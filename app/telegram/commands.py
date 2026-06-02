@@ -95,7 +95,12 @@ class TelegramCommands:
         query = update.callback_query
         if query is None or query.data is None:
             return
-        await query.answer()
+        try:
+            await query.answer()
+        except BadRequest as exc:
+            if "Query is too old" not in str(exc) and "query id is invalid" not in str(exc):
+                raise
+            self.service.log.warning("stale Telegram callback ignored: %s", exc)
         data = query.data
         if data == "home":
             await self._send_or_edit(update, "Select a section.", main_menu(), title=True)

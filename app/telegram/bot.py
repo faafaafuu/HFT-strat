@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from telegram.constants import ParseMode
-from telegram.ext import Application, CallbackQueryHandler, CommandHandler
+from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
 
 from app.config import Settings
 from app.data.database import Database
@@ -70,6 +70,7 @@ class TelegramService:
         for command, callback in handlers.items():
             self.application.add_handler(CommandHandler(command, callback))
         self.application.add_handler(CallbackQueryHandler(commands.callback))
+        self.application.add_error_handler(self._handle_error)
         await self.application.initialize()
         await self.application.start()
         if self.application.updater is not None:
@@ -146,3 +147,9 @@ class TelegramService:
             parse_mode=ParseMode.HTML,
             disable_web_page_preview=True,
         )
+
+    async def _handle_error(self, update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if isinstance(context.error, Exception):
+            self.log.warning("Telegram update failed: %s", context.error)
+        else:
+            self.log.warning("Telegram update failed")
