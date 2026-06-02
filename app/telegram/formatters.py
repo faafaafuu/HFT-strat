@@ -176,7 +176,9 @@ def format_signal_message(
 
 
 def format_marked_entered(signal: SignalModel) -> str:
-    entered_at = _aware(signal.manual_entered_at or datetime.now(UTC)).astimezone(UTC).strftime("%H:%M UTC")
+    entered_at = (
+        _aware(signal.manual_entered_at or datetime.now(UTC)).astimezone(UTC).strftime("%H:%M UTC")
+    )
     return card(
         "✓ Marked as entered",
         "\n".join(
@@ -217,7 +219,9 @@ def format_stats(summary: dict[str, object]) -> str:
 def format_scanner(rows: list[HeatRow]) -> str:
     if not rows:
         return card("📊 Heat Scanner", "No active market data yet.")
-    table = [f"{idx:>2}. {row.symbol:<12} {row.score:>4.1f}" for idx, row in enumerate(rows, start=1)]
+    table = [
+        f"{idx:>2}. {row.symbol:<12} {row.score:>4.1f}" for idx, row in enumerate(rows, start=1)
+    ]
     return card("📊 Heat Scanner", code_table(table))
 
 
@@ -324,7 +328,9 @@ def format_paper_portfolio(summary: dict[str, Any]) -> str:
 
 def format_config(settings: Settings) -> str:
     data = settings.model_dump()
-    return card("⚙️ Config", code_table(json.dumps(data, ensure_ascii=False, indent=2).splitlines()[:80]))
+    return card(
+        "⚙️ Config", code_table(json.dumps(data, ensure_ascii=False, indent=2).splitlines()[:80])
+    )
 
 
 def since_today() -> datetime:

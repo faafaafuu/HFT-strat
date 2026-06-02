@@ -38,4 +38,3 @@ def test_short_outcome_reverses_favorable_and_adverse_moves() -> None:
     assert outcome["hits"]["tp_1_5"] is False
     assert outcome["hits"]["sl_0_5"] is True
     assert outcome["hits"]["sl_0_7"] is False
-

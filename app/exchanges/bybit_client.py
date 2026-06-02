@@ -9,7 +9,13 @@ from typing import Any
 import aiohttp
 import websockets
 
-from app.exchanges.base import ExchangeSymbol, MarketDataCallbacks, OrderbookEvent, TickerEvent, TradeEvent
+from app.exchanges.base import (
+    ExchangeSymbol,
+    MarketDataCallbacks,
+    OrderbookEvent,
+    TickerEvent,
+    TradeEvent,
+)
 from app.logger import get_logger
 from app.utils.math import safe_float
 from app.utils.time import ms_to_datetime, utc_now
@@ -32,7 +38,7 @@ class BybitClient:
         self._stop = asyncio.Event()
         self.public_ws_connected = False
 
-    async def __aenter__(self) -> "BybitClient":
+    async def __aenter__(self) -> BybitClient:
         self.session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=20))
         return self
 
@@ -93,7 +99,9 @@ class BybitClient:
             return None
         return safe_float(rows[0].get("openInterest"), default=0.0)
 
-    async def kline(self, symbol: str, interval: str = "1", limit: int = 200) -> list[dict[str, Any]]:
+    async def kline(
+        self, symbol: str, interval: str = "1", limit: int = 200
+    ) -> list[dict[str, Any]]:
         result = await self._get(
             "/v5/market/kline",
             {"category": self.category, "symbol": symbol, "interval": interval, "limit": limit},
@@ -186,12 +194,16 @@ class BybitClient:
                 symbol=symbol,
                 timestamp=ms_to_datetime(payload.get("ts", int(utc_now().timestamp() * 1000))),
                 price=price,
-                funding_rate=safe_float(data.get("fundingRate"), default=0.0)
-                if data.get("fundingRate") is not None
-                else None,
-                open_interest=safe_float(data.get("openInterest"), default=0.0)
-                if data.get("openInterest") is not None
-                else None,
+                funding_rate=(
+                    safe_float(data.get("fundingRate"), default=0.0)
+                    if data.get("fundingRate") is not None
+                    else None
+                ),
+                open_interest=(
+                    safe_float(data.get("openInterest"), default=0.0)
+                    if data.get("openInterest") is not None
+                    else None
+                ),
             )
         )
 
@@ -218,7 +230,9 @@ class BybitClient:
                 )
             )
 
-    async def _handle_orderbook(self, payload: dict[str, Any], callbacks: MarketDataCallbacks) -> None:
+    async def _handle_orderbook(
+        self, payload: dict[str, Any], callbacks: MarketDataCallbacks
+    ) -> None:
         data = payload.get("data") or {}
         symbol = str(data.get("s") or payload.get("topic", "").split(".")[-1])
         book = self._books.setdefault(symbol, {"b": {}, "a": {}})

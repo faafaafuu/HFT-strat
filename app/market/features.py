@@ -38,7 +38,9 @@ class MarketFeatureStore:
     def __init__(self, retention_minutes: int = 240) -> None:
         self.retention = timedelta(minutes=retention_minutes)
         self.prices: dict[tuple[str, str], deque[tuple[datetime, float]]] = defaultdict(deque)
-        self.trades: dict[tuple[str, str], deque[tuple[datetime, str, float, float, float]]] = defaultdict(deque)
+        self.trades: dict[tuple[str, str], deque[tuple[datetime, str, float, float, float]]] = (
+            defaultdict(deque)
+        )
         self.oi: dict[tuple[str, str], deque[tuple[datetime, float]]] = defaultdict(deque)
         self.funding: dict[tuple[str, str], float | None] = {}
         self.orderbooks: dict[tuple[str, str], OrderbookMetrics] = {}
@@ -65,7 +67,9 @@ class MarketFeatureStore:
             self.prices[(event.exchange, event.symbol)].append((event.timestamp, metrics.mid))
             self._trim_key((event.exchange, event.symbol), event.timestamp)
 
-    def on_open_interest(self, exchange: str, symbol: str, timestamp: datetime, open_interest: float) -> None:
+    def on_open_interest(
+        self, exchange: str, symbol: str, timestamp: datetime, open_interest: float
+    ) -> None:
         key = (exchange, symbol)
         self.oi[key].append((timestamp, open_interest))
         self._trim_key(key, timestamp)
@@ -133,8 +137,8 @@ class MarketFeatureStore:
             ask_depth_1pct=book.ask_depth_1pct if book else None,
             swept_low_30m=sweep["low"],
             swept_high_30m=sweep["high"],
-            returned_after_low_sweep=sweep["returned_low"],
-            returned_after_high_sweep=sweep["returned_high"],
+            returned_after_low_sweep=bool(sweep["returned_low"]),
+            returned_after_high_sweep=bool(sweep["returned_high"]),
         )
 
     def latest_price(self, exchange: str, symbol: str) -> float | None:
@@ -156,7 +160,9 @@ class MarketFeatureStore:
         start: datetime,
         end: datetime,
     ) -> tuple[float | None, float | None, float | None]:
-        values = [price for ts, price in self.prices.get((exchange, symbol), []) if start <= ts <= end]
+        values = [
+            price for ts, price in self.prices.get((exchange, symbol), []) if start <= ts <= end
+        ]
         if not values:
             return None, None, None
         return values[-1], min(values), max(values)

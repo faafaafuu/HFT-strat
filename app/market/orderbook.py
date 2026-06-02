@@ -41,4 +41,3 @@ def calculate_orderbook_metrics(
         bid_depth_1pct=bid_depth,
         ask_depth_1pct=ask_depth,
     )
-

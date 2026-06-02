@@ -9,4 +9,3 @@ class HyperliquidClient:
     """
 
     exchange = "hyperliquid"
-

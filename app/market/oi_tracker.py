@@ -37,4 +37,3 @@ class OpenInterestTracker:
 
     def stop(self) -> None:
         self._stop.set()
-

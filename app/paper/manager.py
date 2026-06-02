@@ -18,7 +18,9 @@ from app.utils.time import utc_now
 class PaperTradeNotifier:
     async def send_paper_opened(self, trade: PaperTradeModel, balance: float) -> None: ...
 
-    async def send_paper_closed(self, trade: PaperTradeModel, balance: float, winrate: float) -> None: ...
+    async def send_paper_closed(
+        self, trade: PaperTradeModel, balance: float, winrate: float
+    ) -> None: ...
 
 
 class PaperTradeManager:
@@ -53,7 +55,9 @@ class PaperTradeManager:
                 await self.notifier.send_paper_opened(trade, balance)
             return trade
 
-    async def on_price(self, exchange: str, symbol: str, price: float, timestamp: datetime | None = None) -> None:
+    async def on_price(
+        self, exchange: str, symbol: str, price: float, timestamp: datetime | None = None
+    ) -> None:
         timestamp = timestamp or utc_now()
         self.latest_prices[(exchange, symbol)] = price
         async with self.database.session() as session:
@@ -92,7 +96,9 @@ class PaperTradeManager:
     async def expire_trade(self, trade_id: int, price: float) -> PaperTradeModel | None:
         return await self._close_by_id(trade_id, price, "EXPIRED")
 
-    async def _close_by_id(self, trade_id: int, price: float, status: str) -> PaperTradeModel | None:
+    async def _close_by_id(
+        self, trade_id: int, price: float, status: str
+    ) -> PaperTradeModel | None:
         async with self.database.session() as session:
             trade = await session.get(PaperTradeModel, trade_id)
             if trade is None or trade.status != "OPEN":
@@ -126,14 +132,22 @@ class PaperTradeManager:
 
         if trade.direction == "LONG":
             if price >= trade.take_price:
-                await self._close_trade(account_service, account, trade, trade.take_price, "CLOSED_TP", timestamp)
+                await self._close_trade(
+                    account_service, account, trade, trade.take_price, "CLOSED_TP", timestamp
+                )
             elif price <= trade.stop_price:
-                await self._close_trade(account_service, account, trade, trade.stop_price, "CLOSED_SL", timestamp)
+                await self._close_trade(
+                    account_service, account, trade, trade.stop_price, "CLOSED_SL", timestamp
+                )
         else:
             if price <= trade.take_price:
-                await self._close_trade(account_service, account, trade, trade.take_price, "CLOSED_TP", timestamp)
+                await self._close_trade(
+                    account_service, account, trade, trade.take_price, "CLOSED_TP", timestamp
+                )
             elif price >= trade.stop_price:
-                await self._close_trade(account_service, account, trade, trade.stop_price, "CLOSED_SL", timestamp)
+                await self._close_trade(
+                    account_service, account, trade, trade.stop_price, "CLOSED_SL", timestamp
+                )
 
     async def _maybe_partial_close(
         self,
@@ -197,7 +211,9 @@ class PaperTradeManager:
         realized = pnl - fee
         trade.pnl_usd += realized
         trade.fees_usd += fee
-        trade.pnl_pct = trade.pnl_usd / trade.position_size_usd * 100 if trade.position_size_usd else 0.0
+        trade.pnl_pct = (
+            trade.pnl_usd / trade.position_size_usd * 100 if trade.position_size_usd else 0.0
+        )
         trade.realized_rr = trade.pnl_usd / trade.risk_usd if trade.risk_usd else 0.0
         trade.remaining_size_usd = 0.0
         trade.exit_price = exit_price
@@ -218,7 +234,9 @@ class PaperTradeManager:
             price = self.latest_prices.get((trade.exchange, trade.symbol))
             if price is None:
                 continue
-            unrealized += pnl_for_exit(trade.direction, trade.entry_price, price, trade.remaining_size_usd)
+            unrealized += pnl_for_exit(
+                trade.direction, trade.entry_price, price, trade.remaining_size_usd
+            )
         account.equity = account.balance + unrealized
         account.peak_equity = max(account.peak_equity, account.equity)
         drawdown = 0.0
@@ -231,9 +249,7 @@ class PaperTradeManager:
 async def _winrate(session) -> float:
     closed = list(
         (
-            await session.scalars(
-                select(PaperTradeModel).where(PaperTradeModel.status != "OPEN")
-            )
+            await session.scalars(select(PaperTradeModel).where(PaperTradeModel.status != "OPEN"))
         ).all()
     )
     if not closed:

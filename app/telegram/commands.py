@@ -10,6 +10,7 @@ from telegram.ext import ContextTypes
 from app.config import save_settings
 from app.data.repositories import SignalRepository
 from app.market.features import FeatureSnapshot
+from app.paper.statistics import paper_summary
 from app.signals.patterns import detect_patterns
 from app.signals.scoring import score_signal
 from app.telegram.formatters import (
@@ -39,61 +40,87 @@ from app.telegram.keyboards import (
     signal_detail_menu,
     signals_menu,
 )
-from app.paper.statistics import paper_summary
 from app.utils.time import utc_now
-
 
 SIGNALS_PAGE_SIZE = 6
 
 
 class TelegramCommands:
-    def __init__(self, service: "TelegramService") -> None:
+    def __init__(self, service: TelegramService) -> None:
         self.service = service
 
     async def start(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+        if not await self._authorize(update):
+            return
         await self._send_or_edit(update, "Select a section.", main_menu(), title=True)
 
     async def help(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+        if not await self._authorize(update):
+            return
         await self._send_or_edit(update, "Select a section.", main_menu(), title=True)
 
     async def status(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+        if not await self._authorize(update):
+            return
         await self.show_dashboard(update)
 
     async def signals(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+        if not await self._authorize(update):
+            return
         await self.show_signals(update, page=0)
 
     async def stats(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+        if not await self._authorize(update):
+            return
         await self.show_stats(update)
 
     async def stats_today(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+        if not await self._authorize(update):
+            return
         await self.show_stats(update, since=since_today().replace(tzinfo=UTC))
 
     async def stats_week(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+        if not await self._authorize(update):
+            return
         await self.show_stats(update, since=since_week().replace(tzinfo=UTC))
 
     async def top_pairs(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+        if not await self._authorize(update):
+            return
         await self.show_stats(update)
 
     async def top_patterns(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+        if not await self._authorize(update):
+            return
         await self.show_stats(update)
 
     async def paper(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+        if not await self._authorize(update):
+            return
         await self.show_paper(update)
 
     async def config(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+        if not await self._authorize(update):
+            return
         await self._send_or_edit(update, format_config(self.service.settings), nav("config"))
 
     async def pause(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+        if not await self._authorize(update):
+            return
         self.service.paused = True
         await self.show_settings(update)
 
     async def resume(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+        if not await self._authorize(update):
+            return
         self.service.paused = False
         await self.show_settings(update)
 
     async def callback(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         query = update.callback_query
         if query is None or query.data is None:
+            return
+        if not await self._authorize(update, answer_callback=True):
             return
         try:
             await query.answer()
@@ -161,7 +188,9 @@ class TelegramCommands:
         page = max(0, page)
         async with self.service.database.session() as session:
             repo = SignalRepository(session)
-            signals = await repo.list_recent(limit=SIGNALS_PAGE_SIZE, offset=page * SIGNALS_PAGE_SIZE)
+            signals = await repo.list_recent(
+                limit=SIGNALS_PAGE_SIZE, offset=page * SIGNALS_PAGE_SIZE
+            )
         await self._send_or_edit(
             update,
             format_recent_signals(signals, page, SIGNALS_PAGE_SIZE),
@@ -173,9 +202,13 @@ class TelegramCommands:
             repo = SignalRepository(session)
             signal = await repo.get_signal_with_outcomes(signal_id)
         if signal is None:
-            await self._send_or_edit(update, "Signal not found.", signal_detail_menu(page, signal_id))
+            await self._send_or_edit(
+                update, "Signal not found.", signal_detail_menu(page, signal_id)
+            )
             return
-        await self._send_or_edit(update, format_signal_detail(signal), signal_detail_menu(page, signal_id))
+        await self._send_or_edit(
+            update, format_signal_detail(signal), signal_detail_menu(page, signal_id)
+        )
 
     async def show_signal_alert_detail(self, update: Update, signal_id: int) -> None:
         async with self.service.database.session() as session:
@@ -184,7 +217,9 @@ class TelegramCommands:
         if signal is None:
             await self._send_or_edit(update, "Signal not found.", nav("home"))
             return
-        await self._send_or_edit(update, format_signal_detail(signal), signal_alert_detail_menu(signal))
+        await self._send_or_edit(
+            update, format_signal_detail(signal), signal_alert_detail_menu(signal)
+        )
 
     async def mark_signal_entered(self, update: Update, signal_id: int) -> None:
         now = utc_now()
@@ -237,7 +272,9 @@ class TelegramCommands:
         await self._send_or_edit(update, format_scanner_pair(row), scanner_pair_menu(symbol))
 
     async def show_settings(self, update: Update) -> None:
-        await self._send_or_edit(update, format_settings(self.service.settings, self.service.paused), settings_menu())
+        await self._send_or_edit(
+            update, format_settings(self.service.settings, self.service.paused), settings_menu()
+        )
 
     async def show_paper(self, update: Update) -> None:
         async with self.service.database.session() as session:
@@ -252,7 +289,9 @@ class TelegramCommands:
         key = parts[2]
         if action == "toggle":
             if key == "auto_select":
-                self.service.settings.symbols.auto_select = not self.service.settings.symbols.auto_select
+                self.service.settings.symbols.auto_select = (
+                    not self.service.settings.symbols.auto_select
+                )
             elif key == "notifications":
                 self.service.settings.telegram.notifications_enabled = (
                     not self.service.settings.telegram.notifications_enabled
@@ -315,11 +354,16 @@ class TelegramCommands:
 
         if snapshot.volume_spike_ratio >= thresholds.volume_spike_multiplier:
             met.append("Volume Spike")
-            score += min(2.0, snapshot.volume_spike_ratio / thresholds.volume_spike_multiplier * 1.5)
+            score += min(
+                2.0, snapshot.volume_spike_ratio / thresholds.volume_spike_multiplier * 1.5
+            )
         else:
             missing.append("Volume Spike")
 
-        if snapshot.spread_pct is not None and snapshot.spread_pct <= self.service.settings.symbols.max_spread_pct:
+        if (
+            snapshot.spread_pct is not None
+            and snapshot.spread_pct <= self.service.settings.symbols.max_spread_pct
+        ):
             met.append("Spread OK")
             score += 1.5
         else:
@@ -378,6 +422,25 @@ class TelegramCommands:
                 parse_mode=ParseMode.HTML,
                 disable_web_page_preview=True,
             )
+
+    async def _authorize(self, update: Update, answer_callback: bool = False) -> bool:
+        if self.service.is_authorized_update(update):
+            return True
+        user = update.effective_user
+        chat = update.effective_chat
+        self.service.log.warning(
+            "unauthorized Telegram update user_id=%s chat_id=%s",
+            user.id if user else None,
+            chat.id if chat else None,
+        )
+        if answer_callback and update.callback_query is not None:
+            try:
+                await update.callback_query.answer("Unauthorized", show_alert=True)
+            except BadRequest:
+                pass
+        elif update.message is not None:
+            await update.message.reply_text("Unauthorized.")
+        return False
 
 
 def _int_part(data: str, index: int, default: int) -> int:

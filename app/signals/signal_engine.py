@@ -23,23 +23,38 @@ class MarketEventSink(MarketDataCallbacks):
     def __init__(
         self,
         feature_store: MarketFeatureStore,
-        paper_manager: "PaperTradeManager | None" = None,
+        paper_manager: PaperTradeManager | None = None,
+        paper_check_interval_seconds: float = 1.0,
     ) -> None:
         self.feature_store = feature_store
         self.paper_manager = paper_manager
+        self.paper_check_interval_seconds = paper_check_interval_seconds
+        self._last_paper_check: dict[tuple[str, str], float] = {}
 
     async def on_ticker(self, event: TickerEvent) -> None:
         self.feature_store.on_ticker(event)
-        if self.paper_manager is not None:
-            await self.paper_manager.on_price(event.exchange, event.symbol, event.price, event.timestamp)
+        await self._maybe_check_paper(event.exchange, event.symbol, event.price, event.timestamp)
 
     async def on_trade(self, event: TradeEvent) -> None:
         self.feature_store.on_trade(event)
-        if self.paper_manager is not None:
-            await self.paper_manager.on_price(event.exchange, event.symbol, event.price, event.timestamp)
+        await self._maybe_check_paper(event.exchange, event.symbol, event.price, event.timestamp)
 
     async def on_orderbook(self, event: OrderbookEvent) -> None:
         self.feature_store.on_orderbook(event)
+        price = self.feature_store.latest_price(event.exchange, event.symbol)
+        if price is not None:
+            await self._maybe_check_paper(event.exchange, event.symbol, price, event.timestamp)
+
+    async def _maybe_check_paper(self, exchange: str, symbol: str, price: float, timestamp) -> None:
+        if self.paper_manager is None:
+            return
+        now = asyncio.get_running_loop().time()
+        key = (exchange, symbol)
+        last = self._last_paper_check.get(key, 0.0)
+        if now - last < self.paper_check_interval_seconds:
+            return
+        self._last_paper_check[key] = now
+        await self.paper_manager.on_price(exchange, symbol, price, timestamp)
 
 
 class SignalEngine:
@@ -50,7 +65,7 @@ class SignalEngine:
         feature_store: MarketFeatureStore,
         telegram: TelegramService,
         symbols: list[str],
-        paper_manager: "PaperTradeManager | None" = None,
+        paper_manager: PaperTradeManager | None = None,
         exchange: str = "bybit",
         interval_seconds: int = 15,
     ) -> None:
@@ -111,7 +126,9 @@ class SignalEngine:
                     score = score_signal(candidate, self.settings.thresholds)
                     if score < self.settings.signals.min_score:
                         continue
-                    since = utc_now() - timedelta(minutes=self.settings.signals.cooldown_minutes_per_symbol)
+                    since = utc_now() - timedelta(
+                        minutes=self.settings.signals.cooldown_minutes_per_symbol
+                    )
                     existing = await signal_repo.latest_signal_for_symbol(
                         candidate.exchange,
                         candidate.symbol,

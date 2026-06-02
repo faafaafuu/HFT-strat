@@ -20,7 +20,9 @@ class SignalCandidate:
     context: dict[str, Any]
 
 
-def detect_patterns(snapshot: FeatureSnapshot, thresholds: ThresholdsConfig) -> list[SignalCandidate]:
+def detect_patterns(
+    snapshot: FeatureSnapshot, thresholds: ThresholdsConfig
+) -> list[SignalCandidate]:
     candidates: list[SignalCandidate] = []
     candidates.extend(_detect_oi_pump_price_move(snapshot, thresholds))
     candidates.extend(_detect_stop_hunt_sweep(snapshot, thresholds))
@@ -129,4 +131,3 @@ def _detect_stop_hunt_sweep(
             )
         )
     return candidates
-

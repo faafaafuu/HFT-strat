@@ -85,4 +85,3 @@ def rr_for_price(direction: str, entry_price: float, stop_price: float, price: f
     if direction.upper() == "LONG":
         return (price - entry_price) / risk_distance
     return (entry_price - price) / risk_distance
-

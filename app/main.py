@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import signal
+from pathlib import Path
 
 from app.config import load_settings
 from app.data.database import Database
@@ -123,12 +124,16 @@ async def _seed_bybit_history(
                             symbol=symbol,
                             timestamp=utc_now(),
                             price=price,
-                            funding_rate=safe_float(ticker.get("fundingRate"), default=0.0)
-                            if ticker.get("fundingRate") is not None
-                            else None,
-                            open_interest=safe_float(ticker.get("openInterest"), default=0.0)
-                            if ticker.get("openInterest") is not None
-                            else None,
+                            funding_rate=(
+                                safe_float(ticker.get("fundingRate"), default=0.0)
+                                if ticker.get("fundingRate") is not None
+                                else None
+                            ),
+                            open_interest=(
+                                safe_float(ticker.get("openInterest"), default=0.0)
+                                if ticker.get("openInterest") is not None
+                                else None
+                            ),
                         )
                     )
         except Exception as exc:  # noqa: BLE001 - one symbol should not block startup.
@@ -136,9 +141,15 @@ async def _seed_bybit_history(
 
 
 async def _heartbeat_loop(log, telegram: TelegramService, bybit: BybitClient) -> None:
+    heartbeat_path = Path("storage/heartbeat")
     while True:
         telegram.last_heartbeat = utc_now()
         telegram.active_websocket_connections = 1 if bybit.public_ws_connected else 0
+        try:
+            heartbeat_path.parent.mkdir(parents=True, exist_ok=True)
+            heartbeat_path.write_text(telegram.last_heartbeat.isoformat())
+        except OSError as exc:
+            log.warning("failed to write heartbeat file: %s", exc)
         log.info(
             "heartbeat uptime=%s ws_connections=%s symbols=%s",
             telegram.last_heartbeat - telegram.started_at,

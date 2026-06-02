@@ -11,12 +11,12 @@ from app.data.repositories import _aware
 
 
 async def paper_summary(session: AsyncSession) -> dict[str, Any]:
-    account = await session.scalar(select(PaperAccountModel).where(PaperAccountModel.name == "default"))
+    account = await session.scalar(
+        select(PaperAccountModel).where(PaperAccountModel.name == "default")
+    )
     trades = list(
         (
-            await session.scalars(
-                select(PaperTradeModel).where(PaperTradeModel.status != "OPEN")
-            )
+            await session.scalars(select(PaperTradeModel).where(PaperTradeModel.status != "OPEN"))
         ).all()
     )
     open_count = int(
@@ -38,7 +38,9 @@ async def paper_summary(session: AsyncSession) -> dict[str, Any]:
     avg_loser = -gross_loss / len(losses) if losses else 0.0
     avg_rr = sum(trade.realized_rr for trade in trades) / total if total else 0.0
     holding_times = [
-        (_aware(trade.closed_at).astimezone(UTC) - _aware(trade.opened_at).astimezone(UTC)).total_seconds()
+        (
+            _aware(trade.closed_at).astimezone(UTC) - _aware(trade.opened_at).astimezone(UTC)
+        ).total_seconds()
         for trade in trades
         if trade.closed_at is not None
     ]
@@ -52,12 +54,16 @@ async def paper_summary(session: AsyncSession) -> dict[str, Any]:
         "wins": len(wins),
         "losses": len(losses),
         "winrate": len(wins) / total * 100 if total else 0.0,
-        "profit_factor": gross_profit / gross_loss if gross_loss else (gross_profit if gross_profit else 0.0),
+        "profit_factor": (
+            gross_profit / gross_loss if gross_loss else (gross_profit if gross_profit else 0.0)
+        ),
         "expectancy_r": avg_rr,
         "average_trade": avg_trade,
         "average_winner": avg_winner,
         "average_loser": avg_loser,
-        "average_holding_seconds": sum(holding_times) / len(holding_times) if holding_times else 0.0,
+        "average_holding_seconds": (
+            sum(holding_times) / len(holding_times) if holding_times else 0.0
+        ),
         "max_consecutive_wins": _max_streak(trades, True),
         "max_consecutive_losses": _max_streak(trades, False),
         "avg_rr": avg_rr,
@@ -67,9 +73,7 @@ async def paper_summary(session: AsyncSession) -> dict[str, Any]:
 async def paper_breakdowns(session: AsyncSession) -> dict[str, list[tuple[str, float, int]]]:
     trades = list(
         (
-            await session.scalars(
-                select(PaperTradeModel).where(PaperTradeModel.status != "OPEN")
-            )
+            await session.scalars(select(PaperTradeModel).where(PaperTradeModel.status != "OPEN"))
         ).all()
     )
     return {
@@ -102,4 +106,3 @@ def _max_streak(trades: list[PaperTradeModel], wins: bool) -> int:
         else:
             current = 0
     return best
-

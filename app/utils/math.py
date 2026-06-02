@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 
 def pct_change(old: float | None, new: float | None) -> float | None:
     if old is None or new is None or old == 0:
@@ -13,11 +15,10 @@ def pct_distance(reference: float, value: float) -> float:
     return abs(value - reference) / reference * 100
 
 
-def safe_float(value: object, default: float = 0.0) -> float:
+def safe_float(value: Any, default: float = 0.0) -> float:
     try:
         if value is None:
             return default
         return float(value)
     except (TypeError, ValueError):
         return default
-

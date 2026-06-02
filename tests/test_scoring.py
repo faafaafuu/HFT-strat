@@ -44,4 +44,3 @@ def test_score_for_basic_oi_price_move() -> None:
     )
 
     assert score_signal(candidate, thresholds) == 5
-

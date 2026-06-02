@@ -13,4 +13,3 @@ def ms_to_datetime(value: int | float) -> datetime:
 
 def timeframe_id(dt: datetime) -> str:
     return dt.astimezone(UTC).strftime("%Y-%m-%d_%H-%M")
-

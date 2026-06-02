@@ -71,7 +71,9 @@ class OutcomeTracker:
         now = utc_now()
         async with self.database.session() as session:
             repo = SignalRepository(session)
-            signals = await repo.list_signals_missing_outcomes(self.config.horizons_minutes, now=now)
+            signals = await repo.list_signals_missing_outcomes(
+                self.config.horizons_minutes, now=now
+            )
             for signal in signals:
                 signal_ts = _aware(signal.timestamp)
                 for horizon in self.config.horizons_minutes:

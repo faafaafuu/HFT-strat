@@ -33,4 +33,3 @@ def base_from_symbol(symbol: str) -> str:
         if upper.endswith(suffix):
             return upper[: -len(suffix)]
     return upper
-

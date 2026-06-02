@@ -46,6 +46,7 @@ python -m app.main
 ```env
 TELEGRAM_BOT_TOKEN=123456:your_real_token
 TELEGRAM_CHAT_ID=your_chat_id
+TELEGRAM_ALLOWED_USER_IDS=your_telegram_user_id
 ```
 
 To get `TELEGRAM_CHAT_ID`, send any message to your bot, then call:
@@ -56,6 +57,8 @@ curl "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getUpdates"
 
 Use the `chat.id` from the response.
 
+`TELEGRAM_ALLOWED_USER_IDS` is recommended. If it is set, only those Telegram users can run commands and press callback buttons. If it is empty, the bot falls back to `TELEGRAM_CHAT_ID`.
+
 ## Docker Run
 
 ```bash
@@ -65,7 +68,7 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-SQLite data is stored in `./storage/market_heat.db`.
+In production Docker mode, SQLite data is stored in the named Docker volume `market_heat_signal_bot_market_storage`. Dev mode uses the local `./storage` directory for easier inspection.
 
 ## Development Mode
 
@@ -280,6 +283,19 @@ pytest
 ```
 
 Current tests cover scoring, outcomes, and paper risk calculations.
+
+## Tooling
+
+```bash
+make lint
+make typecheck
+make test
+make security
+make audit
+make check
+```
+
+`make audit` uses `pip-audit` and needs network access to vulnerability databases.
 
 ## Limitations
 

@@ -19,4 +19,3 @@ def test_hyperliquid_chart_links() -> None:
     assert tradingview_chart_url("hyperliquid", "BTCUSDT") == (
         "https://www.tradingview.com/chart/?symbol=HYPERLIQUID:BTCUSD.P"
     )
-

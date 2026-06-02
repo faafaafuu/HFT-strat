@@ -2,7 +2,17 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from app.utils.time import utc_now
@@ -80,9 +90,11 @@ class SignalModel(Base):
     market_context_json: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(32), default="open")
     manual_entry_price: Mapped[float | None] = mapped_column(Float, nullable=True)
-    manual_entered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    manual_entered_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
-    outcomes: Mapped[list["SignalOutcomeModel"]] = relationship(
+    outcomes: Mapped[list[SignalOutcomeModel]] = relationship(
         back_populates="signal",
         cascade="all, delete-orphan",
     )
@@ -90,7 +102,9 @@ class SignalModel(Base):
 
 class SignalOutcomeModel(Base):
     __tablename__ = "signal_outcomes"
-    __table_args__ = (UniqueConstraint("signal_id", "horizon_minutes", name="uq_signal_outcome_horizon"),)
+    __table_args__ = (
+        UniqueConstraint("signal_id", "horizon_minutes", name="uq_signal_outcome_horizon"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     signal_id: Mapped[int] = mapped_column(ForeignKey("signals.id"), index=True)
@@ -129,7 +143,9 @@ class PaperTradeModel(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     account_id: Mapped[int] = mapped_column(ForeignKey("paper_accounts.id"), index=True)
-    signal_id: Mapped[int | None] = mapped_column(ForeignKey("signals.id"), nullable=True, index=True)
+    signal_id: Mapped[int | None] = mapped_column(
+        ForeignKey("signals.id"), nullable=True, index=True
+    )
     exchange: Mapped[str] = mapped_column(String(32), index=True)
     symbol: Mapped[str] = mapped_column(String(64), index=True)
     direction: Mapped[str] = mapped_column(String(16))
@@ -163,8 +179,12 @@ class PaperEquityCurveModel(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     account_id: Mapped[int] = mapped_column(ForeignKey("paper_accounts.id"), index=True)
-    trade_id: Mapped[int | None] = mapped_column(ForeignKey("paper_trades.id"), nullable=True, index=True)
-    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, index=True)
+    trade_id: Mapped[int | None] = mapped_column(
+        ForeignKey("paper_trades.id"), nullable=True, index=True
+    )
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, index=True
+    )
     balance: Mapped[float] = mapped_column(Float)
     equity: Mapped[float] = mapped_column(Float)
     net_profit: Mapped[float] = mapped_column(Float)
@@ -173,7 +193,9 @@ class PaperEquityCurveModel(Base):
 
 class PaperDailyStatsModel(Base):
     __tablename__ = "paper_daily_stats"
-    __table_args__ = (UniqueConstraint("account_id", "date", name="uq_paper_daily_stats_account_date"),)
+    __table_args__ = (
+        UniqueConstraint("account_id", "date", name="uq_paper_daily_stats_account_date"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     account_id: Mapped[int] = mapped_column(ForeignKey("paper_accounts.id"), index=True)

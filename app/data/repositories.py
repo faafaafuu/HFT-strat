@@ -5,9 +5,9 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import and_, func, select
-from sqlalchemy.orm import selectinload
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.data.models import (
     MarketSnapshotModel,
@@ -248,7 +248,9 @@ class SignalRepository:
             .join(SignalModel, SignalModel.id == SignalOutcomeModel.signal_id)
             .where(SignalOutcomeModel.horizon_minutes == 30, *outcome_filters)
         )
-        avg_mfe, avg_mae, winrate_tp1, outcome_count = (await self.session.execute(outcome_stmt)).one()
+        avg_mfe, avg_mae, winrate_tp1, outcome_count = (
+            await self.session.execute(outcome_stmt)
+        ).one()
 
         best_pattern_stmt = (
             select(SignalModel.pattern, func.avg(SignalOutcomeModel.hit_tp_1_0).label("wr"))
@@ -299,10 +301,7 @@ class SignalRepository:
 
     async def list_recent(self, limit: int = 10, offset: int = 0) -> list[SignalModel]:
         stmt = (
-            select(SignalModel)
-            .order_by(SignalModel.timestamp.desc())
-            .limit(limit)
-            .offset(offset)
+            select(SignalModel).order_by(SignalModel.timestamp.desc()).limit(limit).offset(offset)
         )
         return list((await self.session.scalars(stmt)).all())
 

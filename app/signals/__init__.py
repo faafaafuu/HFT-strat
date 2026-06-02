@@ -1,2 +1,1 @@
 """Signal detection and evaluation."""
-

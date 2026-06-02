@@ -38,7 +38,12 @@ def nav(section: str, back: str = "home") -> InlineKeyboardMarkup:
 
 def signals_menu(signals: list[SignalModel], page: int, page_size: int) -> InlineKeyboardMarkup:
     rows = [
-        [InlineKeyboardButton(f"{signal.symbol} • {signal.direction} • {signal.score}/10", callback_data=f"signal:{signal.id}:{page}")]
+        [
+            InlineKeyboardButton(
+                f"{signal.symbol} • {signal.direction} • {signal.score}/10",
+                callback_data=f"signal:{signal.id}:{page}",
+            )
+        ]
         for signal in signals
     ]
     pager = []
@@ -116,7 +121,11 @@ def signal_alert_menu(signal: SignalModel) -> InlineKeyboardMarkup:
 
 def scanner_menu(rows: list[HeatRow]) -> InlineKeyboardMarkup:
     buttons = [
-        [InlineKeyboardButton(f"{idx}. {row.symbol} • {row.score:.1f}", callback_data=f"scanner_pair:{row.symbol}")]
+        [
+            InlineKeyboardButton(
+                f"{idx}. {row.symbol} • {row.score:.1f}", callback_data=f"scanner_pair:{row.symbol}"
+            )
+        ]
         for idx, row in enumerate(rows, start=1)
     ]
     buttons.append(
@@ -153,8 +162,12 @@ def settings_menu() -> InlineKeyboardMarkup:
                 InlineKeyboardButton("Cooldown +5m", callback_data="settings:set:cooldown:5"),
             ],
             [
-                InlineKeyboardButton("Auto Select On/Off", callback_data="settings:toggle:auto_select"),
-                InlineKeyboardButton("Notifications On/Off", callback_data="settings:toggle:notifications"),
+                InlineKeyboardButton(
+                    "Auto Select On/Off", callback_data="settings:toggle:auto_select"
+                ),
+                InlineKeyboardButton(
+                    "Notifications On/Off", callback_data="settings:toggle:notifications"
+                ),
             ],
             [
                 InlineKeyboardButton("Max Symbols -5", callback_data="settings:set:max_symbols:-5"),

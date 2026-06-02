@@ -22,6 +22,6 @@ async def retry_async(
             last_exc = exc
             await asyncio.sleep(delay)
             delay *= multiplier
-    assert last_exc is not None
+    if last_exc is None:
+        raise RuntimeError("retry_async exhausted without capturing an exception")
     raise last_exc
-

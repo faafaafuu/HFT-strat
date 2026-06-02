@@ -29,7 +29,9 @@ class SymbolSelector:
             and item.spread_pct is not None
             and item.spread_pct <= self.config.max_spread_pct
         ]
-        enriched = await self._enrich_depth(client, candidates[: max(self.config.max_symbols * 3, 50)])
+        enriched = await self._enrich_depth(
+            client, candidates[: max(self.config.max_symbols * 3, 50)]
+        )
         selected = [
             item
             for item in enriched
@@ -88,4 +90,3 @@ class SymbolSelector:
                     spread_pct=item.spread_pct,
                     depth_1pct_usd=item.depth_1pct_usd,
                 )
-

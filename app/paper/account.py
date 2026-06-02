@@ -71,4 +71,3 @@ class PaperAccountService:
                 drawdown_pct=drawdown,
             )
         )
-

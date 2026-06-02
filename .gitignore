@@ -4,5 +4,5 @@ __pycache__/
 .pytest_cache/
 *.pyc
 storage/
+logs/
 market_heat.db
-

@@ -37,4 +37,3 @@ def score_signal(candidate: SignalCandidate, thresholds: ThresholdsConfig) -> in
         score += 1
 
     return min(score, 10)
-

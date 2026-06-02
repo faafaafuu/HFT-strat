@@ -1,2 +1,1 @@
 """Local paper trading simulation."""
-

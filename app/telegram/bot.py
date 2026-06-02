@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
 
@@ -43,6 +44,18 @@ class TelegramService:
     @property
     def is_online(self) -> bool:
         return self.application is not None
+
+    def is_authorized_update(self, update: Update) -> bool:
+        allowed_users = self.settings.telegram.allowed_user_ids
+        user = update.effective_user
+        if allowed_users:
+            return user is not None and user.id in allowed_users
+
+        chat_id = self.settings.telegram.chat_id
+        chat = update.effective_chat
+        if chat_id and chat is not None:
+            return str(chat.id) == str(chat_id)
+        return False
 
     async def start(self) -> None:
         if not self.enabled:

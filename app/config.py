@@ -18,6 +18,7 @@ class TelegramConfig(BaseModel):
     notifications_enabled: bool = True
     bot_token_env: str = "TELEGRAM_BOT_TOKEN"
     chat_id_env: str = "TELEGRAM_CHAT_ID"
+    allowed_user_ids_env: str = "TELEGRAM_ALLOWED_USER_IDS"
 
     @property
     def bot_token(self) -> str | None:
@@ -26,6 +27,20 @@ class TelegramConfig(BaseModel):
     @property
     def chat_id(self) -> str | None:
         return os.getenv(self.chat_id_env)
+
+    @property
+    def allowed_user_ids(self) -> set[int]:
+        raw = os.getenv(self.allowed_user_ids_env, "")
+        result: set[int] = set()
+        for item in raw.replace(";", ",").split(","):
+            value = item.strip()
+            if not value:
+                continue
+            try:
+                result.add(int(value))
+            except ValueError:
+                continue
+        return result
 
 
 class BybitConfig(BaseModel):
@@ -110,6 +125,29 @@ class PaperConfig(BaseModel):
     slippage_pct: float = 0.01
     partial_tp: PartialTakeProfitConfig = Field(default_factory=PartialTakeProfitConfig)
     trailing: TrailingConfig = Field(default_factory=TrailingConfig)
+
+    @field_validator(
+        "initial_balance",
+        "leverage",
+        "risk_per_trade_pct",
+        "stop_pct",
+        "take_pct",
+        "taker_fee_pct",
+        "maker_fee_pct",
+        "slippage_pct",
+    )
+    @classmethod
+    def non_negative_numbers(cls, value: float) -> float:
+        if value < 0:
+            raise ValueError("paper numeric settings must be non-negative")
+        return value
+
+    @field_validator("max_open_positions", "auto_trade_min_score")
+    @classmethod
+    def positive_integers(cls, value: int) -> int:
+        if value <= 0:
+            raise ValueError("paper integer settings must be positive")
+        return value
 
 
 class DatabaseConfig(BaseModel):
