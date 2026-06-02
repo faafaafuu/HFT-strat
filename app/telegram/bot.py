@@ -64,6 +64,7 @@ class TelegramService:
         from app.telegram.commands import TelegramCommands
 
         self.application = Application.builder().token(self.settings.telegram.bot_token).build()
+        self.application.add_error_handler(self._handle_error)
         commands = TelegramCommands(self)
         handlers = {
             "start": commands.start,
@@ -83,7 +84,6 @@ class TelegramService:
         for command, callback in handlers.items():
             self.application.add_handler(CommandHandler(command, callback))
         self.application.add_handler(CallbackQueryHandler(commands.callback))
-        self.application.add_error_handler(self._handle_error)
         await self.application.initialize()
         await self.application.start()
         if self.application.updater is not None:

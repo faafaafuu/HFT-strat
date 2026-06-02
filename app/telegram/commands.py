@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC
 
-from telegram import InlineKeyboardMarkup, Update
+from telegram import CallbackQuery, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import ContextTypes
@@ -43,6 +43,11 @@ from app.telegram.keyboards import (
 from app.utils.time import utc_now
 
 SIGNALS_PAGE_SIZE = 6
+STALE_CALLBACK_MARKERS = (
+    "Query is too old",
+    "query id is invalid",
+    "response timeout expired",
+)
 
 
 class TelegramCommands:
@@ -122,12 +127,7 @@ class TelegramCommands:
             return
         if not await self._authorize(update, answer_callback=True):
             return
-        try:
-            await query.answer()
-        except BadRequest as exc:
-            if "Query is too old" not in str(exc) and "query id is invalid" not in str(exc):
-                raise
-            self.service.log.warning("stale Telegram callback ignored: %s", exc)
+        await self._answer_callback(query)
         data = query.data
         if data == "home":
             await self._send_or_edit(update, "Select a section.", main_menu(), title=True)
@@ -159,8 +159,11 @@ class TelegramCommands:
         elif data == "settings":
             await self.show_settings(update)
         elif data.startswith("settings:"):
-            await self.apply_setting(data)
-            await self.show_settings(update)
+            saved = await self.apply_setting(data)
+            warning = None
+            if not saved:
+                warning = "Config file is read-only. Runtime value changed, but it was not saved."
+            await self.show_settings(update, warning=warning)
 
     async def show_dashboard(self, update: Update) -> None:
         async with self.service.database.session() as session:
@@ -271,9 +274,11 @@ class TelegramCommands:
             )
         await self._send_or_edit(update, format_scanner_pair(row), scanner_pair_menu(symbol))
 
-    async def show_settings(self, update: Update) -> None:
+    async def show_settings(self, update: Update, warning: str | None = None) -> None:
         await self._send_or_edit(
-            update, format_settings(self.service.settings, self.service.paused), settings_menu()
+            update,
+            format_settings(self.service.settings, self.service.paused, warning=warning),
+            settings_menu(),
         )
 
     async def show_paper(self, update: Update) -> None:
@@ -281,10 +286,10 @@ class TelegramCommands:
             summary = await paper_summary(session)
         await self._send_or_edit(update, format_paper_portfolio(summary), nav("paper"))
 
-    async def apply_setting(self, data: str) -> None:
+    async def apply_setting(self, data: str) -> bool:
         parts = data.split(":")
         if len(parts) < 3:
-            return
+            return True
         action = parts[1]
         key = parts[2]
         if action == "toggle":
@@ -313,7 +318,13 @@ class TelegramCommands:
                     200,
                     max(1, self.service.settings.symbols.max_symbols + delta),
                 )
-        save_settings(self.service.settings, self.service.config_path)
+        saved = save_settings(self.service.settings, self.service.config_path)
+        if not saved:
+            self.service.log.warning(
+                "config save failed path=%s reason=read_only_or_unwritable",
+                self.service.config_path,
+            )
+        return saved
 
     def _heat_rows(self, limit: int = 10) -> list[HeatRow]:
         if self.service.feature_store is None:
@@ -412,8 +423,10 @@ class TelegramCommands:
                     disable_web_page_preview=True,
                 )
             except BadRequest as exc:
-                if "Message is not modified" not in str(exc):
+                if "Message is not modified" not in str(exc) and not _is_stale_callback(exc):
                     raise
+                if _is_stale_callback(exc):
+                    self.service.log.warning("stale Telegram edit ignored: %s", exc)
             return
         if update.message:
             await update.message.reply_text(
@@ -434,13 +447,25 @@ class TelegramCommands:
             chat.id if chat else None,
         )
         if answer_callback and update.callback_query is not None:
-            try:
-                await update.callback_query.answer("Unauthorized", show_alert=True)
-            except BadRequest:
-                pass
+            await self._answer_callback(update.callback_query, "Unauthorized", show_alert=True)
         elif update.message is not None:
             await update.message.reply_text("Unauthorized.")
         return False
+
+    async def _answer_callback(
+        self,
+        query: CallbackQuery,
+        text: str | None = None,
+        show_alert: bool = False,
+    ) -> bool:
+        try:
+            await query.answer(text=text, show_alert=show_alert)
+        except BadRequest as exc:
+            if not _is_stale_callback(exc):
+                raise
+            self.service.log.warning("stale Telegram callback ignored: %s", exc)
+            return False
+        return True
 
 
 def _int_part(data: str, index: int, default: int) -> int:
@@ -448,6 +473,11 @@ def _int_part(data: str, index: int, default: int) -> int:
         return int(data.split(":")[index])
     except (IndexError, ValueError):
         return default
+
+
+def _is_stale_callback(exc: BadRequest) -> bool:
+    message = str(exc)
+    return any(marker in message for marker in STALE_CALLBACK_MARKERS)
 
 
 from app.telegram.bot import TelegramService  # noqa: E402

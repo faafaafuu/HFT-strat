@@ -247,7 +247,7 @@ def format_scanner_pair(row: HeatRow) -> str:
     return card("📊 Heat Details", body)
 
 
-def format_settings(settings: Settings, paused: bool) -> str:
+def format_settings(settings: Settings, paused: bool, warning: str | None = None) -> str:
     notification_state = "On" if settings.telegram.notifications_enabled else "Off"
     auto_select = "On" if settings.symbols.auto_select else "Off"
     state = "Paused" if paused else "Active"
@@ -259,7 +259,10 @@ def format_settings(settings: Settings, paused: bool) -> str:
         f"{'Max Symbols':<18} {settings.symbols.max_symbols}",
         f"{'Notifications':<18} {notification_state}",
     ]
-    return card("⚙️ Settings", code_table(lines))
+    body = code_table(lines)
+    if warning:
+        body = "\n".join([body, "", "<b>Warning</b>", escape(warning)])
+    return card("⚙️ Settings", body)
 
 
 def format_paper_opened(trade, balance: float) -> str:

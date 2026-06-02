@@ -187,8 +187,12 @@ def load_settings(path: str | Path = "config.yaml") -> Settings:
     return Settings.model_validate(raw)
 
 
-def save_settings(settings: Settings, path: str | Path = "config.yaml") -> None:
+def save_settings(settings: Settings, path: str | Path = "config.yaml") -> bool:
     config_path = Path(path)
-    config_path.write_text(
-        yaml.safe_dump(settings.model_dump(), sort_keys=False, allow_unicode=True),
-    )
+    try:
+        config_path.write_text(
+            yaml.safe_dump(settings.model_dump(), sort_keys=False, allow_unicode=True),
+        )
+    except OSError:
+        return False
+    return True
