@@ -1,0 +1,10 @@
+services:
+  market-heat-signal-bot:
+    build: .
+    container_name: market-heat-signal-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./storage:/app/storage

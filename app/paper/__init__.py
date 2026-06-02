@@ -1,0 +1,2 @@
+"""Local paper trading simulation."""
+

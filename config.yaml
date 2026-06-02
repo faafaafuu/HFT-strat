@@ -1,0 +1,75 @@
+app:
+  mode: signal_only
+  log_level: INFO
+
+telegram:
+  enabled: true
+  notifications_enabled: true
+  bot_token_env: TELEGRAM_BOT_TOKEN
+  chat_id_env: TELEGRAM_CHAT_ID
+
+exchanges:
+  bybit:
+    enabled: true
+    market_type: linear
+    testnet: false
+  hyperliquid:
+    enabled: false
+    testnet: false
+
+symbols:
+  auto_select: true
+  max_symbols: 30
+  min_24h_volume_usd: 20000000
+  max_spread_pct: 0.05
+  min_orderbook_depth_usd_1pct: 500000
+  exchanges:
+    - bybit
+  manual_list:
+    - BTCUSDT
+    - ETHUSDT
+    - SOLUSDT
+
+signals:
+  min_score: 6
+  strong_score: 8
+  cooldown_minutes_per_symbol: 20
+
+thresholds:
+  price_change_5m_pct: 0.7
+  oi_change_15m_pct: 2.0
+  volume_spike_multiplier: 1.5
+  sweep_lookback_minutes: 30
+  sweep_return_minutes: 5
+  density_min_usd: 500000
+  density_max_distance_pct: 0.3
+  density_min_lifetime_sec: 10
+  funding_extreme_pct: 0.03
+
+outcomes:
+  horizons_minutes: [5, 15, 30, 60, 180]
+  tp_levels_pct: [0.5, 1.0, 1.5]
+  sl_levels_pct: [0.3, 0.5, 0.7]
+
+paper:
+  initial_balance: 2000
+  leverage: 5
+  risk_per_trade_pct: 0.5
+  max_open_positions: 3
+  stop_pct: 0.5
+  take_pct: 1.5
+  auto_trade_min_score: 8
+  partial_tp:
+    enabled: true
+    first_tp_pct: 50
+    first_target_rr: 1
+  trailing:
+    enabled: true
+    activation_rr: 1
+    distance_pct: 0.4
+  taker_fee_pct: 0.055
+  maker_fee_pct: 0.02
+  slippage_pct: 0.01
+
+database:
+  url: sqlite+aiosqlite:///./storage/market_heat.db
