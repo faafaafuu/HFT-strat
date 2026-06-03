@@ -119,7 +119,7 @@ class PaperConfig(BaseModel):
     max_open_positions: int = 3
     stop_pct: float = 0.5
     take_pct: float = 1.5
-    auto_trade_min_score: int = 8
+    auto_trade_min_score: int = 7
     taker_fee_pct: float = 0.055
     maker_fee_pct: float = 0.02
     slippage_pct: float = 0.01

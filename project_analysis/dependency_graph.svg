@@ -213,7 +213,7 @@
 <title>app.paper&#45;&gt;app.logger</title>
 <path fill="none" stroke="#0f766e" d="M532.19,-499.24C580.85,-490.46 659.01,-469.1 704,-419 783.21,-330.78 794.06,-178.98 795.12,-119.22"/>
 <polygon fill="#0f766e" stroke="#0f766e" points="797.57,-119.1 795.21,-112.07 792.67,-119.04 797.57,-119.1"/>
-<text text-anchor="middle" x="643" y="-490.8" font-family="Times,serif" font-size="14.00">1</text>
+<text text-anchor="middle" x="643" y="-490.8" font-family="Times,serif" font-size="14.00">2</text>
 </g>
 <!-- app.paper&#45;&gt;app.utils -->
 <g id="edge21" class="edge">
@@ -366,7 +366,7 @@
 <title>tests&#45;&gt;app.telegram</title>
 <path fill="none" stroke="#0f766e" d="M75.19,-680.17C117.51,-669.98 202.61,-646.3 266,-608 285.09,-596.47 303.57,-579.36 317.03,-565.45"/>
 <polygon fill="#0f766e" stroke="#0f766e" points="319.07,-566.87 322.11,-560.1 315.52,-563.49 319.07,-566.87"/>
-<text text-anchor="middle" x="190" y="-664.8" font-family="Times,serif" font-size="14.00">2</text>
+<text text-anchor="middle" x="190" y="-664.8" font-family="Times,serif" font-size="14.00">3</text>
 </g>
 <!-- tools -->
 <g id="node13" class="node">

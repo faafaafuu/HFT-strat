@@ -1,5 +1,5 @@
 app:
-  mode: signal_only
+  mode: paper_trading
   log_level: INFO
 
 telegram:
@@ -59,7 +59,7 @@ paper:
   max_open_positions: 3
   stop_pct: 0.5
   take_pct: 1.5
-  auto_trade_min_score: 8
+  auto_trade_min_score: 7
   partial_tp:
     enabled: true
     first_tp_pct: 50

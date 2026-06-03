@@ -57,6 +57,16 @@ async def main() -> None:
         if settings.app.mode == "paper_trading":
             paper_manager = PaperTradeManager(database, settings.paper, notifier=telegram)
             await paper_manager.ensure_account()
+            log.info(
+                "paper trading enabled auto_trade_min_score=%s max_open_positions=%s "
+                "risk_per_trade_pct=%s leverage=%s",
+                settings.paper.auto_trade_min_score,
+                settings.paper.max_open_positions,
+                settings.paper.risk_per_trade_pct,
+                settings.paper.leverage,
+            )
+        else:
+            log.info("paper trading disabled app_mode=%s", settings.app.mode)
 
         sink = MarketEventSink(feature_store, paper_manager=paper_manager)
         oi_tracker = OpenInterestTracker(bybit, feature_store, symbols)

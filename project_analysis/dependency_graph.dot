@@ -34,7 +34,7 @@ digraph dependencies {
   "app.market" -> "app.utils" [label="3"];
   "app.paper" -> "app.config" [label="4"];
   "app.paper" -> "app.data" [label="6"];
-  "app.paper" -> "app.logger" [label="1"];
+  "app.paper" -> "app.logger" [label="2"];
   "app.paper" -> "app.utils" [label="3"];
   "app.signals" -> "app.config" [label="4"];
   "app.signals" -> "app.data" [label="4"];
@@ -55,5 +55,5 @@ digraph dependencies {
   "tests" -> "app.data" [label="1"];
   "tests" -> "app.paper" [label="1"];
   "tests" -> "app.signals" [label="3"];
-  "tests" -> "app.telegram" [label="2"];
+  "tests" -> "app.telegram" [label="3"];
 }

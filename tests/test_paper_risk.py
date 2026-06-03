@@ -54,3 +54,7 @@ def test_short_slippage_and_pnl_are_directional() -> None:
 
 def test_fee_for_notional() -> None:
     assert fee_for_notional(2000, 0.055) == 1.1
+
+
+def test_default_auto_trade_min_score_is_seven() -> None:
+    assert PaperConfig().auto_trade_min_score == 7

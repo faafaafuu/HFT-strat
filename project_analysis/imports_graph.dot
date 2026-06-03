@@ -91,6 +91,7 @@ digraph imports {
   "app.paper.account" -> "app.utils.time";
   "app.paper.executor" -> "app.config";
   "app.paper.executor" -> "app.data.models";
+  "app.paper.executor" -> "app.logger";
   "app.paper.executor" -> "app.paper.account";
   "app.paper.executor" -> "app.paper.risk";
   "app.paper.executor" -> "app.utils.time";
@@ -161,4 +162,5 @@ digraph imports {
   "tests.test_telegram_auth" -> "app.config";
   "tests.test_telegram_auth" -> "app.data.database";
   "tests.test_telegram_auth" -> "app.telegram.bot";
+  "tests.test_telegram_auth" -> "app.telegram.commands";
 }

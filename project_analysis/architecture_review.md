@@ -3,7 +3,7 @@
 ## Summary
 
 - Modules analyzed: 47
-- Internal import edges: 112
+- Internal import edges: 114
 - Package dependency edges: 41
 - Cyclic import groups: 1
 
@@ -14,15 +14,15 @@ The project is split into clear domains: exchange adapters, market feature colle
 | Module | LOC | Classes | Functions | Fan-in | Fan-out |
 |---|---:|---:|---:|---:|---:|
 | `app.config` | 156 | 14 | 9 | 16 | 0 |
-| `app.main` | 146 | 0 | 3 | 0 | 14 |
+| `app.main` | 156 | 0 | 3 | 0 | 14 |
 | `app.telegram.bot` | 149 | 1 | 10 | 4 | 9 |
 | `app.utils.time` | 8 | 0 | 3 | 13 | 0 |
-| `app.signals.signal_engine` | 151 | 2 | 9 | 1 | 11 |
+| `app.signals.signal_engine` | 236 | 2 | 9 | 1 | 11 |
+| `app.telegram.commands` | 460 | 1 | 39 | 2 | 10 |
 | `app.market.features` | 200 | 2 | 14 | 7 | 4 |
-| `app.telegram.commands` | 432 | 1 | 35 | 1 | 10 |
 | `app.data.models` | 176 | 10 | 0 | 9 | 1 |
-| `app.paper.manager` | 277 | 2 | 16 | 2 | 8 |
-| `app.data.database` | 58 | 1 | 6 | 7 | 1 |
+| `app.paper.manager` | 300 | 2 | 16 | 2 | 8 |
+| `app.logger` | 12 | 0 | 2 | 9 | 0 |
 
 ## Package Dependencies
 
@@ -32,39 +32,39 @@ The project is split into clear domains: exchange adapters, market feature colle
 | `app.telegram` | `app.data` | 6 |
 | `app.market` | `app.exchanges` | 4 |
 | `app.paper` | `app.config` | 4 |
-| `app.signals` | `app.data` | 4 |
 | `app.signals` | `app.config` | 4 |
+| `app.signals` | `app.data` | 4 |
 | `app.main` | `app.market` | 3 |
 | `app.market` | `app.utils` | 3 |
 | `app.paper` | `app.utils` | 3 |
 | `app.signals` | `app.market` | 3 |
 | `app.telegram` | `app.config` | 3 |
+| `tests` | `app.telegram` | 3 |
 | `tests` | `app.signals` | 3 |
 | `tests` | `app.config` | 3 |
 | `app.data` | `app.utils` | 2 |
 | `app.exchanges` | `app.utils` | 2 |
-| `app.main` | `app.signals` | 2 |
-| `app.main` | `app.utils` | 2 |
 | `app.main` | `app.exchanges` | 2 |
+| `app.main` | `app.utils` | 2 |
+| `app.main` | `app.signals` | 2 |
 | `app.market` | `app.logger` | 2 |
 | `app.market` | `app.data` | 2 |
-| `app.signals` | `app.logger` | 2 |
+| `app.paper` | `app.logger` | 2 |
 | `app.signals` | `app.utils` | 2 |
+| `app.signals` | `app.logger` | 2 |
 | `app.telegram` | `app.utils` | 2 |
 | `app.telegram` | `app.market` | 2 |
 | `app.telegram` | `app.signals` | 2 |
-| `tests` | `app.telegram` | 2 |
 | `app.exchanges` | `app.logger` | 1 |
 | `app.main` | `app.telegram` | 1 |
-| `app.main` | `app.config` | 1 |
 | `app.main` | `app.paper` | 1 |
-| `app.main` | `app.logger` | 1 |
+| `app.main` | `app.config` | 1 |
 | `app.main` | `app.data` | 1 |
+| `app.main` | `app.logger` | 1 |
 | `app.market` | `app.config` | 1 |
-| `app.paper` | `app.logger` | 1 |
+| `app.signals` | `app.exchanges` | 1 |
 | `app.signals` | `app.telegram` | 1 |
 | `app.signals` | `app.paper` | 1 |
-| `app.signals` | `app.exchanges` | 1 |
 | `app.telegram` | `app.logger` | 1 |
 | `app.telegram` | `app.paper` | 1 |
 | `tests` | `app.paper` | 1 |

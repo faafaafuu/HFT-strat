@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import PaperConfig
 from app.data.models import PaperTradeModel, SignalModel
+from app.logger import get_logger
 from app.paper.account import PaperAccountService
 from app.paper.risk import calculate_paper_plan, fee_for_notional
 from app.utils.time import utc_now
@@ -15,20 +16,36 @@ class PaperExecutor:
         self.session = session
         self.config = config
         self.account_service = PaperAccountService(session, config)
+        self.log = get_logger("paper_executor")
 
-    async def can_open(self) -> bool:
+    async def open_count(self) -> int:
         open_count = await self.session.scalar(
             select(func.count(PaperTradeModel.id)).where(PaperTradeModel.status == "OPEN")
         )
-        return int(open_count or 0) < self.config.max_open_positions
+        return int(open_count or 0)
+
+    async def can_open(self) -> bool:
+        return await self.open_count() < self.config.max_open_positions
 
     async def open_from_signal(self, signal: SignalModel) -> PaperTradeModel | None:
-        if not await self.can_open():
+        open_count = await self.open_count()
+        if open_count >= self.config.max_open_positions:
+            self.log.warning(
+                "paper open skipped signal_id=%s reason=max_open_positions open=%s max=%s",
+                signal.id,
+                open_count,
+                self.config.max_open_positions,
+            )
             return None
         existing = await self.session.scalar(
             select(PaperTradeModel).where(PaperTradeModel.signal_id == signal.id)
         )
         if existing is not None:
+            self.log.warning(
+                "paper open skipped signal_id=%s reason=duplicate_trade trade_id=%s",
+                signal.id,
+                existing.id,
+            )
             return None
         account = await self.account_service.get_or_create()
         plan = calculate_paper_plan(
@@ -38,8 +55,31 @@ class PaperExecutor:
             config=self.config,
         )
         if plan.position_size_usd <= 0:
+            self.log.warning(
+                "paper open skipped signal_id=%s reason=invalid_position_size "
+                "balance=%s entry_price=%s position_size_usd=%s risk_usd=%s",
+                signal.id,
+                account.balance,
+                signal.entry_price,
+                plan.position_size_usd,
+                plan.risk_usd,
+            )
             return None
         entry_fee = fee_for_notional(plan.position_size_usd, self.config.taker_fee_pct)
+        self.log.info(
+            "paper open plan signal_id=%s balance=%s direction=%s entry=%s stop=%s take=%s "
+            "position_usd=%s risk_usd=%s leverage=%s entry_fee=%s",
+            signal.id,
+            account.balance,
+            signal.direction,
+            plan.entry_price,
+            plan.stop_price,
+            plan.take_price,
+            plan.position_size_usd,
+            plan.risk_usd,
+            plan.leverage,
+            entry_fee,
+        )
         trade = PaperTradeModel(
             account_id=account.id,
             signal_id=signal.id,

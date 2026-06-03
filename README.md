@@ -150,7 +150,7 @@ paper:
   leverage: 5
   risk_per_trade_pct: 0.5
   max_open_positions: 3
-  auto_trade_min_score: 8
+  auto_trade_min_score: 7
   stop_pct: 0.5
   take_pct: 1.5
   taker_fee_pct: 0.055

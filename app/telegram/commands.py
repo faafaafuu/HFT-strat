@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import contextlib
 from datetime import UTC
 
 from telegram import CallbackQuery, InlineKeyboardMarkup, Update
@@ -53,6 +55,7 @@ STALE_CALLBACK_MARKERS = (
 class TelegramCommands:
     def __init__(self, service: TelegramService) -> None:
         self.service = service
+        self._callback_semaphore = asyncio.Semaphore(4)
 
     async def start(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         if not await self._authorize(update):
@@ -121,14 +124,23 @@ class TelegramCommands:
         self.service.paused = False
         await self.show_settings(update)
 
-    async def callback(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+    async def callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         query = update.callback_query
         if query is None or query.data is None:
             return
-        if not await self._authorize(update, answer_callback=True):
+        answered = await self._answer_callback(query)
+        if not answered:
             return
-        await self._answer_callback(query)
+        if not await self._authorize(update, answer_callback=False):
+            return
         data = query.data
+        self._schedule_callback_task(update, context, data)
+
+    async def _process_callback(self, update: Update, data: str) -> None:
+        async with self._callback_semaphore:
+            await self._dispatch_callback(update, data)
+
+    async def _dispatch_callback(self, update: Update, data: str) -> None:
         if data == "home":
             await self._send_or_edit(update, "Select a section.", main_menu(), title=True)
         elif data == "dashboard":
@@ -164,6 +176,26 @@ class TelegramCommands:
             if not saved:
                 warning = "Config file is read-only. Runtime value changed, but it was not saved."
             await self.show_settings(update, warning=warning)
+
+    def _schedule_callback_task(
+        self,
+        update: Update,
+        context: ContextTypes.DEFAULT_TYPE,
+        data: str,
+    ) -> None:
+        coroutine = self._process_callback(update, data)
+        name = f"telegram_callback:{data[:40]}"
+        if context.application is not None:
+            context.application.create_task(coroutine, update=update, name=name)
+            return
+        task = asyncio.create_task(coroutine, name=name)
+        task.add_done_callback(lambda done: self._log_callback_task_result(done, data))
+
+    def _log_callback_task_result(self, task: asyncio.Task[None], data: str) -> None:
+        with contextlib.suppress(asyncio.CancelledError):
+            exc = task.exception()
+            if exc is not None:
+                self.service.log.warning("Telegram callback task failed data=%s: %s", data, exc)
 
     async def show_dashboard(self, update: Update) -> None:
         async with self.service.database.session() as session:

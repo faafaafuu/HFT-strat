@@ -81,6 +81,13 @@ class SignalEngine:
         self._stop = asyncio.Event()
 
     async def run(self) -> None:
+        self.log.info(
+            "signal engine started mode=%s paper_manager=%s min_score=%s paper_auto_min_score=%s",
+            self.settings.app.mode,
+            self.paper_manager is not None,
+            self.settings.signals.min_score,
+            self.settings.paper.auto_trade_min_score,
+        )
         while not self._stop.is_set():
             try:
                 await self.evaluate_once()
@@ -125,6 +132,16 @@ class SignalEngine:
                 for candidate in detect_patterns(snapshot, self.settings.thresholds):
                     score = score_signal(candidate, self.settings.thresholds)
                     if score < self.settings.signals.min_score:
+                        self.log.debug(
+                            "signal candidate skipped below min_score exchange=%s symbol=%s "
+                            "pattern=%s direction=%s score=%s min_score=%s",
+                            candidate.exchange,
+                            candidate.symbol,
+                            candidate.pattern,
+                            candidate.direction,
+                            score,
+                            self.settings.signals.min_score,
+                        )
                         continue
                     since = utc_now() - timedelta(
                         minutes=self.settings.signals.cooldown_minutes_per_symbol
@@ -135,6 +152,16 @@ class SignalEngine:
                         since=since,
                     )
                     if existing is not None:
+                        self.log.debug(
+                            "signal candidate skipped by cooldown exchange=%s symbol=%s "
+                            "pattern=%s direction=%s score=%s cooldown_minutes=%s",
+                            candidate.exchange,
+                            candidate.symbol,
+                            candidate.pattern,
+                            candidate.direction,
+                            score,
+                            self.settings.signals.cooldown_minutes_per_symbol,
+                        )
                         continue
                     signal = await signal_repo.add_signal(
                         exchange=candidate.exchange,
@@ -148,18 +175,76 @@ class SignalEngine:
                         market_context=candidate.context,
                     )
                     await self.telegram.send_signal(signal, candidate.reasons, candidate.context)
-                    if (
-                        self.paper_manager is not None
-                        and self.settings.app.mode == "paper_trading"
-                        and score >= self.settings.paper.auto_trade_min_score
-                    ):
-                        paper_candidates.append(signal)
+                    paper_enabled = (
+                        self.paper_manager is not None and self.settings.app.mode == "paper_trading"
+                    )
+                    paper_score_ok = score >= self.settings.paper.auto_trade_min_score
                     self.log.info(
-                        "signal %s %s %s score=%s",
+                        "signal created signal_id=%s exchange=%s symbol=%s direction=%s "
+                        "pattern=%s score=%s paper_enabled=%s paper_score_ok=%s "
+                        "paper_auto_min_score=%s",
+                        signal.id,
                         signal.exchange,
                         signal.symbol,
                         signal.direction,
+                        signal.pattern,
                         signal.score,
+                        paper_enabled,
+                        paper_score_ok,
+                        self.settings.paper.auto_trade_min_score,
                     )
+                    if paper_enabled and paper_score_ok:
+                        paper_candidates.append(signal)
+                    elif self.settings.app.mode != "paper_trading":
+                        self.log.debug(
+                            "paper auto-open skipped signal_id=%s reason=app_mode mode=%s",
+                            signal.id,
+                            self.settings.app.mode,
+                        )
+                    elif self.paper_manager is None:
+                        self.log.warning(
+                            "paper auto-open skipped signal_id=%s reason=paper_manager_missing",
+                            signal.id,
+                        )
+                    elif not paper_score_ok:
+                        self.log.debug(
+                            "paper auto-open skipped signal_id=%s reason=score_below_threshold "
+                            "score=%s threshold=%s",
+                            signal.id,
+                            score,
+                            self.settings.paper.auto_trade_min_score,
+                        )
         for signal in paper_candidates:
-            await self.paper_manager.open_from_signal(signal)
+            self.log.info(
+                "paper auto-open requested signal_id=%s exchange=%s symbol=%s direction=%s "
+                "score=%s threshold=%s",
+                signal.id,
+                signal.exchange,
+                signal.symbol,
+                signal.direction,
+                signal.score,
+                self.settings.paper.auto_trade_min_score,
+            )
+            trade = await self.paper_manager.open_from_signal(signal)
+            if trade is None:
+                self.log.warning(
+                    "paper auto-open rejected signal_id=%s exchange=%s symbol=%s",
+                    signal.id,
+                    signal.exchange,
+                    signal.symbol,
+                )
+            else:
+                self.log.info(
+                    "paper trade opened trade_id=%s signal_id=%s exchange=%s symbol=%s "
+                    "direction=%s entry=%s stop=%s take=%s position_usd=%s risk_usd=%s",
+                    trade.id,
+                    signal.id,
+                    trade.exchange,
+                    trade.symbol,
+                    trade.direction,
+                    trade.entry_price,
+                    trade.stop_price,
+                    trade.take_price,
+                    trade.position_size_usd,
+                    trade.risk_usd,
+                )

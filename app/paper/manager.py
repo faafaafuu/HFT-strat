@@ -41,14 +41,37 @@ class PaperTradeManager:
             await PaperAccountService(session, self.config).get_or_create()
 
     async def open_from_signal(self, signal) -> PaperTradeModel | None:
+        self.log.info(
+            "paper open request signal_id=%s exchange=%s symbol=%s direction=%s score=%s "
+            "auto_min_score=%s max_open_positions=%s",
+            signal.id,
+            signal.exchange,
+            signal.symbol,
+            signal.direction,
+            signal.score,
+            self.config.auto_trade_min_score,
+            self.config.max_open_positions,
+        )
         async with self.database.session() as session:
             executor = PaperExecutor(session, self.config)
             trade = await executor.open_from_signal(signal)
             if trade is None:
+                self.log.warning(
+                    "paper open request rejected signal_id=%s exchange=%s symbol=%s",
+                    signal.id,
+                    signal.exchange,
+                    signal.symbol,
+                )
                 return None
             account = await executor.account_service.get_or_create()
             trade_id = trade.id
             balance = account.balance
+            self.log.info(
+                "paper open committed trade_id=%s signal_id=%s balance=%s",
+                trade_id,
+                signal.id,
+                balance,
+            )
         async with self.database.session() as session:
             trade = await session.get(PaperTradeModel, trade_id)
             if trade and self.notifier:
