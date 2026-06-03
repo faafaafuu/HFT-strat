@@ -297,6 +297,39 @@ make check
 
 `make audit` uses `pip-audit` and needs network access to vulnerability databases.
 
+## Architecture Graphs
+
+The project includes Graphify plus a local AST review generator. Graphify writes its raw code graph to `graphify-out/graph.json`; the local generator writes review-ready files to `project_analysis/`.
+
+Update all graphs and reports:
+
+```bash
+make graph
+```
+
+Run the graph build and print the architecture review:
+
+```bash
+make graph-review
+```
+
+Generated files:
+
+```text
+project_analysis/
+  architecture_graph.dot
+  architecture_graph.svg
+  imports_graph.dot
+  imports_graph.svg
+  dependency_graph.dot
+  dependency_graph.svg
+  graphify_graph.json
+  findings.md
+  architecture_review.md
+```
+
+Open the SVG files in a browser. If Graphviz is not installed, the `.dot` files are still generated and can be opened with Graphviz-compatible tools. The review looks for cyclic imports, high fan-in/fan-out modules, large classes/functions, unused-file candidates, unused-function candidates, and package-level dependency pressure.
+
 ## Limitations
 
 - MVP supports Bybit only.

@@ -6,3 +6,4 @@ __pycache__/
 storage/
 logs/
 market_heat.db
+graphify-out/
