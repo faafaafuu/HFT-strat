@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 
 from app.data.models import SignalModel
 from app.telegram.charts import exchange_chart_url, tradingview_chart_url
@@ -24,6 +24,18 @@ def main_menu() -> InlineKeyboardMarkup:
     )
 
 
+def main_reply_keyboard() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        [
+            ["📊 Dashboard", "📈 Signals"],
+            ["📉 Heat", "🧪 Paper"],
+            ["⚙️ Settings"],
+        ],
+        resize_keyboard=True,
+        is_persistent=True,
+    )
+
+
 def nav(section: str, back: str = "home") -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         [
@@ -31,6 +43,117 @@ def nav(section: str, back: str = "home") -> InlineKeyboardMarkup:
                 InlineKeyboardButton("← Back", callback_data=back),
                 InlineKeyboardButton("🏠 Home", callback_data="home"),
                 InlineKeyboardButton("🔄 Refresh", callback_data=section),
+            ]
+        ]
+    )
+
+
+def paper_profiles_menu(profile_keys: list[str]) -> InlineKeyboardMarkup:
+    rows = [[InlineKeyboardButton(key.title(), callback_data=f"pp:{key}")] for key in profile_keys]
+    rows.append(
+        [
+            InlineKeyboardButton("Compare", callback_data="pcmp"),
+            InlineKeyboardButton("Create Profile", callback_data="pnew"),
+        ]
+    )
+    rows.append(
+        [
+            InlineKeyboardButton("← Back", callback_data="home"),
+            InlineKeyboardButton("🏠 Home", callback_data="home"),
+            InlineKeyboardButton("🔄 Refresh", callback_data="paper"),
+        ]
+    )
+    return InlineKeyboardMarkup(rows)
+
+
+def paper_profile_menu(profile_key: str, enabled: bool) -> InlineKeyboardMarkup:
+    toggle = "Disable" if enabled else "Enable"
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("Open Trades", callback_data=f"pot:{profile_key}"),
+                InlineKeyboardButton("Closed Trades", callback_data=f"pct:{profile_key}"),
+            ],
+            [
+                InlineKeyboardButton("Stats", callback_data=f"pp:{profile_key}"),
+                InlineKeyboardButton("Settings", callback_data=f"ps:{profile_key}"),
+            ],
+            [
+                InlineKeyboardButton(toggle, callback_data=f"pt:{profile_key}:enabled"),
+                InlineKeyboardButton("Reset Balance", callback_data=f"pr:{profile_key}"),
+            ],
+            [
+                InlineKeyboardButton("← Back", callback_data="paper"),
+                InlineKeyboardButton("🏠 Home", callback_data="home"),
+                InlineKeyboardButton("🔄 Refresh", callback_data=f"pp:{profile_key}"),
+            ],
+        ]
+    )
+
+
+def paper_profile_settings_menu(profile_key: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("Min Score -", callback_data=f"pset:{profile_key}:score:-1"),
+                InlineKeyboardButton("Min Score +", callback_data=f"pset:{profile_key}:score:1"),
+            ],
+            [
+                InlineKeyboardButton("Risk -", callback_data=f"pset:{profile_key}:risk:-0.1"),
+                InlineKeyboardButton("Risk +", callback_data=f"pset:{profile_key}:risk:0.1"),
+            ],
+            [
+                InlineKeyboardButton("Lev -", callback_data=f"pset:{profile_key}:lev:-1"),
+                InlineKeyboardButton("Lev +", callback_data=f"pset:{profile_key}:lev:1"),
+            ],
+            [
+                InlineKeyboardButton("SL -", callback_data=f"pset:{profile_key}:sl:-0.1"),
+                InlineKeyboardButton("SL +", callback_data=f"pset:{profile_key}:sl:0.1"),
+            ],
+            [
+                InlineKeyboardButton("TP -", callback_data=f"pset:{profile_key}:tp:-0.1"),
+                InlineKeyboardButton("TP +", callback_data=f"pset:{profile_key}:tp:0.1"),
+            ],
+            [
+                InlineKeyboardButton("Max Pos -", callback_data=f"pset:{profile_key}:maxpos:-1"),
+                InlineKeyboardButton("Max Pos +", callback_data=f"pset:{profile_key}:maxpos:1"),
+            ],
+            [
+                InlineKeyboardButton("Daily Loss -", callback_data=f"pset:{profile_key}:dl:-0.5"),
+                InlineKeyboardButton("Daily Loss +", callback_data=f"pset:{profile_key}:dl:0.5"),
+            ],
+            [
+                InlineKeyboardButton("Trailing On/Off", callback_data=f"pt:{profile_key}:trail"),
+                InlineKeyboardButton("Breakeven On/Off", callback_data=f"pt:{profile_key}:be"),
+            ],
+            [
+                InlineKeyboardButton("← Back", callback_data=f"pp:{profile_key}"),
+                InlineKeyboardButton("🏠 Home", callback_data="home"),
+                InlineKeyboardButton("🔄 Refresh", callback_data=f"ps:{profile_key}"),
+            ],
+        ]
+    )
+
+
+def paper_compare_menu() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("← Back", callback_data="paper"),
+                InlineKeyboardButton("🏠 Home", callback_data="home"),
+                InlineKeyboardButton("🔄 Refresh", callback_data="pcmp"),
+            ]
+        ]
+    )
+
+
+def paper_trades_menu(profile_key: str, status: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("← Back", callback_data=f"pp:{profile_key}"),
+                InlineKeyboardButton("🏠 Home", callback_data="home"),
+                InlineKeyboardButton("🔄 Refresh", callback_data=f"p{status}:{profile_key}"),
             ]
         ]
     )

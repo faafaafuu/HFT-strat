@@ -290,7 +290,7 @@
 <title>app.telegram&#45;&gt;app.data</title>
 <path fill="none" stroke="#0f766e" d="M388.65,-560.07C396.43,-562.81 404.41,-565.54 412,-568 475.72,-588.62 550.41,-609.45 596.97,-622.04"/>
 <polygon fill="#0f766e" stroke="#0f766e" points="596.52,-624.45 603.91,-623.91 597.79,-619.72 596.52,-624.45"/>
-<text text-anchor="middle" x="488" y="-607.8" font-family="Times,serif" font-size="14.00">6</text>
+<text text-anchor="middle" x="488" y="-607.8" font-family="Times,serif" font-size="14.00">7</text>
 </g>
 <!-- app.telegram&#45;&gt;app.logger -->
 <g id="edge32" class="edge">
@@ -311,7 +311,7 @@
 <title>app.telegram&#45;&gt;app.paper</title>
 <path fill="none" stroke="#0f766e" d="M394.32,-528.33C408.25,-524.82 423.17,-521.07 436.87,-517.62"/>
 <polygon fill="#0f766e" stroke="#0f766e" points="437.73,-519.93 443.92,-515.84 436.53,-515.18 437.73,-519.93"/>
-<text text-anchor="middle" x="417" y="-526.8" font-family="Times,serif" font-size="14.00">1</text>
+<text text-anchor="middle" x="417" y="-526.8" font-family="Times,serif" font-size="14.00">2</text>
 </g>
 <!-- app.telegram&#45;&gt;app.signals -->
 <g id="edge35" class="edge">
@@ -338,7 +338,7 @@
 <title>tests&#45;&gt;app.config</title>
 <path fill="none" stroke="#0f766e" d="M50.58,-667.73C55.82,-611.65 74.6,-443.68 114,-409 207.91,-326.34 286.32,-443.7 394,-380 406.1,-372.84 399.55,-360.52 412,-354 415.94,-351.94 417.57,-353.62 422,-354 480.29,-359 546.31,-371.31 590.69,-380.58"/>
 <polygon fill="#0f766e" stroke="#0f766e" points="590.27,-382.99 597.63,-382.03 591.28,-378.2 590.27,-382.99"/>
-<text text-anchor="middle" x="339" y="-402.8" font-family="Times,serif" font-size="14.00">3</text>
+<text text-anchor="middle" x="339" y="-402.8" font-family="Times,serif" font-size="14.00">4</text>
 </g>
 <!-- tests&#45;&gt;app.data -->
 <g id="edge38" class="edge">
@@ -352,7 +352,7 @@
 <title>tests&#45;&gt;app.paper</title>
 <path fill="none" stroke="#0f766e" d="M75.08,-691.38C135.25,-702.41 286.78,-722.16 394,-667 409.93,-658.8 413.11,-653.56 422,-638 436.87,-611.97 427.3,-600.15 440,-573 447.31,-557.36 458.14,-541.4 467.55,-528.88"/>
 <polygon fill="#0f766e" stroke="#0f766e" points="469.72,-530.07 472.04,-523.02 465.84,-527.09 469.72,-530.07"/>
-<text text-anchor="middle" x="261" y="-705.8" font-family="Times,serif" font-size="14.00">1</text>
+<text text-anchor="middle" x="261" y="-705.8" font-family="Times,serif" font-size="14.00">3</text>
 </g>
 <!-- tests&#45;&gt;app.signals -->
 <g id="edge40" class="edge">

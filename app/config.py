@@ -112,7 +112,118 @@ class TrailingConfig(BaseModel):
     distance_pct: float = 0.4
 
 
+class PaperProfileConfig(BaseModel):
+    name: str
+    enabled: bool = True
+    initial_balance: float = 2000
+    min_score: int = 7
+    risk_per_trade_pct: float = 0.5
+    leverage: float = 5
+    stop_loss_pct: float = 0.5
+    take_profit_pct: float = 1.5
+    max_open_positions: int = 3
+    max_positions_per_symbol: int = 1
+    max_daily_loss_pct: float = 3
+    max_holding_minutes: int = 180
+    breakeven_enabled: bool = True
+    breakeven_activation_rr: float = 1.0
+    trailing_enabled: bool = True
+    trailing_activation_rr: float = 1.5
+    trailing_distance_pct: float = 0.4
+    allowed_patterns: list[str] = Field(default_factory=list)
+    allowed_symbols: list[str] = Field(default_factory=list)
+    blocked_symbols: list[str] = Field(default_factory=list)
+
+    @field_validator(
+        "initial_balance",
+        "risk_per_trade_pct",
+        "leverage",
+        "stop_loss_pct",
+        "take_profit_pct",
+        "max_daily_loss_pct",
+        "breakeven_activation_rr",
+        "trailing_activation_rr",
+        "trailing_distance_pct",
+    )
+    @classmethod
+    def profile_non_negative_numbers(cls, value: float) -> float:
+        if value < 0:
+            raise ValueError("paper profile numeric settings must be non-negative")
+        return value
+
+    @field_validator(
+        "min_score", "max_open_positions", "max_positions_per_symbol", "max_holding_minutes"
+    )
+    @classmethod
+    def profile_positive_integers(cls, value: int) -> int:
+        if value <= 0:
+            raise ValueError("paper profile integer settings must be positive")
+        return value
+
+
 class PaperConfig(BaseModel):
+    enabled: bool = True
+    default_profile: str = "aggressive"
+    profiles: dict[str, PaperProfileConfig] = Field(
+        default_factory=lambda: {
+            "conservative": PaperProfileConfig(
+                name="Conservative",
+                enabled=True,
+                initial_balance=2000,
+                min_score=8,
+                risk_per_trade_pct=0.3,
+                leverage=3,
+                stop_loss_pct=0.4,
+                take_profit_pct=1.2,
+                max_open_positions=2,
+                max_positions_per_symbol=1,
+                max_daily_loss_pct=2,
+                max_holding_minutes=180,
+                breakeven_enabled=True,
+                breakeven_activation_rr=1.0,
+                trailing_enabled=True,
+                trailing_activation_rr=1.5,
+                trailing_distance_pct=0.3,
+            ),
+            "aggressive": PaperProfileConfig(
+                name="Aggressive",
+                enabled=True,
+                initial_balance=2000,
+                min_score=7,
+                risk_per_trade_pct=0.7,
+                leverage=7,
+                stop_loss_pct=0.5,
+                take_profit_pct=1.5,
+                max_open_positions=3,
+                max_positions_per_symbol=1,
+                max_daily_loss_pct=3,
+                max_holding_minutes=180,
+                breakeven_enabled=True,
+                breakeven_activation_rr=1.0,
+                trailing_enabled=True,
+                trailing_activation_rr=1.5,
+                trailing_distance_pct=0.4,
+            ),
+            "experimental": PaperProfileConfig(
+                name="Experimental",
+                enabled=False,
+                initial_balance=500,
+                min_score=6,
+                risk_per_trade_pct=1.0,
+                leverage=10,
+                stop_loss_pct=0.7,
+                take_profit_pct=2.0,
+                max_open_positions=5,
+                max_positions_per_symbol=1,
+                max_daily_loss_pct=5,
+                max_holding_minutes=120,
+                breakeven_enabled=False,
+                trailing_enabled=True,
+                trailing_activation_rr=1.3,
+                trailing_distance_pct=0.5,
+            ),
+        }
+    )
     initial_balance: float = 2000
     leverage: float = 5
     risk_per_trade_pct: float = 0.5

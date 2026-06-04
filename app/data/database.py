@@ -40,18 +40,68 @@ class Database:
         async with self.engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
             if self.is_sqlite:
-                existing = {
-                    row[1]
-                    for row in (await conn.execute(text("PRAGMA table_info(signals)"))).fetchall()
-                }
-                if "manual_entry_price" not in existing:
-                    await conn.execute(
-                        text("ALTER TABLE signals ADD COLUMN manual_entry_price FLOAT")
-                    )
-                if "manual_entered_at" not in existing:
-                    await conn.execute(
-                        text("ALTER TABLE signals ADD COLUMN manual_entered_at DATETIME")
-                    )
+                await self._migrate_sqlite(conn)
+
+    async def _migrate_sqlite(self, conn) -> None:
+        existing = {
+            row[1] for row in (await conn.execute(text("PRAGMA table_info(signals)"))).fetchall()
+        }
+        if "manual_entry_price" not in existing:
+            await conn.execute(text("ALTER TABLE signals ADD COLUMN manual_entry_price FLOAT"))
+        if "manual_entered_at" not in existing:
+            await conn.execute(text("ALTER TABLE signals ADD COLUMN manual_entered_at DATETIME"))
+        trade_columns = {
+            row[1]
+            for row in (await conn.execute(text("PRAGMA table_info(paper_trades)"))).fetchall()
+        }
+        if "profile_id" not in trade_columns:
+            await conn.execute(text("ALTER TABLE paper_trades ADD COLUMN profile_id INTEGER"))
+        if "profile_key" not in trade_columns:
+            await conn.execute(
+                text(
+                    "ALTER TABLE paper_trades ADD COLUMN profile_key VARCHAR(64) DEFAULT 'default'"
+                )
+            )
+        await conn.execute(
+            text("UPDATE paper_trades SET profile_key = 'default' WHERE profile_key IS NULL")
+        )
+
+        equity_columns = {
+            row[1]
+            for row in (
+                await conn.execute(text("PRAGMA table_info(paper_equity_curve)"))
+            ).fetchall()
+        }
+        if "profile_id" not in equity_columns:
+            await conn.execute(text("ALTER TABLE paper_equity_curve ADD COLUMN profile_id INTEGER"))
+        if "profile_key" not in equity_columns:
+            await conn.execute(
+                text(
+                    "ALTER TABLE paper_equity_curve "
+                    "ADD COLUMN profile_key VARCHAR(64) DEFAULT 'default'"
+                )
+            )
+        await conn.execute(
+            text(
+                "UPDATE paper_equity_curve SET profile_key = 'default' " "WHERE profile_key IS NULL"
+            )
+        )
+        await conn.execute(
+            text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS ux_paper_trade_signal_profile "
+                "ON paper_trades(signal_id, profile_key) WHERE signal_id IS NOT NULL"
+            )
+        )
+        for statement in (
+            "CREATE INDEX IF NOT EXISTS ix_paper_trades_profile_key ON paper_trades(profile_key)",
+            "CREATE INDEX IF NOT EXISTS ix_paper_trades_symbol ON paper_trades(symbol)",
+            "CREATE INDEX IF NOT EXISTS ix_paper_trades_status ON paper_trades(status)",
+            "CREATE INDEX IF NOT EXISTS ix_paper_trades_signal_id ON paper_trades(signal_id)",
+            "CREATE INDEX IF NOT EXISTS ix_paper_trades_opened_at ON paper_trades(opened_at)",
+            "CREATE INDEX IF NOT EXISTS ix_paper_equity_curve_profile_key "
+            "ON paper_equity_curve(profile_key)",
+        ):
+            await conn.execute(text(statement))
 
     async def close(self) -> None:
         await self.engine.dispose()

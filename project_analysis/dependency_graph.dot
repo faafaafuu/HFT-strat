@@ -45,15 +45,15 @@ digraph dependencies {
   "app.signals" -> "app.telegram" [label="1"];
   "app.signals" -> "app.utils" [label="2"];
   "app.telegram" -> "app.config" [label="3"];
-  "app.telegram" -> "app.data" [label="6"];
+  "app.telegram" -> "app.data" [label="7"];
   "app.telegram" -> "app.logger" [label="1"];
   "app.telegram" -> "app.market" [label="2"];
-  "app.telegram" -> "app.paper" [label="1"];
+  "app.telegram" -> "app.paper" [label="2"];
   "app.telegram" -> "app.signals" [label="2"];
   "app.telegram" -> "app.utils" [label="2"];
-  "tests" -> "app.config" [label="3"];
+  "tests" -> "app.config" [label="4"];
   "tests" -> "app.data" [label="1"];
-  "tests" -> "app.paper" [label="1"];
+  "tests" -> "app.paper" [label="3"];
   "tests" -> "app.signals" [label="3"];
   "tests" -> "app.telegram" [label="3"];
 }

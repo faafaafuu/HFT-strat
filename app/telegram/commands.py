@@ -2,17 +2,25 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import time
 from datetime import UTC
+from typing import Any
 
-from telegram import CallbackQuery, InlineKeyboardMarkup, Update
+from telegram import CallbackQuery, InlineKeyboardMarkup, ReplyKeyboardMarkup, Update
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import ContextTypes
 
-from app.config import save_settings
+from app.config import PaperProfileConfig, save_settings
 from app.data.repositories import SignalRepository
 from app.market.features import FeatureSnapshot
-from app.paper.statistics import paper_summary
+from app.paper.account import PaperAccountService
+from app.paper.statistics import (
+    paper_profile_summary,
+    paper_profile_trades,
+    paper_profiles_summary,
+    paper_summary,
+)
 from app.signals.patterns import detect_patterns
 from app.signals.scoring import score_signal
 from app.telegram.formatters import (
@@ -21,7 +29,12 @@ from app.telegram.formatters import (
     format_dashboard,
     format_ignored,
     format_marked_entered,
+    format_paper_compare,
     format_paper_portfolio,
+    format_paper_profile,
+    format_paper_profile_settings,
+    format_paper_profiles,
+    format_paper_trades,
     format_recent_signals,
     format_scanner,
     format_scanner_pair,
@@ -33,7 +46,13 @@ from app.telegram.formatters import (
 )
 from app.telegram.keyboards import (
     main_menu,
+    main_reply_keyboard,
     nav,
+    paper_compare_menu,
+    paper_profile_menu,
+    paper_profile_settings_menu,
+    paper_profiles_menu,
+    paper_trades_menu,
     scanner_menu,
     scanner_pair_menu,
     settings_menu,
@@ -53,19 +72,42 @@ STALE_CALLBACK_MARKERS = (
 
 
 class TelegramCommands:
-    def __init__(self, service: TelegramService) -> None:
+    def __init__(self, service: Any) -> None:
         self.service = service
         self._callback_semaphore = asyncio.Semaphore(4)
+        self._view_cache: dict[str, tuple[float, str, InlineKeyboardMarkup]] = {}
 
     async def start(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         if not await self._authorize(update):
             return
+        if update.message is not None:
+            await update.message.reply_text(
+                "Menu enabled.",
+                reply_markup=main_reply_keyboard(),
+            )
         await self._send_or_edit(update, "Select a section.", main_menu(), title=True)
 
     async def help(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         if not await self._authorize(update):
             return
         await self._send_or_edit(update, "Select a section.", main_menu(), title=True)
+
+    async def menu_text(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
+        if not await self._authorize(update):
+            return
+        text = (update.message.text if update.message else "").strip()
+        if "Dashboard" in text:
+            await self.show_dashboard(update)
+        elif "Signals" in text:
+            await self.show_signals(update, page=0)
+        elif "Heat" in text:
+            await self.show_scanner(update)
+        elif "Paper" in text:
+            await self.show_paper(update)
+        elif "Settings" in text:
+            await self.show_settings(update)
+        else:
+            await self._send_or_edit(update, "Select a section.", main_menu(), title=True)
 
     async def status(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         if not await self._authorize(update):
@@ -168,6 +210,24 @@ class TelegramCommands:
             await self.show_scanner_pair(update, data.split(":", 1)[1])
         elif data == "paper":
             await self.show_paper(update)
+        elif data.startswith("pp:"):
+            await self.show_paper_profile(update, data.split(":", 1)[1])
+        elif data == "pcmp":
+            await self.show_paper_compare(update)
+        elif data == "pnew":
+            await self.create_paper_profile(update)
+        elif data.startswith("ps:"):
+            await self.show_paper_profile_settings(update, data.split(":", 1)[1])
+        elif data.startswith("pt:"):
+            await self.toggle_paper_profile_setting(update, data)
+        elif data.startswith("pset:"):
+            await self.adjust_paper_profile_setting(update, data)
+        elif data.startswith("pr:"):
+            await self.reset_paper_profile(update, data.split(":", 1)[1])
+        elif data.startswith("pot:"):
+            await self.show_paper_trades(update, data.split(":", 1)[1], status="OPEN")
+        elif data.startswith("pct:"):
+            await self.show_paper_trades(update, data.split(":", 1)[1], status="CLOSED")
         elif data == "settings":
             await self.show_settings(update)
         elif data.startswith("settings:"):
@@ -314,9 +374,190 @@ class TelegramCommands:
         )
 
     async def show_paper(self, update: Update) -> None:
+        cache_key = "paper:profiles"
+        cached = self._cached(cache_key)
+        if cached is not None:
+            text, markup = cached
+            await self._send_or_edit(update, text, markup)
+            return
+        await self._send_or_edit(update, "Loading...", nav("paper"))
         async with self.service.database.session() as session:
-            summary = await paper_summary(session)
-        await self._send_or_edit(update, format_paper_portfolio(summary), nav("paper"))
+            profiles = await paper_profiles_summary(session)
+            if not profiles:
+                summary = await paper_summary(session)
+                text = format_paper_portfolio(summary)
+                markup = nav("paper")
+            else:
+                text = format_paper_profiles(profiles)
+                markup = paper_profiles_menu([str(item["profile_key"]) for item in profiles])
+        self._store_cache(cache_key, text, markup)
+        await self._send_or_edit(update, text, markup)
+
+    async def show_paper_profile(self, update: Update, profile_key: str) -> None:
+        cache_key = f"paper:profile:{profile_key}"
+        cached = self._cached(cache_key)
+        if cached is not None:
+            text, markup = cached
+            await self._send_or_edit(update, text, markup)
+            return
+        await self._send_or_edit(update, "Loading...", nav("paper", back="paper"))
+        async with self.service.database.session() as session:
+            summary = await paper_profile_summary(session, profile_key)
+        text = format_paper_profile(summary)
+        markup = paper_profile_menu(profile_key, bool(summary.get("enabled")))
+        self._store_cache(cache_key, text, markup)
+        await self._send_or_edit(update, text, markup)
+
+    async def show_paper_compare(self, update: Update) -> None:
+        cache_key = "paper:compare"
+        cached = self._cached(cache_key)
+        if cached is not None:
+            text, markup = cached
+            await self._send_or_edit(update, text, markup)
+            return
+        await self._send_or_edit(update, "Loading...", paper_compare_menu())
+        async with self.service.database.session() as session:
+            profiles = await paper_profiles_summary(session)
+        text = format_paper_compare(profiles)
+        markup = paper_compare_menu()
+        self._store_cache(cache_key, text, markup)
+        await self._send_or_edit(update, text, markup)
+
+    async def show_paper_profile_settings(self, update: Update, profile_key: str) -> None:
+        async with self.service.database.session() as session:
+            summary = await paper_profile_summary(session, profile_key)
+        await self._send_or_edit(
+            update,
+            format_paper_profile_settings(summary),
+            paper_profile_settings_menu(profile_key),
+        )
+
+    async def show_paper_trades(self, update: Update, profile_key: str, status: str) -> None:
+        async with self.service.database.session() as session:
+            trades = await paper_profile_trades(session, profile_key, status=status, limit=10)
+        title = "🧪 Open Trades" if status == "OPEN" else "🧪 Closed Trades"
+        menu_status = "ot" if status == "OPEN" else "ct"
+        await self._send_or_edit(
+            update,
+            format_paper_trades(trades, title),
+            paper_trades_menu(profile_key, menu_status),
+        )
+
+    async def toggle_paper_profile_setting(self, update: Update, data: str) -> None:
+        parts = data.split(":")
+        if len(parts) != 3:
+            await self.show_paper(update)
+            return
+        profile_key, field = parts[1], parts[2]
+        profile_config = self.service.settings.paper.profiles.get(profile_key)
+        if profile_config is None:
+            await self._send_or_edit(update, "Profile not found.", nav("paper", back="paper"))
+            return
+        values = profile_config.model_dump()
+        if field == "enabled":
+            values["enabled"] = not bool(values["enabled"])
+        elif field == "trail":
+            values["trailing_enabled"] = not bool(values["trailing_enabled"])
+        elif field == "be":
+            values["breakeven_enabled"] = not bool(values["breakeven_enabled"])
+        else:
+            await self.show_paper_profile(update, profile_key)
+            return
+        await self._save_paper_profile_config(profile_key, values)
+        await self.show_paper_profile_settings(update, profile_key)
+
+    async def adjust_paper_profile_setting(self, update: Update, data: str) -> None:
+        parts = data.split(":")
+        if len(parts) != 4:
+            await self.show_paper(update)
+            return
+        profile_key, field, delta_raw = parts[1], parts[2], parts[3]
+        profile_config = self.service.settings.paper.profiles.get(profile_key)
+        if profile_config is None:
+            await self._send_or_edit(update, "Profile not found.", nav("paper", back="paper"))
+            return
+        values = profile_config.model_dump()
+        delta = float(delta_raw)
+        mapping = {
+            "score": ("min_score", 1, 10, int),
+            "risk": ("risk_per_trade_pct", 0.0, 10.0, float),
+            "lev": ("leverage", 1.0, 50.0, float),
+            "sl": ("stop_loss_pct", 0.1, 10.0, float),
+            "tp": ("take_profit_pct", 0.1, 20.0, float),
+            "maxpos": ("max_open_positions", 1, 50, int),
+            "dl": ("max_daily_loss_pct", 0.1, 100.0, float),
+        }
+        target = mapping.get(field)
+        if target is None:
+            await self.show_paper_profile_settings(update, profile_key)
+            return
+        key, low, high, caster = target
+        values[key] = caster(min(high, max(low, float(values[key]) + delta)))
+        await self._save_paper_profile_config(profile_key, values)
+        await self.show_paper_profile_settings(update, profile_key)
+
+    async def reset_paper_profile(self, update: Update, profile_key: str) -> None:
+        async with self.service.database.session() as session:
+            from sqlalchemy import select
+
+            from app.data.models import PaperAccountModel, PaperProfileModel, PaperTradeModel
+
+            open_trade = await session.scalar(
+                select(PaperTradeModel).where(
+                    PaperTradeModel.profile_key == profile_key,
+                    PaperTradeModel.status == "OPEN",
+                )
+            )
+            if open_trade is not None:
+                await self._send_or_edit(
+                    update,
+                    "Cannot reset profile while it has open trades.",
+                    paper_profile_menu(profile_key, True),
+                )
+                return
+            profile = await session.scalar(
+                select(PaperProfileModel).where(PaperProfileModel.profile_key == profile_key)
+            )
+            if profile is None:
+                await self._send_or_edit(update, "Profile not found.", nav("paper", back="paper"))
+                return
+            profile.current_balance = profile.initial_balance
+            profile.equity = profile.initial_balance
+            profile.net_profit = 0.0
+            profile.peak_equity = profile.initial_balance
+            profile.max_drawdown_pct = 0.0
+            account = await session.scalar(
+                select(PaperAccountModel).where(PaperAccountModel.name == f"profile:{profile_key}")
+            )
+            if account is not None:
+                account.balance = profile.initial_balance
+                account.equity = profile.initial_balance
+                account.net_profit = 0.0
+                account.peak_equity = profile.initial_balance
+                account.max_drawdown_pct = 0.0
+        self._invalidate_paper_cache(profile_key)
+        await self.show_paper_profile(update, profile_key)
+
+    async def create_paper_profile(self, update: Update) -> None:
+        base_key = self.service.settings.paper.default_profile
+        base_config = self.service.settings.paper.profiles.get(base_key)
+        if base_config is None:
+            base_config = next(iter(self.service.settings.paper.profiles.values()))
+        existing = set(self.service.settings.paper.profiles)
+        idx = 1
+        while f"custom_{idx}" in existing:
+            idx += 1
+        profile_key = f"custom_{idx}"
+        values = base_config.model_dump()
+        values["name"] = f"Custom {idx}"
+        values["enabled"] = False
+        profile_config = PaperProfileConfig.model_validate(values)
+        self.service.settings.paper.profiles[profile_key] = profile_config
+        async with self.service.database.session() as session:
+            service = PaperAccountService(session, self.service.settings.paper)
+            await service.save_profile_config(profile_key, profile_config)
+        self._invalidate_paper_cache()
+        await self.show_paper_profile(update, profile_key)
 
     async def apply_setting(self, data: str) -> bool:
         parts = data.split(":")
@@ -357,6 +598,39 @@ class TelegramCommands:
                 self.service.config_path,
             )
         return saved
+
+    async def _save_paper_profile_config(
+        self,
+        profile_key: str,
+        values: dict[str, object],
+    ) -> None:
+        profile_config = PaperProfileConfig.model_validate(values)
+        self.service.settings.paper.profiles[profile_key] = profile_config
+        async with self.service.database.session() as session:
+            service = PaperAccountService(session, self.service.settings.paper)
+            await service.save_profile_config(profile_key, profile_config)
+        self._invalidate_paper_cache(profile_key)
+
+    def _cached(self, key: str) -> tuple[str, InlineKeyboardMarkup] | None:
+        cached = self._view_cache.get(key)
+        if cached is None:
+            return None
+        expires_at, text, markup = cached
+        if expires_at <= time.monotonic():
+            self._view_cache.pop(key, None)
+            return None
+        return text, markup
+
+    def _store_cache(self, key: str, text: str, markup: InlineKeyboardMarkup) -> None:
+        self._view_cache[key] = (time.monotonic() + 8.0, text, markup)
+
+    def _invalidate_paper_cache(self, profile_key: str | None = None) -> None:
+        prefixes = ["paper:profiles", "paper:compare"]
+        if profile_key is not None:
+            prefixes.extend([f"paper:profile:{profile_key}"])
+        for key in list(self._view_cache):
+            if key in prefixes:
+                self._view_cache.pop(key, None)
 
     def _heat_rows(self, limit: int = 10) -> list[HeatRow]:
         if self.service.feature_store is None:
@@ -441,7 +715,7 @@ class TelegramCommands:
         self,
         update: Update,
         text: str,
-        reply_markup: InlineKeyboardMarkup,
+        reply_markup: InlineKeyboardMarkup | ReplyKeyboardMarkup,
         title: bool = False,
     ) -> None:
         if title:
@@ -510,6 +784,3 @@ def _int_part(data: str, index: int, default: int) -> int:
 def _is_stale_callback(exc: BadRequest) -> bool:
     message = str(exc)
     return any(marker in message for marker in STALE_CALLBACK_MARKERS)
-
-
-from app.telegram.bot import TelegramService  # noqa: E402

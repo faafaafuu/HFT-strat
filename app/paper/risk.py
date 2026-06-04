@@ -1,8 +1,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Protocol
 
 from app.config import PaperConfig
+
+
+class PaperRiskConfig(Protocol):
+    leverage: float
+    risk_per_trade_pct: float
+    stop_pct: float
+    take_pct: float
+    slippage_pct: float
 
 
 @dataclass(frozen=True)
@@ -33,7 +42,7 @@ def calculate_paper_plan(
     balance: float,
     signal_price: float,
     direction: str,
-    config: PaperConfig,
+    config: PaperConfig | PaperRiskConfig,
 ) -> PaperPlan:
     entry = apply_entry_slippage(signal_price, direction, config.slippage_pct)
     stop_distance = config.stop_pct / 100

@@ -43,6 +43,7 @@ digraph imports {
   "app.utils.retry";
   "app.utils.time";
   "tests.test_chart_links";
+  "tests.test_multi_profile_paper";
   "tests.test_outcomes";
   "tests.test_paper_risk";
   "tests.test_scoring";
@@ -137,12 +138,13 @@ digraph imports {
   "app.telegram.bot" -> "app.telegram.keyboards";
   "app.telegram.bot" -> "app.utils.time";
   "app.telegram.commands" -> "app.config";
+  "app.telegram.commands" -> "app.data.models";
   "app.telegram.commands" -> "app.data.repositories";
   "app.telegram.commands" -> "app.market.features";
+  "app.telegram.commands" -> "app.paper.account";
   "app.telegram.commands" -> "app.paper.statistics";
   "app.telegram.commands" -> "app.signals.patterns";
   "app.telegram.commands" -> "app.signals.scoring";
-  "app.telegram.commands" -> "app.telegram.bot";
   "app.telegram.commands" -> "app.telegram.formatters";
   "app.telegram.commands" -> "app.telegram.keyboards";
   "app.telegram.commands" -> "app.utils.time";
@@ -153,6 +155,9 @@ digraph imports {
   "app.telegram.keyboards" -> "app.telegram.charts";
   "app.telegram.keyboards" -> "app.telegram.formatters";
   "tests.test_chart_links" -> "app.telegram.charts";
+  "tests.test_multi_profile_paper" -> "app.config";
+  "tests.test_multi_profile_paper" -> "app.paper.manager";
+  "tests.test_multi_profile_paper" -> "app.paper.risk";
   "tests.test_outcomes" -> "app.signals.outcome_tracker";
   "tests.test_paper_risk" -> "app.config";
   "tests.test_paper_risk" -> "app.paper.risk";

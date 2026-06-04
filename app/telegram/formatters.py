@@ -268,6 +268,7 @@ def format_settings(settings: Settings, paused: bool, warning: str | None = None
 def format_paper_opened(trade, balance: float) -> str:
     body = "\n".join(
         [
+            kv("Profile", getattr(trade, "profile_key", "default")),
             kv("Pair", trade.symbol),
             kv("Direction", trade.direction),
             "",
@@ -291,6 +292,7 @@ def format_paper_closed(trade, balance: float, winrate: float) -> str:
     pnl = f"{trade.pnl_usd:+.2f}"
     body = "\n".join(
         [
+            kv("Profile", getattr(trade, "profile_key", "default")),
             kv("Pair", trade.symbol),
             "",
             "<b>Result</b>",
@@ -327,6 +329,98 @@ def format_paper_portfolio(summary: dict[str, Any]) -> str:
         f"{'Loss Streak':<16} {summary.get('max_consecutive_losses', 0)}",
     ]
     return card("📊 Paper Portfolio", code_table(lines))
+
+
+def format_paper_profiles(profiles: list[dict[str, Any]]) -> str:
+    if not profiles:
+        return card("🧪 Paper Bots", "No paper profiles yet.")
+    blocks = []
+    for profile in profiles:
+        state = "ON" if profile.get("enabled") else "OFF"
+        name = str(profile.get("name") or profile.get("profile_key"))
+        lines = [
+            f"<b>{escape(name)}</b>",
+            f"Balance: ${float(profile.get('balance', 0)):.2f}",
+            f"PnL: {float(profile.get('pnl_pct', 0)):+.1f}%",
+            f"Open: {int(profile.get('open_positions', 0))}",
+            f"Trades: {int(profile.get('trades', 0))}",
+            f"Status: {state}",
+        ]
+        blocks.append("\n".join(lines))
+    return card("🧪 Paper Bots", "\n\n".join(blocks))
+
+
+def format_paper_profile(summary: dict[str, Any]) -> str:
+    settings = summary.get("settings", {})
+    if not isinstance(settings, dict):
+        settings = {}
+    lines = [
+        f"{'Balance':<14} ${float(summary.get('balance', 0)):.2f}",
+        f"{'Equity':<14} ${float(summary.get('equity', 0)):.2f}",
+        f"{'Net PnL':<14} ${float(summary.get('net_profit', 0)):+.2f}",
+        f"{'Today PnL':<14} ${float(summary.get('today_pnl', 0)):+.2f}",
+        f"{'Open':<14} {int(summary.get('open_positions', 0))}",
+        f"{'Closed':<14} {int(summary.get('closed_trades', 0))}",
+        f"{'Winrate':<14} {float(summary.get('winrate', 0)):.1f}%",
+        f"{'PF':<14} {float(summary.get('profit_factor', 0)):.2f}",
+        f"{'Max DD':<14} {float(summary.get('max_drawdown_pct', 0)):.2f}%",
+        f"{'Min Score':<14} {settings.get('min_score', summary.get('min_score', 0))}",
+        f"{'Risk':<14} {float(settings.get('risk_per_trade_pct', 0)):.2f}%",
+        f"{'Leverage':<14} {float(settings.get('leverage', 0)):.1f}x",
+        f"{'SL / TP':<14} {float(settings.get('stop_loss_pct', 0)):.2f}% / "
+        f"{float(settings.get('take_profit_pct', 0)):.2f}%",
+    ]
+    title = f"🧪 {summary.get('name') or summary.get('profile_key')}"
+    return card(str(title), code_table(lines))
+
+
+def format_paper_compare(profiles: list[dict[str, Any]]) -> str:
+    if not profiles:
+        return card("🧪 Paper Compare", "No paper profiles yet.")
+    lines = [f"{'Profile':<13} {'Bal':>9} {'PnL':>7} {'WR':>6} {'PF':>5} {'DD':>6} {'Tr':>4}"]
+    for profile in profiles:
+        name = str(profile.get("name") or profile.get("profile_key"))[:13]
+        lines.append(
+            f"{name:<13} "
+            f"{float(profile.get('balance', 0)):>9.0f} "
+            f"{float(profile.get('pnl_pct', 0)):>+6.1f}% "
+            f"{float(profile.get('winrate', 0)):>5.1f}% "
+            f"{float(profile.get('profit_factor', 0)):>5.2f} "
+            f"{float(profile.get('max_drawdown_pct', 0)):>5.1f}% "
+            f"{int(profile.get('trades', 0)):>4}"
+        )
+    return card("🧪 Paper Compare", code_table(lines))
+
+
+def format_paper_profile_settings(summary: dict[str, Any]) -> str:
+    settings = summary.get("settings", {})
+    if not isinstance(settings, dict):
+        settings = {}
+    lines = [
+        f"{'Enabled':<16} {'ON' if summary.get('enabled') else 'OFF'}",
+        f"{'Min Score':<16} {settings.get('min_score', 0)}",
+        f"{'Risk':<16} {float(settings.get('risk_per_trade_pct', 0)):.2f}%",
+        f"{'Leverage':<16} {float(settings.get('leverage', 0)):.1f}x",
+        f"{'SL':<16} {float(settings.get('stop_loss_pct', 0)):.2f}%",
+        f"{'TP':<16} {float(settings.get('take_profit_pct', 0)):.2f}%",
+        f"{'Max Positions':<16} {settings.get('max_open_positions', 0)}",
+        f"{'Daily Loss':<16} {float(settings.get('max_daily_loss_pct', 0)):.2f}%",
+        f"{'Trailing':<16} {'ON' if settings.get('trailing_enabled') else 'OFF'}",
+        f"{'Breakeven':<16} {'ON' if settings.get('breakeven_enabled') else 'OFF'}",
+    ]
+    return card("⚙️ Paper Settings", code_table(lines))
+
+
+def format_paper_trades(trades: list[Any], title: str) -> str:
+    if not trades:
+        return card(title, "No trades.")
+    lines = [f"{'Pair':<10} {'Dir':<5} {'Status':<10} {'PnL':>9}"]
+    for trade in trades:
+        lines.append(
+            f"{trade.symbol:<10} {trade.direction:<5} {trade.status.replace('CLOSED_', ''):<10} "
+            f"${trade.pnl_usd:>+8.2f}"
+        )
+    return card(title, code_table(lines))
 
 
 def format_config(settings: Settings) -> str:

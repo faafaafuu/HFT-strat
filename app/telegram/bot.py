@@ -4,7 +4,14 @@ from pathlib import Path
 
 from telegram import Update
 from telegram.constants import ParseMode
-from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
+from telegram.ext import (
+    Application,
+    CallbackQueryHandler,
+    CommandHandler,
+    ContextTypes,
+    MessageHandler,
+    filters,
+)
 
 from app.config import Settings
 from app.data.database import Database
@@ -84,6 +91,12 @@ class TelegramService:
         for command, callback in handlers.items():
             self.application.add_handler(CommandHandler(command, callback))
         self.application.add_handler(CallbackQueryHandler(commands.callback))
+        self.application.add_handler(
+            MessageHandler(
+                filters.Regex("^(📊 Dashboard|📈 Signals|📉 Heat|🧪 Paper|⚙️ Settings)$"),
+                commands.menu_text,
+            )
+        )
         await self.application.initialize()
         await self.application.start()
         if self.application.updater is not None:

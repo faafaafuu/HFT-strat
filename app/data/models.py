@@ -138,11 +138,37 @@ class PaperAccountModel(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
 
+class PaperProfileModel(Base):
+    __tablename__ = "paper_profiles"
+    __table_args__ = (UniqueConstraint("profile_key", name="uq_paper_profiles_profile_key"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    profile_key: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(128))
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    initial_balance: Mapped[float] = mapped_column(Float)
+    current_balance: Mapped[float] = mapped_column(Float)
+    equity: Mapped[float] = mapped_column(Float)
+    settings_json: Mapped[str] = mapped_column(Text)
+    net_profit: Mapped[float] = mapped_column(Float, default=0.0)
+    max_drawdown_pct: Mapped[float] = mapped_column(Float, default=0.0)
+    peak_equity: Mapped[float] = mapped_column(Float)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
 class PaperTradeModel(Base):
     __tablename__ = "paper_trades"
+    __table_args__ = (
+        UniqueConstraint("signal_id", "profile_key", name="uq_paper_trade_signal_profile"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     account_id: Mapped[int] = mapped_column(ForeignKey("paper_accounts.id"), index=True)
+    profile_id: Mapped[int | None] = mapped_column(
+        ForeignKey("paper_profiles.id"), nullable=True, index=True
+    )
+    profile_key: Mapped[str] = mapped_column(String(64), default="default", index=True)
     signal_id: Mapped[int | None] = mapped_column(
         ForeignKey("signals.id"), nullable=True, index=True
     )
@@ -179,6 +205,10 @@ class PaperEquityCurveModel(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     account_id: Mapped[int] = mapped_column(ForeignKey("paper_accounts.id"), index=True)
+    profile_id: Mapped[int | None] = mapped_column(
+        ForeignKey("paper_profiles.id"), nullable=True, index=True
+    )
+    profile_key: Mapped[str] = mapped_column(String(64), default="default", index=True)
     trade_id: Mapped[int | None] = mapped_column(
         ForeignKey("paper_trades.id"), nullable=True, index=True
     )

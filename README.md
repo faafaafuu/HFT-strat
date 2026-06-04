@@ -15,8 +15,8 @@ Async signal radar for Bybit linear futures. The bot does not place orders and d
 - Applies per-symbol cooldown to avoid duplicates.
 - Saves signals and market snapshots to SQLite.
 - Tracks outcomes after `5/15/30/60/180` minutes by default.
-- Can run local paper trading simulation with virtual balance, fees, slippage, partial TP, trailing stop, and portfolio statistics.
-- Provides Telegram commands including `/stats`, `/signals`, `/top_pairs`, `/top_patterns`, `/pause`, `/resume`.
+- Can run multiple local paper trading portfolios with separate balances, risk rules, fees, slippage, partial TP, trailing stop, and statistics.
+- Provides Telegram commands and a persistent lower menu for dashboard, signals, heat, paper, and settings.
 
 Hyperliquid, liquidation feed, density events, dashboard, CSV export, and manual entry tracking are planned v2/v3 items.
 
@@ -138,6 +138,7 @@ Signal fields:
 ## Paper Trading
 
 Paper trading is fully local. The bot never sends real orders and does not need exchange API keys.
+One Telegram bot can run several independent paper profiles on the same signal stream.
 
 Enable it:
 
@@ -146,27 +147,42 @@ app:
   mode: paper_trading
 
 paper:
-  initial_balance: 2000
-  leverage: 5
-  risk_per_trade_pct: 0.5
-  max_open_positions: 3
-  auto_trade_min_score: 7
-  stop_pct: 0.5
-  take_pct: 1.5
+  enabled: true
+  default_profile: aggressive
+  profiles:
+    conservative:
+      name: Conservative
+      enabled: true
+      initial_balance: 2000
+      min_score: 8
+      risk_per_trade_pct: 0.3
+      leverage: 3
+      stop_loss_pct: 0.4
+      take_profit_pct: 1.2
+    aggressive:
+      name: Aggressive
+      enabled: true
+      initial_balance: 2000
+      min_score: 7
+      risk_per_trade_pct: 0.7
+      leverage: 7
+      stop_loss_pct: 0.5
+      take_profit_pct: 1.5
   taker_fee_pct: 0.055
   slippage_pct: 0.01
 ```
 
-In `signal_only`, signals are stored and alerted but no virtual trades are opened. In `paper_trading`, signals with `score >= paper.auto_trade_min_score` open virtual trades automatically.
+In `signal_only`, signals are stored and alerted but no virtual trades are opened. In `paper_trading`, every enabled profile evaluates each signal independently. A signal with score `8` can open both Conservative and Aggressive trades, while a score `7` opens only profiles whose `min_score` allows it.
 
 Trade lifecycle:
 
 1. Signal is generated and saved.
-2. If paper mode is active and score is high enough, a virtual trade opens.
-3. Entry includes configured slippage.
-4. Position size is calculated from account risk and stop distance.
-5. Ticks from public market data check TP, SL, partial TP, and trailing stop.
-6. On close, fees and slippage are applied, balance is updated, and equity curve is written.
+2. If paper mode is active, each enabled profile checks its own min score, symbol/pattern filters, open-position limits, and daily loss limit.
+3. Matching profiles open isolated virtual trades with profile-specific SL, TP, leverage, and risk.
+4. Entry includes configured slippage.
+5. Position size is calculated from profile balance, risk, and stop distance.
+6. Ticks from public market data check TP, SL, timeout, partial TP, breakeven, and trailing stop.
+7. On close, fees and slippage are applied, only that profile balance is updated, and profile equity curve is written.
 
 Position example:
 
@@ -197,8 +213,13 @@ paper_accounts
   id, name, initial_balance, balance, equity, net_profit,
   max_drawdown_pct, peak_equity, created_at, updated_at
 
+paper_profiles
+  id, profile_key, name, enabled, initial_balance, current_balance,
+  equity, settings_json, net_profit, max_drawdown_pct, peak_equity,
+  created_at, updated_at
+
 paper_trades
-  id, account_id, signal_id, exchange, symbol, direction, pattern, score,
+  id, account_id, profile_id, profile_key, signal_id, exchange, symbol, direction, pattern, score,
   entry_price, stop_price, take_price, leverage, position_size_usd,
   remaining_size_usd, risk_usd, opened_at, closed_at, status,
   exit_price, pnl_usd, fees_usd, pnl_pct, realized_rr,
@@ -206,7 +227,8 @@ paper_trades
   trailing_activated, high_watermark, low_watermark
 
 paper_equity_curve
-  id, account_id, trade_id, timestamp, balance, equity, net_profit, drawdown_pct
+  id, account_id, profile_id, profile_key, trade_id, timestamp,
+  balance, equity, net_profit, drawdown_pct
 
 paper_daily_stats
   id, account_id, date, balance, net_profit, trades, wins,
@@ -215,15 +237,23 @@ paper_daily_stats
 
 ## Telegram Commands
 
-The Telegram interface uses an inline menu, so daily use does not require typing commands. `/start` opens:
+The Telegram interface uses a persistent lower menu plus inline section buttons, so daily use does not require typing commands. `/start` installs the lower menu:
 
 - `📊 Dashboard`
 - `📈 Signals`
-- `📉 Statistics`
-- `📊 Heat Scanner`
+- `📉 Heat`
+- `🧪 Paper`
 - `⚙️ Settings`
 
 Sections use `← Back`, `🏠 Home`, and `🔄 Refresh`. Long signal lists are paginated, and settings such as min score, cooldown, auto symbol selection, max symbols, and notifications can be changed from buttons. Changes are saved to `config.yaml`.
+
+The `🧪 Paper` section shows all paper profiles, per-profile cards, open/closed trades, profile settings, and profile comparison:
+
+```text
+Profile | Balance | PnL | WR | PF | DD | Trades
+```
+
+Paper profile settings changed from Telegram are saved in SQLite/runtime storage, not written to `config.yaml`. This avoids write errors in read-only Docker mounts.
 
 Signal alerts include chart and action buttons:
 
@@ -282,7 +312,7 @@ cd /root/market-heat-signal-bot
 pytest
 ```
 
-Current tests cover scoring, outcomes, and paper risk calculations.
+Current tests cover scoring, outcomes, Telegram callback/auth behavior, paper risk calculations, and multi-profile paper routing.
 
 ## Tooling
 

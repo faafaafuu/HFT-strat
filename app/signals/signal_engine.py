@@ -176,13 +176,13 @@ class SignalEngine:
                     )
                     await self.telegram.send_signal(signal, candidate.reasons, candidate.context)
                     paper_enabled = (
-                        self.paper_manager is not None and self.settings.app.mode == "paper_trading"
+                        self.paper_manager is not None
+                        and self.settings.app.mode == "paper_trading"
+                        and self.settings.paper.enabled
                     )
-                    paper_score_ok = score >= self.settings.paper.auto_trade_min_score
                     self.log.info(
                         "signal created signal_id=%s exchange=%s symbol=%s direction=%s "
-                        "pattern=%s score=%s paper_enabled=%s paper_score_ok=%s "
-                        "paper_auto_min_score=%s",
+                        "pattern=%s score=%s paper_enabled=%s paper_profiles=%s",
                         signal.id,
                         signal.exchange,
                         signal.symbol,
@@ -190,10 +190,9 @@ class SignalEngine:
                         signal.pattern,
                         signal.score,
                         paper_enabled,
-                        paper_score_ok,
-                        self.settings.paper.auto_trade_min_score,
+                        ",".join(self.settings.paper.profiles.keys()),
                     )
-                    if paper_enabled and paper_score_ok:
+                    if paper_enabled:
                         paper_candidates.append(signal)
                     elif self.settings.app.mode != "paper_trading":
                         self.log.debug(
@@ -206,41 +205,39 @@ class SignalEngine:
                             "paper auto-open skipped signal_id=%s reason=paper_manager_missing",
                             signal.id,
                         )
-                    elif not paper_score_ok:
+                    elif not self.settings.paper.enabled:
                         self.log.debug(
-                            "paper auto-open skipped signal_id=%s reason=score_below_threshold "
-                            "score=%s threshold=%s",
+                            "paper auto-open skipped signal_id=%s reason=paper_disabled",
                             signal.id,
-                            score,
-                            self.settings.paper.auto_trade_min_score,
                         )
         for signal in paper_candidates:
             self.log.info(
                 "paper auto-open requested signal_id=%s exchange=%s symbol=%s direction=%s "
-                "score=%s threshold=%s",
+                "score=%s profiles=%s",
                 signal.id,
                 signal.exchange,
                 signal.symbol,
                 signal.direction,
                 signal.score,
-                self.settings.paper.auto_trade_min_score,
+                ",".join(self.settings.paper.profiles.keys()),
             )
-            trade = await self.paper_manager.open_from_signal(signal)
-            if trade is None:
+            trades = await self.paper_manager.open_for_signal(signal)
+            if not trades:
                 self.log.warning(
                     "paper auto-open rejected signal_id=%s exchange=%s symbol=%s",
                     signal.id,
                     signal.exchange,
                     signal.symbol,
                 )
-            else:
+            for trade in trades:
                 self.log.info(
                     "paper trade opened trade_id=%s signal_id=%s exchange=%s symbol=%s "
-                    "direction=%s entry=%s stop=%s take=%s position_usd=%s risk_usd=%s",
+                    "profile=%s direction=%s entry=%s stop=%s take=%s position_usd=%s risk_usd=%s",
                     trade.id,
                     signal.id,
                     trade.exchange,
                     trade.symbol,
+                    trade.profile_key,
                     trade.direction,
                     trade.entry_price,
                     trade.stop_price,
