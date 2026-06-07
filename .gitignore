@@ -4,6 +4,11 @@ __pycache__/
 .pytest_cache/
 *.pyc
 storage/
-logs/
+data/*
+logs/*
+backups/*
+!data/.gitkeep
+!logs/.gitkeep
+!backups/.gitkeep
 market_heat.db
 graphify-out/

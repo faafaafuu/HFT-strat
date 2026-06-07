@@ -72,6 +72,14 @@ class OrderbookEventModel(Base):
     lifetime_sec: Mapped[float | None] = mapped_column(Float, nullable=True)
 
 
+class RuntimeSettingModel(Base):
+    __tablename__ = "runtime_settings"
+
+    key: Mapped[str] = mapped_column(String(128), primary_key=True)
+    value_json: Mapped[str] = mapped_column(Text)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
 class SignalModel(Base):
     __tablename__ = "signals"
     __table_args__ = (
@@ -238,3 +246,22 @@ class PaperDailyStatsModel(Base):
     winrate_pct: Mapped[float] = mapped_column(Float, default=0.0)
     max_drawdown_pct: Mapped[float] = mapped_column(Float, default=0.0)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+class StrategyAnalysisModel(Base):
+    __tablename__ = "strategy_analysis"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    period_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    profile_key: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    pattern: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    symbol: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    total_trades: Mapped[int] = mapped_column(Integer, default=0)
+    winrate: Mapped[float] = mapped_column(Float, default=0.0)
+    profit_factor: Mapped[float] = mapped_column(Float, default=0.0)
+    expectancy: Mapped[float] = mapped_column(Float, default=0.0)
+    avg_mfe: Mapped[float] = mapped_column(Float, default=0.0)
+    avg_mae: Mapped[float] = mapped_column(Float, default=0.0)
+    conclusion_json: Mapped[str] = mapped_column(Text)

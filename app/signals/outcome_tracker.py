@@ -5,7 +5,7 @@ from datetime import timedelta
 
 from app.config import OutcomesConfig
 from app.data.database import Database
-from app.data.repositories import SignalRepository, _aware
+from app.data.repositories import MarketRepository, SignalRepository, _aware
 from app.logger import get_logger
 from app.market.features import MarketFeatureStore
 from app.utils.time import utc_now
@@ -71,6 +71,7 @@ class OutcomeTracker:
         now = utc_now()
         async with self.database.session() as session:
             repo = SignalRepository(session)
+            market_repo = MarketRepository(session)
             signals = await repo.list_signals_missing_outcomes(
                 self.config.horizons_minutes, now=now
             )
@@ -86,6 +87,13 @@ class OutcomeTracker:
                         signal_ts,
                         end,
                     )
+                    if price_after is None or min_price is None or max_price is None:
+                        price_after, min_price, max_price = await market_repo.min_max_price_since(
+                            signal.exchange,
+                            signal.symbol,
+                            signal_ts,
+                            end,
+                        )
                     if price_after is None or min_price is None or max_price is None:
                         continue
                     outcome = calculate_outcome(

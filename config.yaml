@@ -52,6 +52,21 @@ outcomes:
   tp_levels_pct: [0.5, 1.0, 1.5]
   sl_levels_pct: [0.3, 0.5, 0.7]
 
+storage:
+  data_dir: /app/data
+  logs_dir: /app/logs
+  backups_dir: /app/backups
+  persist_market_snapshots: true
+  market_snapshot_interval_sec: 60
+  keep_raw_ticks_minutes: 30
+  keep_orderbook_events_days: 30
+  keep_market_snapshots_days: 90
+  max_price_points_per_symbol: 3000
+  max_trade_points_per_symbol: 3000
+  max_oi_points_per_symbol: 1000
+  backup_interval_hours: 24
+  strategy_analysis_interval_hours: 24
+
 paper:
   enabled: true
   default_profile: aggressive
@@ -139,4 +154,4 @@ paper:
   slippage_pct: 0.01
 
 database:
-  url: sqlite+aiosqlite:///./storage/market_heat.db
+  url: sqlite+aiosqlite:////app/data/bot.sqlite3

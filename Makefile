@@ -19,6 +19,12 @@ logs-dev:
 restart-dev:
 	docker compose -f docker-compose.dev.yml restart
 
+backup:
+	$(PY) -m tools.backup_database
+
+verify-persistence:
+	$(PY) -m tools.verify_persistence
+
 graph:
 	mkdir -p project_analysis
 	$(PY) -c "import shutil; shutil.rmtree('graphify-out', ignore_errors=True)"

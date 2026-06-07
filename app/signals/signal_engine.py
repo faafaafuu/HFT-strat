@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 from app.config import Settings
@@ -79,6 +79,7 @@ class SignalEngine:
         self.interval_seconds = interval_seconds
         self.log = get_logger("signal_engine")
         self._stop = asyncio.Event()
+        self._last_snapshot_persist: dict[tuple[str, str], datetime] = {}
 
     async def run(self) -> None:
         self.log.info(
@@ -112,21 +113,22 @@ class SignalEngine:
                 )
                 if snapshot is None:
                     continue
-                await market_repo.add_market_snapshot(
-                    exchange=snapshot.exchange,
-                    symbol=snapshot.symbol,
-                    timestamp=snapshot.timestamp,
-                    price=snapshot.price,
-                    volume_1m=snapshot.volume_1m_usd,
-                    volume_5m=snapshot.volume_5m_usd,
-                    oi=snapshot.oi,
-                    oi_change_5m=snapshot.oi_change_5m_pct,
-                    oi_change_15m=snapshot.oi_change_15m_pct,
-                    funding_rate=snapshot.funding_rate_pct,
-                    spread_pct=snapshot.spread_pct,
-                    bid_depth_1pct=snapshot.bid_depth_1pct,
-                    ask_depth_1pct=snapshot.ask_depth_1pct,
-                )
+                if self._should_persist_snapshot(snapshot.exchange, snapshot.symbol):
+                    await market_repo.add_market_snapshot(
+                        exchange=snapshot.exchange,
+                        symbol=snapshot.symbol,
+                        timestamp=snapshot.timestamp,
+                        price=snapshot.price,
+                        volume_1m=snapshot.volume_1m_usd,
+                        volume_5m=snapshot.volume_5m_usd,
+                        oi=snapshot.oi,
+                        oi_change_5m=snapshot.oi_change_5m_pct,
+                        oi_change_15m=snapshot.oi_change_15m_pct,
+                        funding_rate=snapshot.funding_rate_pct,
+                        spread_pct=snapshot.spread_pct,
+                        bid_depth_1pct=snapshot.bid_depth_1pct,
+                        ask_depth_1pct=snapshot.ask_depth_1pct,
+                    )
                 if self.telegram.paused:
                     continue
                 for candidate in detect_patterns(snapshot, self.settings.thresholds):
@@ -245,3 +247,16 @@ class SignalEngine:
                     trade.position_size_usd,
                     trade.risk_usd,
                 )
+
+    def _should_persist_snapshot(self, exchange: str, symbol: str) -> bool:
+        if not self.settings.storage.persist_market_snapshots:
+            return False
+        key = (exchange, symbol)
+        now = utc_now()
+        previous = self._last_snapshot_persist.get(key)
+        if previous is not None:
+            elapsed = (now - previous).total_seconds()
+            if elapsed < self.settings.storage.market_snapshot_interval_sec:
+                return False
+        self._last_snapshot_persist[key] = now
+        return True

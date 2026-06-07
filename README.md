@@ -68,7 +68,15 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-In production Docker mode, SQLite data is stored in the named Docker volume `market_heat_signal_bot_market_storage`. Dev mode uses the local `./storage` directory for easier inspection.
+Persistent runtime data is stored on the host:
+
+```text
+./data/bot.sqlite3
+./logs/
+./backups/
+```
+
+The container mounts these directories into `/app/data`, `/app/logs`, and `/app/backups`. `docker compose down`, `docker compose up`, and `docker compose up --build` do not remove this data.
 
 ## Development Mode
 
@@ -99,7 +107,11 @@ make prod
 make logs
 make logs-dev
 make restart-dev
+make backup
+make verify-persistence
 ```
+
+`make backup` creates a SQLite backup in `./backups` when `./data/bot.sqlite3` exists.
 
 ## Configure Symbols
 
@@ -233,6 +245,38 @@ paper_equity_curve
 paper_daily_stats
   id, account_id, date, balance, net_profit, trades, wins,
   losses, winrate_pct, max_drawdown_pct, updated_at
+
+runtime_settings
+  key, value_json, updated_at
+
+strategy_analysis
+  id, created_at, period_start, period_end, profile_key, pattern,
+  symbol, total_trades, winrate, profit_factor, expectancy,
+  avg_mfe, avg_mae, conclusion_json
+```
+
+## Storage And Retention
+
+Runtime storage is configured in `config.yaml`:
+
+```yaml
+database:
+  url: sqlite+aiosqlite:////app/data/bot.sqlite3
+
+storage:
+  persist_market_snapshots: true
+  market_snapshot_interval_sec: 60
+  keep_raw_ticks_minutes: 30
+  keep_orderbook_events_days: 30
+  keep_market_snapshots_days: 90
+```
+
+In memory, the bot keeps bounded rolling buffers only. Raw trades, prices, and OI use `deque(maxlen=...)` plus time retention. Full orderbook history is not kept in RAM; only the latest aggregated orderbook metrics are retained. Longer-horizon outcomes fall back to persisted `market_snapshots`.
+
+SQLite backups are created at startup, before migrations, after startup, every 24 hours, and on graceful shutdown. Backup names use:
+
+```text
+bot_YYYY-MM-DD_HH-MM.sqlite3
 ```
 
 ## Telegram Commands
@@ -245,7 +289,7 @@ The Telegram interface uses a persistent lower menu plus inline section buttons,
 - `🧪 Paper`
 - `⚙️ Settings`
 
-Sections use `← Back`, `🏠 Home`, and `🔄 Refresh`. Long signal lists are paginated, and settings such as min score, cooldown, auto symbol selection, max symbols, and notifications can be changed from buttons. Changes are saved to `config.yaml`.
+Sections use `← Back`, `🏠 Home`, and `🔄 Refresh`. Long signal lists are paginated, and settings such as min score, cooldown, auto symbol selection, max symbols, and notifications can be changed from buttons. Runtime changes are saved to SQLite in `runtime_settings`, not written to `config.yaml`.
 
 The `🧪 Paper` section shows all paper profiles, per-profile cards, open/closed trades, profile settings, and profile comparison:
 
@@ -281,7 +325,7 @@ Signal alerts include chart and action buttons:
 /help
 ```
 
-`/status` shows uptime, last heartbeat, active websocket connections, selected symbols, and last signal time. `/pause` keeps collecting market snapshots but stops creating new signals. `/resume` enables signal creation again.
+`/status` shows uptime, last heartbeat, active websocket connections, selected symbols, last signal time, RAM usage, active asyncio tasks, DB size, and open paper trades. `/pause` keeps collecting market snapshots but stops creating new signals. `/resume` enables signal creation again.
 
 ## Statistics
 
@@ -313,6 +357,12 @@ pytest
 ```
 
 Current tests cover scoring, outcomes, Telegram callback/auth behavior, paper risk calculations, and multi-profile paper routing.
+
+Manual persistence check:
+
+```bash
+make verify-persistence
+```
 
 ## Tooling
 

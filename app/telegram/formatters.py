@@ -53,6 +53,10 @@ def format_dashboard(
     active_websocket_connections: int = 0,
     selected_symbols: list[str] | None = None,
     last_signal_time: datetime | None = None,
+    memory_mb: float = 0.0,
+    active_tasks: int = 0,
+    db_size_mb: float = 0.0,
+    open_paper_trades: int = 0,
 ) -> str:
     selected_symbols = selected_symbols or []
     body = "\n".join(
@@ -62,6 +66,10 @@ def format_dashboard(
             kv("Signals today", signals_today),
             kv("Signals week", signals_week),
             kv("WS connections", active_websocket_connections),
+            kv("RAM", f"{memory_mb:.1f} MB"),
+            kv("Tasks", active_tasks),
+            kv("DB size", f"{db_size_mb:.2f} MB"),
+            kv("Open paper trades", open_paper_trades),
             kv("Last heartbeat", _time_or_na(last_heartbeat)),
             kv("Last signal", _time_or_na(last_signal_time)),
             "",

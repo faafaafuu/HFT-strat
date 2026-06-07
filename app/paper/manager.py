@@ -165,6 +165,12 @@ class PaperTradeManager:
             if self.notifier:
                 await self.notifier.send_paper_closed(trade, balance, winrate)
 
+    async def persist_state(self) -> None:
+        async with self.database.session() as session:
+            account_service = PaperAccountService(session, self.config)
+            legacy_account = await account_service.get_or_create()
+            await self._mark_to_market(session, legacy_account)
+
     async def close_manual(self, trade_id: int, price: float) -> PaperTradeModel | None:
         return await self._close_by_id(trade_id, price, "CLOSED_MANUAL")
 

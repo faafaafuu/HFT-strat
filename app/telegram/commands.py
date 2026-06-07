@@ -6,13 +6,15 @@ import time
 from datetime import UTC
 from typing import Any
 
+from sqlalchemy import func, select
 from telegram import CallbackQuery, InlineKeyboardMarkup, ReplyKeyboardMarkup, Update
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import ContextTypes
 
-from app.config import PaperProfileConfig, save_settings
-from app.data.repositories import SignalRepository
+from app.config import PaperProfileConfig
+from app.data.models import PaperTradeModel
+from app.data.repositories import RuntimeSettingsRepository, SignalRepository
 from app.market.features import FeatureSnapshot
 from app.paper.account import PaperAccountService
 from app.paper.statistics import (
@@ -61,6 +63,7 @@ from app.telegram.keyboards import (
     signal_detail_menu,
     signals_menu,
 )
+from app.utils.runtime import active_task_count, memory_usage_mb
 from app.utils.time import utc_now
 
 SIGNALS_PAGE_SIZE = 6
@@ -264,6 +267,12 @@ class TelegramCommands:
             week_count = await repo.count_since(since_week().replace(tzinfo=UTC))
             summary = await repo.summary()
             last_signal_time = await repo.last_signal_time()
+            open_paper_trades = int(
+                await session.scalar(
+                    select(func.count(PaperTradeModel.id)).where(PaperTradeModel.status == "OPEN")
+                )
+                or 0
+            )
         text = format_dashboard(
             online=self.service.is_online,
             pairs_count=len(self.service.symbols),
@@ -276,6 +285,10 @@ class TelegramCommands:
             active_websocket_connections=self.service.active_websocket_connections,
             selected_symbols=self.service.symbols,
             last_signal_time=last_signal_time,
+            memory_mb=memory_usage_mb(),
+            active_tasks=active_task_count(),
+            db_size_mb=self.service.database.size_mb(),
+            open_paper_trades=open_paper_trades,
         )
         await self._send_or_edit(update, text, nav("dashboard"))
 
@@ -591,13 +604,23 @@ class TelegramCommands:
                     200,
                     max(1, self.service.settings.symbols.max_symbols + delta),
                 )
-        saved = save_settings(self.service.settings, self.service.config_path)
-        if not saved:
-            self.service.log.warning(
-                "config save failed path=%s reason=read_only_or_unwritable",
-                self.service.config_path,
+        await self._save_runtime_settings()
+        return True
+
+    async def _save_runtime_settings(self) -> None:
+        async with self.service.database.session() as session:
+            repo = RuntimeSettingsRepository(session)
+            await repo.set("symbols.auto_select", self.service.settings.symbols.auto_select)
+            await repo.set("symbols.max_symbols", self.service.settings.symbols.max_symbols)
+            await repo.set("signals.min_score", self.service.settings.signals.min_score)
+            await repo.set(
+                "signals.cooldown_minutes_per_symbol",
+                self.service.settings.signals.cooldown_minutes_per_symbol,
             )
-        return saved
+            await repo.set(
+                "telegram.notifications_enabled",
+                self.service.settings.telegram.notifications_enabled,
+            )
 
     async def _save_paper_profile_config(
         self,

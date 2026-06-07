@@ -100,6 +100,39 @@ class OutcomesConfig(BaseModel):
     sl_levels_pct: list[float] = Field(default_factory=lambda: [0.3, 0.5, 0.7])
 
 
+class StorageConfig(BaseModel):
+    data_dir: str = "/app/data"
+    logs_dir: str = "/app/logs"
+    backups_dir: str = "/app/backups"
+    persist_market_snapshots: bool = True
+    market_snapshot_interval_sec: int = 60
+    keep_raw_ticks_minutes: int = 30
+    keep_orderbook_events_days: int = 30
+    keep_market_snapshots_days: int = 90
+    max_price_points_per_symbol: int = 3000
+    max_trade_points_per_symbol: int = 3000
+    max_oi_points_per_symbol: int = 1000
+    backup_interval_hours: int = 24
+    strategy_analysis_interval_hours: int = 24
+
+    @field_validator(
+        "market_snapshot_interval_sec",
+        "keep_raw_ticks_minutes",
+        "keep_orderbook_events_days",
+        "keep_market_snapshots_days",
+        "max_price_points_per_symbol",
+        "max_trade_points_per_symbol",
+        "max_oi_points_per_symbol",
+        "backup_interval_hours",
+        "strategy_analysis_interval_hours",
+    )
+    @classmethod
+    def storage_positive_integers(cls, value: int) -> int:
+        if value <= 0:
+            raise ValueError("storage integer settings must be positive")
+        return value
+
+
 class PartialTakeProfitConfig(BaseModel):
     enabled: bool = True
     first_tp_pct: float = 50
@@ -262,7 +295,7 @@ class PaperConfig(BaseModel):
 
 
 class DatabaseConfig(BaseModel):
-    url: str = "sqlite+aiosqlite:///./storage/market_heat.db"
+    url: str = "sqlite+aiosqlite:////app/data/bot.sqlite3"
 
 
 class Settings(BaseModel):
@@ -273,6 +306,7 @@ class Settings(BaseModel):
     signals: SignalsConfig = Field(default_factory=SignalsConfig)
     thresholds: ThresholdsConfig = Field(default_factory=ThresholdsConfig)
     outcomes: OutcomesConfig = Field(default_factory=OutcomesConfig)
+    storage: StorageConfig = Field(default_factory=StorageConfig)
     paper: PaperConfig = Field(default_factory=PaperConfig)
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
 

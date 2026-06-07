@@ -6,8 +6,9 @@ services:
     volumes:
       - ./app:/app/app
       - ./config.yaml:/app/config.yaml
-      - ./storage:/app/storage
+      - ./data:/app/data
       - ./logs:/app/logs
+      - ./backups:/app/backups
     env_file:
       - .env
     restart: unless-stopped

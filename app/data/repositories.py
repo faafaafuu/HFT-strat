@@ -4,7 +4,7 @@ import json
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, delete, func, select
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -12,8 +12,10 @@ from sqlalchemy.orm import selectinload
 from app.data.models import (
     MarketSnapshotModel,
     OrderbookEventModel,
+    RuntimeSettingModel,
     SignalModel,
     SignalOutcomeModel,
+    StrategyAnalysisModel,
     SymbolModel,
 )
 from app.utils.time import utc_now
@@ -92,6 +94,123 @@ class MarketRepository:
                 ask_depth_1pct=ask_depth_1pct,
             )
         )
+
+    async def purge_old_market_data(
+        self,
+        market_snapshot_cutoff: datetime,
+        orderbook_event_cutoff: datetime,
+    ) -> None:
+        await self.session.execute(
+            delete(MarketSnapshotModel).where(
+                MarketSnapshotModel.timestamp < market_snapshot_cutoff
+            )
+        )
+        await self.session.execute(
+            delete(OrderbookEventModel).where(
+                OrderbookEventModel.timestamp < orderbook_event_cutoff
+            )
+        )
+
+    async def min_max_price_since(
+        self,
+        exchange: str,
+        symbol: str,
+        start: datetime,
+        end: datetime,
+    ) -> tuple[float | None, float | None, float | None]:
+        last_stmt = (
+            select(MarketSnapshotModel.price)
+            .where(
+                MarketSnapshotModel.exchange == exchange,
+                MarketSnapshotModel.symbol == symbol,
+                MarketSnapshotModel.timestamp >= start,
+                MarketSnapshotModel.timestamp <= end,
+            )
+            .order_by(MarketSnapshotModel.timestamp.desc())
+            .limit(1)
+        )
+        agg_stmt = select(
+            func.min(MarketSnapshotModel.price),
+            func.max(MarketSnapshotModel.price),
+        ).where(
+            MarketSnapshotModel.exchange == exchange,
+            MarketSnapshotModel.symbol == symbol,
+            MarketSnapshotModel.timestamp >= start,
+            MarketSnapshotModel.timestamp <= end,
+        )
+        price_after = await self.session.scalar(last_stmt)
+        min_price, max_price = (await self.session.execute(agg_stmt)).one()
+        if price_after is None or min_price is None or max_price is None:
+            return None, None, None
+        return float(price_after), float(min_price), float(max_price)
+
+
+class RuntimeSettingsRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def get_all(self) -> dict[str, Any]:
+        rows = list((await self.session.scalars(select(RuntimeSettingModel))).all())
+        result: dict[str, Any] = {}
+        for row in rows:
+            try:
+                result[row.key] = json.loads(row.value_json)
+            except json.JSONDecodeError:
+                continue
+        return result
+
+    async def set(self, key: str, value: Any) -> None:
+        stmt = sqlite_insert(RuntimeSettingModel).values(
+            key=key,
+            value_json=json.dumps(value, ensure_ascii=False, default=str),
+            updated_at=utc_now(),
+        )
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["key"],
+            set_={
+                "value_json": json.dumps(value, ensure_ascii=False, default=str),
+                "updated_at": utc_now(),
+            },
+        )
+        await self.session.execute(stmt)
+
+
+class StrategyAnalysisRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def replace_period(
+        self,
+        period_start: datetime,
+        period_end: datetime,
+        rows: list[dict[str, Any]],
+    ) -> None:
+        await self.session.execute(
+            delete(StrategyAnalysisModel).where(
+                StrategyAnalysisModel.period_start == period_start,
+                StrategyAnalysisModel.period_end == period_end,
+            )
+        )
+        for row in rows:
+            self.session.add(
+                StrategyAnalysisModel(
+                    created_at=utc_now(),
+                    period_start=period_start,
+                    period_end=period_end,
+                    profile_key=row.get("profile_key"),
+                    pattern=row.get("pattern"),
+                    symbol=row.get("symbol"),
+                    total_trades=int(row.get("total_trades", 0)),
+                    winrate=float(row.get("winrate", 0.0)),
+                    profit_factor=float(row.get("profit_factor", 0.0)),
+                    expectancy=float(row.get("expectancy", 0.0)),
+                    avg_mfe=float(row.get("avg_mfe", 0.0)),
+                    avg_mae=float(row.get("avg_mae", 0.0)),
+                    conclusion_json=json.dumps(
+                        row.get("conclusion", {}), ensure_ascii=False, default=str
+                    ),
+                )
+            )
 
     async def add_orderbook_event(
         self,

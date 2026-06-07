@@ -35,13 +35,26 @@ class FeatureSnapshot:
 
 
 class MarketFeatureStore:
-    def __init__(self, retention_minutes: int = 240) -> None:
+    def __init__(
+        self,
+        retention_minutes: int = 30,
+        max_price_points_per_symbol: int = 3000,
+        max_trade_points_per_symbol: int = 3000,
+        max_oi_points_per_symbol: int = 1000,
+    ) -> None:
         self.retention = timedelta(minutes=retention_minutes)
-        self.prices: dict[tuple[str, str], deque[tuple[datetime, float]]] = defaultdict(deque)
-        self.trades: dict[tuple[str, str], deque[tuple[datetime, str, float, float, float]]] = (
-            defaultdict(deque)
+        self.max_price_points_per_symbol = max_price_points_per_symbol
+        self.max_trade_points_per_symbol = max_trade_points_per_symbol
+        self.max_oi_points_per_symbol = max_oi_points_per_symbol
+        self.prices: dict[tuple[str, str], deque[tuple[datetime, float]]] = defaultdict(
+            lambda: deque(maxlen=max_price_points_per_symbol)
         )
-        self.oi: dict[tuple[str, str], deque[tuple[datetime, float]]] = defaultdict(deque)
+        self.trades: dict[tuple[str, str], deque[tuple[datetime, str, float, float, float]]] = (
+            defaultdict(lambda: deque(maxlen=max_trade_points_per_symbol))
+        )
+        self.oi: dict[tuple[str, str], deque[tuple[datetime, float]]] = defaultdict(
+            lambda: deque(maxlen=max_oi_points_per_symbol)
+        )
         self.funding: dict[tuple[str, str], float | None] = {}
         self.orderbooks: dict[tuple[str, str], OrderbookMetrics] = {}
 
@@ -217,3 +230,16 @@ class MarketFeatureStore:
                 continue
             while values and values[0][0] < cutoff:
                 values.popleft()
+
+    def trim_all(self, now: datetime | None = None) -> None:
+        now = now or utc_now()
+        for key in set(self.prices) | set(self.trades) | set(self.oi):
+            self._trim_key(key, now)
+
+    def memory_counts(self) -> dict[str, int]:
+        return {
+            "price_points": sum(len(values) for values in self.prices.values()),
+            "trade_points": sum(len(values) for values in self.trades.values()),
+            "oi_points": sum(len(values) for values in self.oi.values()),
+            "orderbooks": len(self.orderbooks),
+        }
