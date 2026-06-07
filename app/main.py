@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import shutil
 import signal
 from pathlib import Path
 from typing import Any
@@ -29,6 +30,7 @@ async def main() -> None:
     settings = load_settings()
     setup_logging(settings.app.log_level)
     log = get_logger("main")
+    _migrate_legacy_sqlite_if_needed(settings, log)
     database = Database(settings.database.url, backups_dir=settings.storage.backups_dir)
     await database.backup_sqlite("startup")
     await database.init()
@@ -153,6 +155,19 @@ def _set_nested(settings, key: str, value: Any) -> None:
             return
     if hasattr(target, parts[-1]):
         setattr(target, parts[-1], value)
+
+
+def _migrate_legacy_sqlite_if_needed(settings, log) -> None:
+    prefix = "sqlite+aiosqlite:///"
+    if not settings.database.url.startswith(prefix):
+        return
+    target = Path(settings.database.url.removeprefix(prefix))
+    legacy = Path("/app/storage/market_heat.db")
+    if target.exists() or not legacy.exists():
+        return
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(legacy, target)
+    log.info("legacy sqlite database migrated source=%s target=%s", legacy, target)
 
 
 async def _seed_bybit_history(

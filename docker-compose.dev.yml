@@ -9,6 +9,7 @@ services:
       - ./data:/app/data
       - ./logs:/app/logs
       - ./backups:/app/backups
+      - ./storage:/app/storage:ro
     env_file:
       - .env
     restart: unless-stopped
