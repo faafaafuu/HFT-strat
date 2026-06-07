@@ -8,37 +8,38 @@ No cyclic imports detected.
 ## Strong Coupling
 | Module | Fan-in | Fan-out |
 |---|---:|---:|
-| `app.config` | 17 | 0 |
-| `app.main` | 0 | 14 |
-| `app.telegram.commands` | 2 | 11 |
-| `app.utils.time` | 13 | 0 |
+| `app.config` | 18 | 0 |
+| `app.main` | 0 | 17 |
+| `app.utils.time` | 15 | 0 |
+| `app.telegram.commands` | 2 | 12 |
+| `app.data.models` | 12 | 1 |
 | `app.telegram.bot` | 3 | 9 |
 | `app.signals.signal_engine` | 1 | 11 |
-| `app.data.models` | 10 | 1 |
 | `app.market.features` | 7 | 4 |
 | `app.paper.manager` | 3 | 8 |
-| `app.logger` | 9 | 0 |
+| `app.data.database` | 9 | 1 |
+| `app.logger` | 10 | 0 |
+| `app.data.repositories` | 8 | 2 |
 | `app.market.symbol_selector` | 1 | 7 |
-| `app.data.database` | 7 | 1 |
-| `app.data.repositories` | 6 | 2 |
 | `app.signals.outcome_tracker` | 2 | 6 |
-| `app.exchanges.bybit_client` | 3 | 4 |
+| `app.paper.executor` | 1 | 6 |
 
 ## Potential Scaling Problems
-- Current graph has 48 Python modules and 118 internal import edges.
+- Current graph has 54 Python modules and 132 internal import edges.
 - Large modules may become harder to test and review:
-  - `app.telegram.commands`: 718 LOC
+  - `app.telegram.commands`: 740 LOC
   - `tools.architecture_review`: 559 LOC
-  - `app.telegram.formatters`: 524 LOC
-  - `app.paper.manager`: 489 LOC
-  - `app.data.repositories`: 346 LOC
+  - `app.telegram.formatters`: 532 LOC
+  - `app.paper.manager`: 494 LOC
+  - `app.data.repositories`: 456 LOC
+  - `app.config`: 294 LOC
+  - `app.main`: 277 LOC
   - `app.telegram.keyboards`: 273 LOC
-  - `app.config`: 263 LOC
 
 ## Suspicious Dependencies
 | Dependency | Import Count |
 |---|---:|
-| `sqlalchemy` | 8 |
+| `sqlalchemy` | 10 |
 | `telegram` | 3 |
 | `pydantic` | 2 |
 | `pytest` | 2 |
@@ -53,53 +54,55 @@ No cyclic imports detected.
 - `app.utils.retry` (retry.py, 23 LOC)
 
 ## Unused Functions
+- `app.analysis.daily.DailyStrategyAnalysisJob.run` (app.analysis.daily:23, 7 LOC)
 - `app.config.TelegramConfig.bot_token` (app.config:24, 2 LOC)
 - `app.config.TelegramConfig.chat_id` (app.config:28, 2 LOC)
 - `app.config.TelegramConfig.allowed_user_ids` (app.config:32, 12 LOC)
 - `app.config.SymbolsConfig.max_symbols_positive` (app.config:73, 4 LOC)
-- `app.config.PaperProfileConfig.profile_non_negative_numbers` (app.config:149, 4 LOC)
-- `app.config.PaperProfileConfig.profile_positive_integers` (app.config:158, 4 LOC)
-- `app.config.PaperConfig.non_negative_numbers` (app.config:251, 4 LOC)
-- `app.config.PaperConfig.positive_integers` (app.config:258, 4 LOC)
-- `app.data.database.Database.close` (app.data.database:106, 2 LOC)
-- `app.data.repositories.MarketRepository.add_orderbook_event` (app.data.repositories:96, 25 LOC)
-- `app.data.repositories.SignalRepository.ignore_signal` (app.data.repositories:330, 6 LOC)
-- `app.data.repositories.SignalRepository.top_pairs` (app.data.repositories:341, 15 LOC)
-- `app.data.repositories.SignalRepository.top_patterns` (app.data.repositories:357, 15 LOC)
+- `app.config.StorageConfig.storage_positive_integers` (app.config:130, 4 LOC)
+- `app.config.PaperProfileConfig.profile_non_negative_numbers` (app.config:182, 4 LOC)
+- `app.config.PaperProfileConfig.profile_positive_integers` (app.config:191, 4 LOC)
+- `app.config.PaperConfig.non_negative_numbers` (app.config:284, 4 LOC)
+- `app.config.PaperConfig.positive_integers` (app.config:291, 4 LOC)
+- `app.config.save_settings` (app.config:335, 9 LOC)
+- `app.data.database.Database.close` (app.data.database:170, 2 LOC)
+- `app.data.repositories.MarketRepository.purge_old_market_data` (app.data.repositories:98, 15 LOC)
+- `app.data.repositories.MarketRepository.min_max_price_since` (app.data.repositories:114, 32 LOC)
+- `app.data.repositories.StrategyAnalysisRepository.add_orderbook_event` (app.data.repositories:215, 25 LOC)
+- `app.data.repositories.SignalRepository.ignore_signal` (app.data.repositories:449, 6 LOC)
+- `app.data.repositories.SignalRepository.top_pairs` (app.data.repositories:460, 15 LOC)
+- `app.data.repositories.SignalRepository.top_patterns` (app.data.repositories:476, 15 LOC)
 - `app.exchanges.base.TradeEvent.usd` (app.exchanges.base:39, 2 LOC)
 - `app.exchanges.base.MarketDataCallbacks.on_ticker` (app.exchanges.base:53, 1 LOC)
 - `app.exchanges.base.MarketDataCallbacks.on_trade` (app.exchanges.base:55, 1 LOC)
 - `app.exchanges.base.MarketDataCallbacks.on_orderbook` (app.exchanges.base:57, 1 LOC)
-- `app.market.features.MarketFeatureStore.on_ticker` (app.market.features:48, 8 LOC)
-- `app.market.features.MarketFeatureStore.on_trade` (app.market.features:57, 5 LOC)
-- `app.market.features.MarketFeatureStore.on_orderbook` (app.market.features:63, 6 LOC)
+- `app.market.features.MarketFeatureStore.on_ticker` (app.market.features:61, 8 LOC)
+- `app.market.features.MarketFeatureStore.on_trade` (app.market.features:70, 5 LOC)
+- `app.market.features.MarketFeatureStore.on_orderbook` (app.market.features:76, 6 LOC)
 - `app.market.oi_tracker.OpenInterestTracker.run` (app.market.oi_tracker:26, 11 LOC)
 - `app.market.orderbook.OrderbookMetrics.depth_1pct_usd` (app.market.orderbook:16, 2 LOC)
 - `app.paper.account.PaperAccountService.apply_realized_pnl` (app.paper.account:121, 26 LOC)
 - `app.paper.executor.PaperExecutor.can_open` (app.paper.executor:43, 2 LOC)
 - `app.paper.executor.PaperExecutor.open_from_signal` (app.paper.executor:46, 112 LOC)
-- `app.paper.manager.PaperTradeNotifier.send_paper_opened` (app.paper.manager:19, 1 LOC)
-- `app.paper.manager.PaperTradeNotifier.send_paper_closed` (app.paper.manager:21, 3 LOC)
-- `app.paper.manager.PaperTradeManager.close_manual` (app.paper.manager:168, 2 LOC)
-- `app.paper.manager.PaperTradeManager.expire_trade` (app.paper.manager:171, 2 LOC)
-- `app.paper.risk.rr_for_price` (app.paper.risk:90, 7 LOC)
 
 ## Large Classes
-- `app.telegram.commands.TelegramCommands` (app.telegram.commands:74, 701 LOC)
-- `app.paper.manager.PaperTradeManager` (app.paper.manager:26, 401 LOC)
-- `app.data.repositories.SignalRepository` (app.data.repositories:123, 249 LOC)
+- `app.telegram.commands.TelegramCommands` (app.telegram.commands:77, 721 LOC)
+- `app.paper.manager.PaperTradeManager` (app.paper.manager:26, 407 LOC)
+- `app.data.repositories.SignalRepository` (app.data.repositories:242, 249 LOC)
 - `app.exchanges.bybit_client.BybitClient` (app.exchanges.bybit_client:24, 240 LOC)
+- `app.market.features.MarketFeatureStore` (app.market.features:37, 209 LOC)
+- `app.signals.signal_engine.SignalEngine` (app.signals.signal_engine:60, 203 LOC)
 - `app.paper.executor.PaperExecutor` (app.paper.executor:27, 188 LOC)
-- `app.signals.signal_engine.SignalEngine` (app.signals.signal_engine:60, 188 LOC)
-- `app.market.features.MarketFeatureStore` (app.market.features:37, 183 LOC)
 - `app.paper.account.PaperAccountService` (app.paper.account:14, 171 LOC)
+- `app.data.database.Database` (app.data.database:20, 162 LOC)
 - `app.telegram.bot.TelegramService` (app.telegram.bot:26, 156 LOC)
+- `app.data.repositories.MarketRepository` (app.data.repositories:24, 122 LOC)
 
 ## Large Functions
-- `app.signals.signal_engine.SignalEngine.evaluate_once` (app.signals.signal_engine:101, 147 LOC)
+- `app.signals.signal_engine.SignalEngine.evaluate_once` (app.signals.signal_engine:102, 148 LOC)
 - `app.paper.executor.PaperExecutor.open_from_signal` (app.paper.executor:46, 112 LOC)
-- `app.main.main` (app.main:24, 81 LOC)
-- `app.paper.manager.PaperTradeManager._update_trade` (app.paper.manager:196, 72 LOC)
+- `app.main.main` (app.main:28, 110 LOC)
+- `app.paper.manager.PaperTradeManager._update_trade` (app.paper.manager:202, 72 LOC)
 - `app.paper.statistics.paper_profile_summary` (app.paper.statistics:85, 67 LOC)
-- `app.data.repositories.SignalRepository.summary` (app.data.repositories:233, 62 LOC)
-- `app.data.database.Database._migrate_sqlite` (app.data.database:45, 60 LOC)
+- `app.data.database.Database._migrate_sqlite` (app.data.database:52, 66 LOC)
+- `app.data.repositories.SignalRepository.summary` (app.data.repositories:352, 62 LOC)

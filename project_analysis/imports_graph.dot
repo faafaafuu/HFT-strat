@@ -3,6 +3,8 @@ digraph imports {
   node [shape=box, style="rounded,filled", fillcolor="#f8fafc", color="#94a3b8", fontname="Inter"];
   edge [color="#2563eb", arrowsize=0.7];
   "app.__init__";
+  "app.analysis.__init__";
+  "app.analysis.daily";
   "app.config";
   "app.data.__init__";
   "app.data.database";
@@ -41,15 +43,24 @@ digraph imports {
   "app.utils.__init__";
   "app.utils.math";
   "app.utils.retry";
+  "app.utils.runtime";
   "app.utils.time";
   "tests.test_chart_links";
   "tests.test_multi_profile_paper";
   "tests.test_outcomes";
   "tests.test_paper_risk";
+  "tests.test_persistence_recovery";
   "tests.test_scoring";
   "tests.test_telegram_auth";
   "tools.__init__";
   "tools.architecture_review";
+  "tools.backup_database";
+  "tools.verify_persistence";
+  "app.analysis.daily" -> "app.data.database";
+  "app.analysis.daily" -> "app.data.models";
+  "app.analysis.daily" -> "app.data.repositories";
+  "app.analysis.daily" -> "app.logger";
+  "app.analysis.daily" -> "app.utils.time";
   "app.data.database" -> "app.data.models";
   "app.data.models" -> "app.utils.time";
   "app.data.repositories" -> "app.data.models";
@@ -58,8 +69,10 @@ digraph imports {
   "app.exchanges.bybit_client" -> "app.logger";
   "app.exchanges.bybit_client" -> "app.utils.math";
   "app.exchanges.bybit_client" -> "app.utils.time";
+  "app.main" -> "app.analysis.daily";
   "app.main" -> "app.config";
   "app.main" -> "app.data.database";
+  "app.main" -> "app.data.repositories";
   "app.main" -> "app.exchanges.base";
   "app.main" -> "app.exchanges.bybit_client";
   "app.main" -> "app.logger";
@@ -71,6 +84,7 @@ digraph imports {
   "app.main" -> "app.signals.signal_engine";
   "app.main" -> "app.telegram.bot";
   "app.main" -> "app.utils.math";
+  "app.main" -> "app.utils.runtime";
   "app.main" -> "app.utils.time";
   "app.market.features" -> "app.exchanges.base";
   "app.market.features" -> "app.market.orderbook";
@@ -147,6 +161,7 @@ digraph imports {
   "app.telegram.commands" -> "app.signals.scoring";
   "app.telegram.commands" -> "app.telegram.formatters";
   "app.telegram.commands" -> "app.telegram.keyboards";
+  "app.telegram.commands" -> "app.utils.runtime";
   "app.telegram.commands" -> "app.utils.time";
   "app.telegram.formatters" -> "app.config";
   "app.telegram.formatters" -> "app.data.models";
@@ -161,6 +176,7 @@ digraph imports {
   "tests.test_outcomes" -> "app.signals.outcome_tracker";
   "tests.test_paper_risk" -> "app.config";
   "tests.test_paper_risk" -> "app.paper.risk";
+  "tests.test_persistence_recovery" -> "tools.verify_persistence";
   "tests.test_scoring" -> "app.config";
   "tests.test_scoring" -> "app.signals.patterns";
   "tests.test_scoring" -> "app.signals.scoring";
@@ -168,4 +184,8 @@ digraph imports {
   "tests.test_telegram_auth" -> "app.data.database";
   "tests.test_telegram_auth" -> "app.telegram.bot";
   "tests.test_telegram_auth" -> "app.telegram.commands";
+  "tools.backup_database" -> "app.config";
+  "tools.backup_database" -> "app.data.database";
+  "tools.verify_persistence" -> "app.data.models";
+  "tools.verify_persistence" -> "app.utils.time";
 }
