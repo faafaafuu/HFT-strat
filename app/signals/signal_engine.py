@@ -25,11 +25,14 @@ class MarketEventSink(MarketDataCallbacks):
         feature_store: MarketFeatureStore,
         paper_manager: PaperTradeManager | None = None,
         paper_check_interval_seconds: float = 1.0,
+        orderbook_process_interval_seconds: float = 0.25,
     ) -> None:
         self.feature_store = feature_store
         self.paper_manager = paper_manager
         self.paper_check_interval_seconds = paper_check_interval_seconds
+        self.orderbook_process_interval_seconds = orderbook_process_interval_seconds
         self._last_paper_check: dict[tuple[str, str], float] = {}
+        self._last_orderbook_process: dict[tuple[str, str], float] = {}
 
     async def on_ticker(self, event: TickerEvent) -> None:
         self.feature_store.on_ticker(event)
@@ -40,6 +43,13 @@ class MarketEventSink(MarketDataCallbacks):
         await self._maybe_check_paper(event.exchange, event.symbol, event.price, event.timestamp)
 
     async def on_orderbook(self, event: OrderbookEvent) -> None:
+        if self.orderbook_process_interval_seconds > 0:
+            now = asyncio.get_running_loop().time()
+            key = (event.exchange, event.symbol)
+            last = self._last_orderbook_process.get(key, 0.0)
+            if now - last < self.orderbook_process_interval_seconds:
+                return
+            self._last_orderbook_process[key] = now
         self.feature_store.on_orderbook(event)
         price = self.feature_store.latest_price(event.exchange, event.symbol)
         if price is not None:

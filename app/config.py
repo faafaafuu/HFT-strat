@@ -47,6 +47,23 @@ class BybitConfig(BaseModel):
     enabled: bool = True
     market_type: Literal["linear"] = "linear"
     testnet: bool = False
+    ws_topics_per_connection: int = 20
+    orderbook_depth_limit: int = 100
+    orderbook_process_interval_ms: int = 250
+
+    @field_validator("ws_topics_per_connection", "orderbook_depth_limit")
+    @classmethod
+    def bybit_positive_integers(cls, value: int) -> int:
+        if value <= 0:
+            raise ValueError("bybit integer settings must be positive")
+        return value
+
+    @field_validator("orderbook_process_interval_ms")
+    @classmethod
+    def bybit_non_negative_integer(cls, value: int) -> int:
+        if value < 0:
+            raise ValueError("bybit orderbook_process_interval_ms must be non-negative")
+        return value
 
 
 class HyperliquidConfig(BaseModel):

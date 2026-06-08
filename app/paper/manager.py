@@ -35,6 +35,7 @@ class PaperTradeManager:
         self.notifier = notifier
         self.log = get_logger("paper_manager")
         self.latest_prices: dict[tuple[str, str], float] = {}
+        self._open_symbols: set[tuple[str, str]] = set()
 
     async def ensure_account(self) -> None:
         async with self.database.session() as session:
@@ -45,6 +46,14 @@ class PaperTradeManager:
                 self.config.profiles[profile_key] = profile_config_from_model(
                     profile, profile_config
                 )
+            rows = (
+                await session.execute(
+                    select(PaperTradeModel.exchange, PaperTradeModel.symbol).where(
+                        PaperTradeModel.status == "OPEN"
+                    )
+                )
+            ).all()
+            self._open_symbols = {(str(exchange), str(symbol)) for exchange, symbol in rows}
 
     async def open_from_signal(
         self,
@@ -96,6 +105,7 @@ class PaperTradeManager:
                 profile_key,
                 balance,
             )
+            self._open_symbols.add((signal.exchange, signal.symbol))
         async with self.database.session() as session:
             trade = await session.get(PaperTradeModel, trade_id)
             if trade and self.notifier:
@@ -119,7 +129,10 @@ class PaperTradeManager:
         self, exchange: str, symbol: str, price: float, timestamp: datetime | None = None
     ) -> None:
         timestamp = timestamp or utc_now()
-        self.latest_prices[(exchange, symbol)] = price
+        key = (exchange, symbol)
+        self.latest_prices[key] = price
+        if key not in self._open_symbols:
+            return
         async with self.database.session() as session:
             trades = list(
                 (
@@ -133,6 +146,7 @@ class PaperTradeManager:
                 ).all()
             )
             if not trades:
+                self._open_symbols.discard(key)
                 return
             account_service = PaperAccountService(session, self.config)
             closed_payloads: list[tuple[PaperTradeModel, float, float]] = []
@@ -161,6 +175,8 @@ class PaperTradeManager:
             await self._mark_to_market(session, legacy_account)
             for account in touched_accounts.values():
                 await _upsert_daily_stats(session, account)
+            if not any(trade.status == "OPEN" for trade in trades):
+                self._open_symbols.discard(key)
         for trade, balance, winrate in closed_payloads:
             if self.notifier:
                 await self.notifier.send_paper_closed(trade, balance, winrate)

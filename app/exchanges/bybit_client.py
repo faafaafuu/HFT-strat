@@ -24,8 +24,16 @@ from app.utils.time import ms_to_datetime, utc_now
 class BybitClient:
     exchange = "bybit"
 
-    def __init__(self, testnet: bool = False, category: str = "linear") -> None:
+    def __init__(
+        self,
+        testnet: bool = False,
+        category: str = "linear",
+        ws_topics_per_connection: int = 20,
+        orderbook_depth_limit: int = 100,
+    ) -> None:
         self.category = category
+        self.ws_topics_per_connection = ws_topics_per_connection
+        self.orderbook_depth_limit = orderbook_depth_limit
         self.rest_url = "https://api-testnet.bybit.com" if testnet else "https://api.bybit.com"
         self.ws_url = (
             "wss://stream-testnet.bybit.com/v5/public/linear"
@@ -37,6 +45,7 @@ class BybitClient:
         self._books: dict[str, dict[str, dict[float, float]]] = {}
         self._stop = asyncio.Event()
         self.public_ws_connected = False
+        self.public_ws_connections = 0
 
     async def __aenter__(self) -> BybitClient:
         self.session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=20))
@@ -137,27 +146,71 @@ class BybitClient:
 
     async def run_public_ws(self, symbols: list[str], callbacks: MarketDataCallbacks) -> None:
         args = self._subscription_args(symbols)
+        groups = list(self._chunks(args, self.ws_topics_per_connection))
+        if not groups:
+            self.log.warning("Bybit public WS skipped: no subscription args")
+            return
+        tasks = [
+            asyncio.create_task(
+                self._run_public_ws_group(group_index, group, symbols, callbacks),
+                name=f"bybit_ws_{group_index}",
+            )
+            for group_index, group in enumerate(groups, start=1)
+        ]
+        try:
+            await asyncio.gather(*tasks)
+        except asyncio.CancelledError:
+            for task in tasks:
+                task.cancel()
+            raise
+        finally:
+            self._stop.set()
+            for task in tasks:
+                task.cancel()
+            for task in tasks:
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+
+    async def _run_public_ws_group(
+        self,
+        group_index: int,
+        args: list[str],
+        symbols: list[str],
+        callbacks: MarketDataCallbacks,
+    ) -> None:
         while not self._stop.is_set():
             try:
-                async with websockets.connect(self.ws_url, ping_interval=20, ping_timeout=20) as ws:
-                    self.public_ws_connected = True
-                    self.log.info("connected Bybit public WS for %s symbols", len(symbols))
-                    for chunk in self._chunks(args, 20):
-                        await ws.send(json.dumps({"op": "subscribe", "args": chunk}))
-                        await asyncio.sleep(0.2)
+                async with websockets.connect(
+                    self.ws_url,
+                    ping_interval=30,
+                    ping_timeout=30,
+                    max_queue=512,
+                ) as ws:
+                    self._mark_public_ws_connected(1)
+                    self.log.info(
+                        "connected Bybit public WS group=%s topics=%s symbols=%s",
+                        group_index,
+                        len(args),
+                        len(symbols),
+                    )
+                    await ws.send(json.dumps({"op": "subscribe", "args": args}))
                     async for raw in ws:
                         await self._handle_ws_message(raw, callbacks)
                         if self._stop.is_set():
                             break
             except asyncio.CancelledError:
-                self.public_ws_connected = False
                 raise
             except Exception as exc:  # noqa: BLE001 - reconnect loop.
-                self.public_ws_connected = False
-                self.log.warning("Bybit WS disconnected: %s", exc)
+                self.log.warning("Bybit WS disconnected group=%s: %s", group_index, exc)
                 await asyncio.sleep(5)
             finally:
-                self.public_ws_connected = False
+                self._mark_public_ws_connected(-1)
+
+    def _mark_public_ws_connected(self, delta: int) -> None:
+        self.public_ws_connections = max(0, self.public_ws_connections + delta)
+        self.public_ws_connected = self.public_ws_connections > 0
 
     def _subscription_args(self, symbols: Iterable[str]) -> list[str]:
         args: list[str] = []
@@ -237,21 +290,41 @@ class BybitClient:
         symbol = str(data.get("s") or payload.get("topic", "").split(".")[-1])
         book = self._books.setdefault(symbol, {"b": {}, "a": {}})
         if payload.get("type") == "snapshot":
-            book["b"] = {safe_float(price): safe_float(size) for price, size in data.get("b", [])}
-            book["a"] = {safe_float(price): safe_float(size) for price, size in data.get("a", [])}
+            book["b"] = {
+                price: size
+                for price, size in (
+                    (safe_float(price), safe_float(size)) for price, size in data.get("b", [])
+                )
+                if price > 0 and size > 0
+            }
+            book["a"] = {
+                price: size
+                for price, size in (
+                    (safe_float(price), safe_float(size)) for price, size in data.get("a", [])
+                )
+                if price > 0 and size > 0
+            }
         else:
             for side in ("b", "a"):
                 for price_raw, size_raw in data.get(side, []):
                     price = safe_float(price_raw)
                     size = safe_float(size_raw)
+                    if price <= 0:
+                        continue
                     if size == 0:
                         book[side].pop(price, None)
                     else:
                         book[side][price] = size
-        bids = sorted(book["b"].items(), key=lambda x: x[0], reverse=True)[:50]
-        asks = sorted(book["a"].items(), key=lambda x: x[0])[:50]
+        sorted_bids = sorted(book["b"].items(), key=lambda x: x[0], reverse=True)
+        sorted_asks = sorted(book["a"].items(), key=lambda x: x[0])
+        bids = sorted_bids[:50]
+        asks = sorted_asks[:50]
         if not bids or not asks:
             return
+        if len(sorted_bids) > self.orderbook_depth_limit:
+            book["b"] = dict(sorted_bids[: self.orderbook_depth_limit])
+        if len(sorted_asks) > self.orderbook_depth_limit:
+            book["a"] = dict(sorted_asks[: self.orderbook_depth_limit])
         await callbacks.on_orderbook(
             OrderbookEvent(
                 exchange=self.exchange,

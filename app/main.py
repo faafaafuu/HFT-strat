@@ -53,6 +53,8 @@ async def main() -> None:
     async with BybitClient(
         testnet=settings.exchanges.bybit.testnet,
         category=settings.exchanges.bybit.market_type,
+        ws_topics_per_connection=settings.exchanges.bybit.ws_topics_per_connection,
+        orderbook_depth_limit=settings.exchanges.bybit.orderbook_depth_limit,
     ) as bybit:
         selector = SymbolSelector(settings.symbols, database)
         try:
@@ -82,7 +84,13 @@ async def main() -> None:
         else:
             log.info("paper trading disabled app_mode=%s", settings.app.mode)
 
-        sink = MarketEventSink(feature_store, paper_manager=paper_manager)
+        sink = MarketEventSink(
+            feature_store,
+            paper_manager=paper_manager,
+            orderbook_process_interval_seconds=(
+                settings.exchanges.bybit.orderbook_process_interval_ms / 1000
+            ),
+        )
         oi_tracker = OpenInterestTracker(bybit, feature_store, symbols)
         signal_engine = SignalEngine(
             settings,
@@ -226,7 +234,7 @@ async def _heartbeat_loop(
     heartbeat_path = Path("/app/data/heartbeat")
     while True:
         telegram.last_heartbeat = utc_now()
-        telegram.active_websocket_connections = 1 if bybit.public_ws_connected else 0
+        telegram.active_websocket_connections = bybit.public_ws_connections
         try:
             heartbeat_path.parent.mkdir(parents=True, exist_ok=True)
             heartbeat_path.write_text(telegram.last_heartbeat.isoformat())

@@ -14,6 +14,9 @@ exchanges:
     enabled: true
     market_type: linear
     testnet: false
+    ws_topics_per_connection: 20
+    orderbook_depth_limit: 100
+    orderbook_process_interval_ms: 250
   hyperliquid:
     enabled: false
     testnet: false

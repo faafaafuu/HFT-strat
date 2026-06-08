@@ -137,6 +137,23 @@ symbols:
     - SOLUSDT
 ```
 
+## Bybit Performance
+
+Bybit public market data is split across multiple WebSocket connections to reduce
+ping timeouts under high orderbook/trade throughput. These settings can be tuned
+in `config.yaml` without changing strategy thresholds:
+
+```yaml
+exchanges:
+  bybit:
+    ws_topics_per_connection: 20
+    orderbook_depth_limit: 100
+    orderbook_process_interval_ms: 250
+```
+
+Lower `orderbook_process_interval_ms` reacts faster to book changes but costs more
+CPU. Higher values reduce CPU while keeping trades/tickers live.
+
 ## Read Signals
 
 Signal fields:
