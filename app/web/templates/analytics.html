@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="top">
+  <h1>Analytics</h1>
+  <span class="muted">Cached 10 seconds</span>
+</div>
+
+<section class="grid">
+  <div class="card"><div class="metric">Signals</div><div class="value">{{ summary.signals.total_signals }}</div></div>
+  <div class="card"><div class="metric">Signal WR 30m</div><div class="value">{{ summary.signals.winrate_tp1_30m|pct }}</div></div>
+  <div class="card"><div class="metric">Paper Net PnL</div><div class="value">{{ summary.paper.net_pnl|money }}</div></div>
+  <div class="card"><div class="metric">Paper PF</div><div class="value">{{ summary.paper.profit_factor|num }}</div></div>
+</section>
+
+<section class="grid">
+  <div class="card">
+    <h2>By Symbol</h2>
+    {% set rows = summary.by_symbol %}
+    {% include "analytics_table.html" %}
+  </div>
+  <div class="card">
+    <h2>By Pattern</h2>
+    {% set rows = summary.by_pattern %}
+    {% include "analytics_table.html" %}
+  </div>
+  <div class="card">
+    <h2>By Score</h2>
+    {% set rows = summary.by_score %}
+    {% include "analytics_table.html" %}
+  </div>
+  <div class="card">
+    <h2>By Hour</h2>
+    {% set rows = summary.by_hour %}
+    {% include "analytics_table.html" %}
+  </div>
+</section>
+{% endblock %}
+

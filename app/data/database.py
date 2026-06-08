@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from sqlalchemy import event, text
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -29,22 +29,15 @@ class Database:
                 self.sqlite_path = Path(path)
                 self.sqlite_path.parent.mkdir(parents=True, exist_ok=True)
         self.engine: AsyncEngine = create_async_engine(url, future=True)
-        if self.is_sqlite:
-            self._configure_sqlite_pragmas()
         self.session_factory = async_sessionmaker(self.engine, expire_on_commit=False)
-
-    def _configure_sqlite_pragmas(self) -> None:
-        @event.listens_for(self.engine.sync_engine, "connect")
-        def _set_sqlite_pragmas(dbapi_connection, _: object) -> None:
-            cursor = dbapi_connection.cursor()
-            cursor.execute("PRAGMA foreign_keys=ON")
-            cursor.execute("PRAGMA journal_mode=WAL")
-            cursor.execute("PRAGMA busy_timeout=5000")
-            cursor.close()
 
     async def init(self) -> None:
         await self.backup_sqlite("pre_migration")
         async with self.engine.begin() as conn:
+            if self.is_sqlite:
+                await conn.execute(text("PRAGMA foreign_keys=ON"))
+                await conn.execute(text("PRAGMA busy_timeout=5000"))
+                await conn.execute(text("PRAGMA journal_mode=WAL"))
             await conn.run_sync(Base.metadata.create_all)
             if self.is_sqlite:
                 await self._migrate_sqlite(conn)

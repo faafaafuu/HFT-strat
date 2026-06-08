@@ -2,9 +2,9 @@
 
 ## Summary
 
-- Modules analyzed: 54
-- Internal import edges: 132
-- Package dependency edges: 49
+- Modules analyzed: 69
+- Internal import edges: 175
+- Package dependency edges: 59
 - Cyclic import groups: 0
 
 The project is split into clear domains: exchange adapters, market feature collection, signal detection, paper trading, data persistence, and Telegram UX. The highest architectural risk is the Telegram layer depending directly on repositories, market features, paper statistics, formatting, and mutable config writes. This makes Telegram callbacks a broad integration surface and raises regression risk when adding new UI actions.
@@ -13,68 +13,78 @@ The project is split into clear domains: exchange adapters, market feature colle
 
 | Module | LOC | Classes | Functions | Fan-in | Fan-out |
 |---|---:|---:|---:|---:|---:|
-| `app.config` | 294 | 16 | 12 | 18 | 0 |
-| `app.main` | 277 | 0 | 8 | 0 | 17 |
-| `app.utils.time` | 8 | 0 | 3 | 15 | 0 |
-| `app.telegram.commands` | 740 | 1 | 53 | 2 | 12 |
-| `app.data.models` | 224 | 13 | 0 | 12 | 1 |
-| `app.signals.signal_engine` | 247 | 2 | 10 | 1 | 11 |
+| `app.config` | 309 | 16 | 14 | 23 | 0 |
+| `app.data.models` | 224 | 13 | 0 | 16 | 1 |
+| `app.main` | 298 | 0 | 9 | 0 | 17 |
+| `app.data.database` | 161 | 1 | 8 | 15 | 1 |
+| `app.telegram.commands` | 722 | 1 | 53 | 2 | 14 |
+| `app.utils.time` | 8 | 0 | 3 | 16 | 0 |
+| `app.data.repositories` | 456 | 4 | 27 | 11 | 2 |
+| `app.signals.signal_engine` | 257 | 2 | 10 | 2 | 11 |
+| `app.paper.manager` | 510 | 2 | 22 | 4 | 8 |
 | `app.telegram.bot` | 162 | 1 | 10 | 3 | 9 |
-| `app.market.features` | 224 | 2 | 16 | 7 | 4 |
-| `app.paper.manager` | 494 | 2 | 22 | 3 | 8 |
-| `app.data.database` | 167 | 1 | 10 | 9 | 1 |
 
 ## Package Dependencies
 
 | From | To | Imports |
 |---|---|---:|
+| `app.services` | `app.data` | 12 |
 | `app.telegram` | `app.data` | 7 |
 | `app.paper` | `app.data` | 6 |
+| `tests` | `app.config` | 6 |
+| `app.web` | `app.services` | 5 |
 | `app.market` | `app.exchanges` | 4 |
 | `app.paper` | `app.config` | 4 |
-| `app.signals` | `app.config` | 4 |
 | `app.signals` | `app.data` | 4 |
-| `tests` | `app.config` | 4 |
+| `app.signals` | `app.config` | 4 |
+| `app.telegram` | `app.services` | 4 |
+| `tests` | `app.paper` | 4 |
+| `tests` | `app.signals` | 4 |
 | `app.analysis` | `app.data` | 3 |
-| `app.main` | `app.utils` | 3 |
 | `app.main` | `app.market` | 3 |
+| `app.main` | `app.utils` | 3 |
 | `app.market` | `app.utils` | 3 |
 | `app.paper` | `app.utils` | 3 |
+| `app.services` | `app.utils` | 3 |
 | `app.signals` | `app.market` | 3 |
 | `app.telegram` | `app.config` | 3 |
-| `app.telegram` | `app.utils` | 3 |
 | `tests` | `app.telegram` | 3 |
-| `tests` | `app.paper` | 3 |
-| `tests` | `app.signals` | 3 |
 | `app.data` | `app.utils` | 2 |
 | `app.exchanges` | `app.utils` | 2 |
-| `app.main` | `app.exchanges` | 2 |
-| `app.main` | `app.signals` | 2 |
 | `app.main` | `app.data` | 2 |
+| `app.main` | `app.signals` | 2 |
+| `app.main` | `app.exchanges` | 2 |
 | `app.market` | `app.logger` | 2 |
 | `app.market` | `app.data` | 2 |
 | `app.paper` | `app.logger` | 2 |
-| `app.signals` | `app.logger` | 2 |
+| `app.services` | `app.paper` | 2 |
+| `app.services` | `app.config` | 2 |
 | `app.signals` | `app.utils` | 2 |
+| `app.signals` | `app.logger` | 2 |
 | `app.telegram` | `app.market` | 2 |
+| `app.telegram` | `app.utils` | 2 |
 | `app.telegram` | `app.signals` | 2 |
-| `app.telegram` | `app.paper` | 2 |
 | `tools` | `app.data` | 2 |
-| `app.analysis` | `app.logger` | 1 |
 | `app.analysis` | `app.utils` | 1 |
+| `app.analysis` | `app.logger` | 1 |
 | `app.exchanges` | `app.logger` | 1 |
 | `app.main` | `app.logger` | 1 |
 | `app.main` | `app.telegram` | 1 |
-| `app.main` | `app.paper` | 1 |
 | `app.main` | `app.config` | 1 |
+| `app.main` | `app.paper` | 1 |
 | `app.main` | `app.analysis` | 1 |
 | `app.market` | `app.config` | 1 |
 | `app.signals` | `app.exchanges` | 1 |
-| `app.signals` | `app.telegram` | 1 |
 | `app.signals` | `app.paper` | 1 |
+| `app.signals` | `app.telegram` | 1 |
 | `app.telegram` | `app.logger` | 1 |
+| `app.telegram` | `app.paper` | 1 |
+| `app.web` | `app.data` | 1 |
+| `app.web` | `app.config` | 1 |
+| `tests` | `app.exchanges` | 1 |
 | `tests` | `tools` | 1 |
 | `tests` | `app.data` | 1 |
+| `tests` | `app.web` | 1 |
 | `tools` | `app.config` | 1 |
 | `tools` | `app.utils` | 1 |
 

@@ -6,23 +6,19 @@ import time
 from datetime import UTC
 from typing import Any
 
-from sqlalchemy import func, select
 from telegram import CallbackQuery, InlineKeyboardMarkup, ReplyKeyboardMarkup, Update
 from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import ContextTypes
 
 from app.config import PaperProfileConfig
-from app.data.models import PaperTradeModel
 from app.data.repositories import RuntimeSettingsRepository, SignalRepository
 from app.market.features import FeatureSnapshot
 from app.paper.account import PaperAccountService
-from app.paper.statistics import (
-    paper_profile_summary,
-    paper_profile_trades,
-    paper_profiles_summary,
-    paper_summary,
-)
+from app.services.analytics_service import AnalyticsService
+from app.services.paper_service import PaperService
+from app.services.signal_service import SignalService
+from app.services.status_service import RuntimeStatusContext, StatusService
 from app.signals.patterns import detect_patterns
 from app.signals.scoring import score_signal
 from app.telegram.formatters import (
@@ -63,7 +59,6 @@ from app.telegram.keyboards import (
     signal_detail_menu,
     signals_menu,
 )
-from app.utils.runtime import active_task_count, memory_usage_mb
 from app.utils.time import utc_now
 
 SIGNALS_PAGE_SIZE = 6
@@ -79,6 +74,9 @@ class TelegramCommands:
         self.service = service
         self._callback_semaphore = asyncio.Semaphore(4)
         self._view_cache: dict[str, tuple[float, str, InlineKeyboardMarkup]] = {}
+        self.signals = SignalService(service.database)
+        self.paper_service = PaperService(service.database)
+        self.analytics = AnalyticsService(service.database)
 
     async def start(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         if not await self._authorize(update):
@@ -261,44 +259,39 @@ class TelegramCommands:
                 self.service.log.warning("Telegram callback task failed data=%s: %s", data, exc)
 
     async def show_dashboard(self, update: Update) -> None:
-        async with self.service.database.session() as session:
-            repo = SignalRepository(session)
-            today_count = await repo.count_since(since_today().replace(tzinfo=UTC))
-            week_count = await repo.count_since(since_week().replace(tzinfo=UTC))
-            summary = await repo.summary()
-            last_signal_time = await repo.last_signal_time()
-            open_paper_trades = int(
-                await session.scalar(
-                    select(func.count(PaperTradeModel.id)).where(PaperTradeModel.status == "OPEN")
-                )
-                or 0
-            )
+        status = await StatusService(
+            self.service.database,
+            self.service.settings,
+            RuntimeStatusContext(
+                started_at=self.service.started_at,
+                online=self.service.is_online,
+                selected_symbols=self.service.symbols,
+                last_heartbeat=self.service.last_heartbeat,
+                active_websocket_connections=self.service.active_websocket_connections,
+            ),
+        ).dashboard()
         text = format_dashboard(
-            online=self.service.is_online,
-            pairs_count=len(self.service.symbols),
-            signals_today=today_count,
-            signals_week=week_count,
-            best_pattern=summary.get("best_pattern"),
-            best_pair=summary.get("best_pair"),
-            uptime=utc_now() - self.service.started_at,
-            last_heartbeat=self.service.last_heartbeat,
-            active_websocket_connections=self.service.active_websocket_connections,
-            selected_symbols=self.service.symbols,
-            last_signal_time=last_signal_time,
-            memory_mb=memory_usage_mb(),
-            active_tasks=active_task_count(),
-            db_size_mb=self.service.database.size_mb(),
-            open_paper_trades=open_paper_trades,
+            online=bool(status["online"]),
+            pairs_count=int(status["pairs_count"]),
+            signals_today=int(status["signals_today"]),
+            signals_week=int(status["signals_week"]),
+            best_pattern=status["best_pattern"],
+            best_pair=status["best_pair"],
+            uptime=status["uptime"],
+            last_heartbeat=status["last_heartbeat"],
+            active_websocket_connections=int(status["active_websocket_connections"]),
+            selected_symbols=status["selected_symbols"],
+            last_signal_time=status["last_signal_time"],
+            memory_mb=float(status["memory_mb"]),
+            active_tasks=int(status["active_tasks"]),
+            db_size_mb=float(status["db_size_mb"]),
+            open_paper_trades=int(status["open_paper_trades"]),
         )
         await self._send_or_edit(update, text, nav("dashboard"))
 
     async def show_signals(self, update: Update, page: int) -> None:
         page = max(0, page)
-        async with self.service.database.session() as session:
-            repo = SignalRepository(session)
-            signals = await repo.list_recent(
-                limit=SIGNALS_PAGE_SIZE, offset=page * SIGNALS_PAGE_SIZE
-            )
+        signals = await self.signals.recent(limit=SIGNALS_PAGE_SIZE, offset=page * SIGNALS_PAGE_SIZE)
         await self._send_or_edit(
             update,
             format_recent_signals(signals, page, SIGNALS_PAGE_SIZE),
@@ -306,9 +299,7 @@ class TelegramCommands:
         )
 
     async def show_signal_detail(self, update: Update, signal_id: int, page: int) -> None:
-        async with self.service.database.session() as session:
-            repo = SignalRepository(session)
-            signal = await repo.get_signal_with_outcomes(signal_id)
+        signal = await self.signals.detail(signal_id)
         if signal is None:
             await self._send_or_edit(
                 update, "Signal not found.", signal_detail_menu(page, signal_id)
@@ -319,9 +310,7 @@ class TelegramCommands:
         )
 
     async def show_signal_alert_detail(self, update: Update, signal_id: int) -> None:
-        async with self.service.database.session() as session:
-            repo = SignalRepository(session)
-            signal = await repo.get_signal_with_outcomes(signal_id)
+        signal = await self.signals.detail(signal_id)
         if signal is None:
             await self._send_or_edit(update, "Signal not found.", nav("home"))
             return
@@ -354,9 +343,7 @@ class TelegramCommands:
         await self._send_or_edit(update, format_ignored(signal), signal_alert_menu(signal))
 
     async def show_stats(self, update: Update, since=None) -> None:
-        async with self.service.database.session() as session:
-            repo = SignalRepository(session)
-            summary = await repo.summary(since=since)
+        summary = await self.signals.summary(since=since)
         await self._send_or_edit(update, format_stats(summary), nav("stats"))
 
     async def show_scanner(self, update: Update) -> None:
@@ -394,15 +381,14 @@ class TelegramCommands:
             await self._send_or_edit(update, text, markup)
             return
         await self._send_or_edit(update, "Loading...", nav("paper"))
-        async with self.service.database.session() as session:
-            profiles = await paper_profiles_summary(session)
-            if not profiles:
-                summary = await paper_summary(session)
-                text = format_paper_portfolio(summary)
-                markup = nav("paper")
-            else:
-                text = format_paper_profiles(profiles)
-                markup = paper_profiles_menu([str(item["profile_key"]) for item in profiles])
+        profiles = await self.paper_service.profiles()
+        if not profiles:
+            summary = await self.paper_service.portfolio()
+            text = format_paper_portfolio(summary)
+            markup = nav("paper")
+        else:
+            text = format_paper_profiles(profiles)
+            markup = paper_profiles_menu([str(item["profile_key"]) for item in profiles])
         self._store_cache(cache_key, text, markup)
         await self._send_or_edit(update, text, markup)
 
@@ -414,8 +400,7 @@ class TelegramCommands:
             await self._send_or_edit(update, text, markup)
             return
         await self._send_or_edit(update, "Loading...", nav("paper", back="paper"))
-        async with self.service.database.session() as session:
-            summary = await paper_profile_summary(session, profile_key)
+        summary = await self.paper_service.profile(profile_key)
         text = format_paper_profile(summary)
         markup = paper_profile_menu(profile_key, bool(summary.get("enabled")))
         self._store_cache(cache_key, text, markup)
@@ -429,16 +414,14 @@ class TelegramCommands:
             await self._send_or_edit(update, text, markup)
             return
         await self._send_or_edit(update, "Loading...", paper_compare_menu())
-        async with self.service.database.session() as session:
-            profiles = await paper_profiles_summary(session)
+        profiles = await self.paper_service.profiles()
         text = format_paper_compare(profiles)
         markup = paper_compare_menu()
         self._store_cache(cache_key, text, markup)
         await self._send_or_edit(update, text, markup)
 
     async def show_paper_profile_settings(self, update: Update, profile_key: str) -> None:
-        async with self.service.database.session() as session:
-            summary = await paper_profile_summary(session, profile_key)
+        summary = await self.paper_service.profile(profile_key)
         await self._send_or_edit(
             update,
             format_paper_profile_settings(summary),
@@ -446,8 +429,7 @@ class TelegramCommands:
         )
 
     async def show_paper_trades(self, update: Update, profile_key: str, status: str) -> None:
-        async with self.service.database.session() as session:
-            trades = await paper_profile_trades(session, profile_key, status=status, limit=10)
+        trades = await self.paper_service.trades(profile_key, status=status, limit=10)
         title = "🧪 Open Trades" if status == "OPEN" else "🧪 Closed Trades"
         menu_status = "ot" if status == "OPEN" else "ct"
         await self._send_or_edit(

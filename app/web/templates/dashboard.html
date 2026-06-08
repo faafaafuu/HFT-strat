@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="top">
+  <h1>Dashboard</h1>
+  <span class="muted">Read-only web dashboard</span>
+</div>
+
+<section class="grid">
+  <div class="card"><div class="metric">Status</div><div class="value">{{ "Online" if status.online else "Offline" }}</div></div>
+  <div class="card"><div class="metric">Pairs</div><div class="value">{{ status.pairs_count }}</div></div>
+  <div class="card"><div class="metric">Signals Today</div><div class="value">{{ status.signals_today }}</div></div>
+  <div class="card"><div class="metric">Signals Week</div><div class="value">{{ status.signals_week }}</div></div>
+  <div class="card"><div class="metric">Open Paper Trades</div><div class="value">{{ status.open_paper_trades }}</div></div>
+  <div class="card"><div class="metric">DB Size</div><div class="value">{{ status.db_size_mb|num }} MB</div></div>
+</section>
+
+<section class="card">
+  <h2>Runtime</h2>
+  <table>
+    <tr><th>Metric</th><th>Value</th></tr>
+    <tr><td>WS Connections</td><td>{{ status.active_websocket_connections }}</td></tr>
+    <tr><td>RAM</td><td>{{ status.memory_mb|num }} MB</td></tr>
+    <tr><td>Active Tasks</td><td>{{ status.active_tasks }}</td></tr>
+    <tr><td>Last Heartbeat</td><td>{{ status.last_heartbeat|time }}</td></tr>
+    <tr><td>Last Signal</td><td>{{ status.last_signal_time|time }}</td></tr>
+    <tr><td>Uptime</td><td>{{ status.uptime }}</td></tr>
+  </table>
+</section>
+
+<section class="card">
+  <h2>Selected Symbols</h2>
+  <p class="muted">{{ status.selected_symbols|join(", ") if status.selected_symbols else "No symbols selected yet." }}</p>
+</section>
+{% endblock %}
+

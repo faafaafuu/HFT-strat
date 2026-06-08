@@ -13,8 +13,14 @@ prod:
 logs:
 	docker logs -f market-heat-signal-bot
 
+logs-web:
+	docker logs -f market-heat-signal-bot-web
+
 logs-dev:
 	docker logs -f market-heat-signal-bot-dev
+
+logs-web-dev:
+	docker logs -f market-heat-signal-bot-web-dev
 
 restart-dev:
 	docker compose -f docker-compose.dev.yml restart

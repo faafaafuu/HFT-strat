@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="top">
+  <h1>Performance</h1>
+  <span class="muted">Realtime path metrics</span>
+</div>
+
+<table>
+  <tr><th>Metric</th><th>Value</th></tr>
+  <tr><td>RAM</td><td>{{ performance.ram_mb|num }} MB</td></tr>
+  <tr><td>Active Tasks</td><td>{{ performance.active_tasks }}</td></tr>
+  <tr><td>WS Connections</td><td>{{ performance.ws_connections }}</td></tr>
+  <tr><td>Selected Symbols</td><td>{{ performance.selected_symbols }}</td></tr>
+  <tr><td>DB Size</td><td>{{ performance.db_size_mb|num }} MB</td></tr>
+  <tr><td>Heartbeat File</td><td>{{ "OK" if performance.heartbeat_exists else "Missing" }}</td></tr>
+  <tr><td>Signal Cycle</td><td>{{ performance.signal_cycle_ms or "n/a" }}</td></tr>
+  <tr><td>Orderbook Processing</td><td>{{ performance.orderbook_processing_ms or "n/a" }}</td></tr>
+  <tr><td>DB Write Latency</td><td>{{ performance.db_write_latency_ms or "n/a" }}</td></tr>
+  <tr><td>Telegram Callback Latency</td><td>{{ performance.telegram_callback_latency_ms or "n/a" }}</td></tr>
+</table>
+{% endblock %}
+

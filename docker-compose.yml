@@ -1,5 +1,5 @@
 services:
-  market-heat-signal-bot:
+  bot:
     build: .
     container_name: market-heat-signal-bot
     restart: unless-stopped
@@ -11,3 +11,31 @@ services:
       - ./logs:/app/logs
       - ./backups:/app/backups
       - ./storage:/app/storage:ro
+  web:
+    build: .
+    container_name: market-heat-signal-bot-web
+    command: python -m app.web.main
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      WEB_HOST: 0.0.0.0
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./backups:/app/backups
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import base64, os, urllib.request; u=os.getenv('WEB_USERNAME',''); p=os.getenv('WEB_PASSWORD',''); token=base64.b64encode(f'{u}:{p}'.encode()).decode(); req=urllib.request.Request('http://127.0.0.1:8080/api/status', headers={'Authorization':'Basic '+token}); urllib.request.urlopen(req, timeout=5)",
+        ]
+      interval: 60s
+      timeout: 10s
+      start_period: 30s
+      retries: 3

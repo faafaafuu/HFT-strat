@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="top">
+  <h1>Signals</h1>
+  <span class="muted">{{ signals|length }} latest</span>
+</div>
+
+<table>
+  <tr>
+    <th>ID</th><th>Time</th><th>Exchange</th><th>Symbol</th><th>Direction</th>
+    <th>Pattern</th><th>Score</th><th>Entry</th><th>Status</th>
+  </tr>
+  {% for signal in signals %}
+  <tr>
+    <td>{{ signal.id }}</td>
+    <td>{{ signal.timestamp }}</td>
+    <td>{{ signal.exchange }}</td>
+    <td><b>{{ signal.symbol }}</b></td>
+    <td>{{ signal.direction }}</td>
+    <td>{{ signal.pattern }}</td>
+    <td>{{ signal.score }}/10</td>
+    <td>{{ signal.entry_price|num }}</td>
+    <td><span class="pill">{{ signal.status }}</span></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="9" class="muted">No signals yet.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}
+

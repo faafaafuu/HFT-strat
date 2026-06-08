@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="top">
+  <h1>Trades</h1>
+  <span class="muted">Paper trades only</span>
+</div>
+
+<section class="card">
+  <h2>Open Trades</h2>
+  {% set trades = open_trades %}
+  {% include "trade_table.html" %}
+</section>
+
+<section class="card">
+  <h2>Closed Trades</h2>
+  {% set trades = closed_trades %}
+  {% include "trade_table.html" %}
+</section>
+{% endblock %}

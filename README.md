@@ -47,6 +47,9 @@ python -m app.main
 TELEGRAM_BOT_TOKEN=123456:your_real_token
 TELEGRAM_CHAT_ID=your_chat_id
 TELEGRAM_ALLOWED_USER_IDS=your_telegram_user_id
+WEB_USERNAME=admin
+WEB_PASSWORD=replace_with_a_long_password
+WEB_PORT=8080
 ```
 
 To get `TELEGRAM_CHAT_ID`, send any message to your bot, then call:
@@ -67,6 +70,11 @@ cp .env.example .env
 # edit .env
 docker compose up -d --build
 ```
+
+This starts two services:
+
+- `bot` / container `market-heat-signal-bot`: Telegram radar, signal engine, paper trading.
+- `web` / container `market-heat-signal-bot-web`: read-only FastAPI dashboard.
 
 Persistent runtime data is stored on the host:
 
@@ -96,6 +104,7 @@ Logs:
 
 ```bash
 docker logs -f market-heat-signal-bot-dev
+docker logs -f market-heat-signal-bot-web-dev
 ```
 
 Makefile shortcuts:
@@ -105,13 +114,59 @@ make dev
 make dev-down
 make prod
 make logs
+make logs-web
 make logs-dev
+make logs-web-dev
 make restart-dev
 make backup
 make verify-persistence
 ```
 
 `make backup` creates a SQLite backup in `./backups` when `./data/bot.sqlite3` exists.
+
+## Web Dashboard
+
+The web dashboard is a separate FastAPI service using Jinja2 and HTMX. It reads
+SQLite through application services only and does not call Bybit REST/WebSocket.
+
+Open:
+
+```text
+http://SERVER_IP:8080/
+```
+
+Authentication is required via Basic Auth:
+
+```env
+WEB_USERNAME=admin
+WEB_PASSWORD=replace_with_a_long_password
+WEB_PORT=8080
+```
+
+Pages:
+
+- `/` dashboard
+- `/signals`
+- `/paper`
+- `/trades`
+- `/analytics`
+- `/performance`
+
+API:
+
+```text
+GET /api/status
+GET /api/signals
+GET /api/paper/profiles
+GET /api/paper/trades/open
+GET /api/paper/trades/closed
+GET /api/analytics/summary
+GET /api/performance
+```
+
+Analytics responses are cached briefly to avoid expensive recomputation on every
+browser refresh. The web service is read-only in this phase; live trading and
+private exchange APIs are not implemented.
 
 ## Configure Symbols
 

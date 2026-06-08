@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="top">
+  <h1>Paper Trading</h1>
+  <span class="muted">Profiles</span>
+</div>
+
+<table>
+  <tr>
+    <th>Profile</th><th>Status</th><th>Balance</th><th>Equity</th><th>PnL</th>
+    <th>Open</th><th>Trades</th><th>Winrate</th><th>PF</th><th>DD</th>
+  </tr>
+  {% for profile in profiles %}
+  <tr>
+    <td><b>{{ profile.name }}</b><br><span class="muted">{{ profile.profile_key }}</span></td>
+    <td><span class="pill">{{ "ON" if profile.enabled else "OFF" }}</span></td>
+    <td>{{ profile.balance|money }}</td>
+    <td>{{ profile.equity|money }}</td>
+    <td class="{{ 'positive' if profile.net_profit > 0 else 'negative' if profile.net_profit < 0 else '' }}">{{ profile.net_profit|money }}</td>
+    <td>{{ profile.open_positions }}</td>
+    <td>{{ profile.closed_trades }}</td>
+    <td>{{ profile.winrate|pct }}</td>
+    <td>{{ profile.profit_factor|num }}</td>
+    <td>{{ profile.max_drawdown_pct|pct }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="10" class="muted">No paper profiles yet.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}
+

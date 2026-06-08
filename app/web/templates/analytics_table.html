@@ -1,0 +1,15 @@
+<table>
+  <tr><th>Key</th><th>Count</th><th>WR</th><th>MFE</th><th>MAE</th></tr>
+  {% for row in rows %}
+  <tr>
+    <td>{{ row.key }}</td>
+    <td>{{ row.count }}</td>
+    <td>{{ row.winrate|pct }}</td>
+    <td>{{ row.avg_mfe|pct }}</td>
+    <td>{{ row.avg_mae|pct }}</td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5" class="muted">No data.</td></tr>
+  {% endfor %}
+</table>
+
