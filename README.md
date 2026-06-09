@@ -416,6 +416,30 @@ Open:
 http://SERVER_IP:8080
 ```
 
+HTTPS is available through the nginx reverse proxy. On this server, port 443 is already used by another Caddy service, so the dashboard proxy is exposed on port 9443. With the default IP-only setup, the project uses a self-signed certificate, so browsers will show a certificate warning.
+
+Generate a self-signed certificate for the server IP:
+
+```bash
+make tls-cert TLS_HOST=84.247.166.53
+docker compose up -d nginx
+```
+
+Open:
+
+```text
+https://SERVER_IP:9443/
+```
+
+Check HTTPS health:
+
+```bash
+make https-health
+curl -k https://SERVER_IP:9443/health
+```
+
+For a trusted browser certificate without warnings, point a domain to the server and replace `certs/dashboard.crt` / `certs/dashboard.key` with a real certificate for that domain, or use a Caddy/Traefik/Certbot setup.
+
 Health endpoints are public and do not require Basic Auth:
 
 ```bash

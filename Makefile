@@ -2,6 +2,8 @@ PY := $(shell if [ -x .venv/bin/python ]; then echo .venv/bin/python; else echo 
 GRAPHIFY := $(shell if [ -x .venv/bin/graphify ]; then echo .venv/bin/graphify; else echo graphify; fi)
 TIMEFRAME ?= 1m
 DAYS ?= 30
+TLS_HOST ?= 84.247.166.53
+TLS_PORT ?= 9443
 
 dev:
 	docker compose -f docker-compose.dev.yml up
@@ -34,6 +36,17 @@ web-restart:
 
 web-health:
 	curl -fsS http://127.0.0.1:8080/health
+
+tls-cert:
+	mkdir -p certs
+	openssl req -x509 -nodes -newkey rsa:2048 -days 365 \
+		-keyout certs/dashboard.key \
+		-out certs/dashboard.crt \
+		-subj "/CN=$(TLS_HOST)" \
+		-addext "subjectAltName=IP:$(TLS_HOST),IP:127.0.0.1,DNS:localhost"
+
+https-health:
+	curl -k -fsS https://127.0.0.1:$(TLS_PORT)/health
 
 backup:
 	$(PY) -m tools.backup_database

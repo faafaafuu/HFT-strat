@@ -7,8 +7,10 @@ storage/
 data/*
 logs/*
 backups/*
+certs/*
 !data/.gitkeep
 !logs/.gitkeep
 !backups/.gitkeep
+!certs/.gitkeep
 market_heat.db
 graphify-out/

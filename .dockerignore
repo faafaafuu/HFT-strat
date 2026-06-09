@@ -8,5 +8,6 @@ storage
 data
 logs
 backups
+certs
 *.db
 graphify-out

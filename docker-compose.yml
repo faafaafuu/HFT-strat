@@ -39,3 +39,15 @@ services:
       timeout: 10s
       start_period: 30s
       retries: 3
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: market-heat-signal-bot-nginx
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    ports:
+      - "9443:443"
+    volumes:
+      - ./deploy/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./certs:/etc/nginx/certs:ro
