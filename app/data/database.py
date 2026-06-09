@@ -50,6 +50,18 @@ class Database:
             await conn.execute(text("ALTER TABLE signals ADD COLUMN manual_entry_price FLOAT"))
         if "manual_entered_at" not in existing:
             await conn.execute(text("ALTER TABLE signals ADD COLUMN manual_entered_at DATETIME"))
+        for column, ddl in {
+            "strategy_key": "ALTER TABLE signals ADD COLUMN strategy_key VARCHAR(64)",
+            "strategy_profile_key": (
+                "ALTER TABLE signals ADD COLUMN strategy_profile_key VARCHAR(64)"
+            ),
+            "paper_profile_key": "ALTER TABLE signals ADD COLUMN paper_profile_key VARCHAR(64)",
+            "invalidation_level": "ALTER TABLE signals ADD COLUMN invalidation_level FLOAT",
+            "suggested_stop_pct": "ALTER TABLE signals ADD COLUMN suggested_stop_pct FLOAT",
+            "suggested_take_pct": "ALTER TABLE signals ADD COLUMN suggested_take_pct FLOAT",
+        }.items():
+            if column not in existing:
+                await conn.execute(text(ddl))
         trade_columns = {
             row[1]
             for row in (await conn.execute(text("PRAGMA table_info(paper_trades)"))).fetchall()
@@ -65,6 +77,14 @@ class Database:
         await conn.execute(
             text("UPDATE paper_trades SET profile_key = 'default' WHERE profile_key IS NULL")
         )
+        for column, ddl in {
+            "strategy_key": "ALTER TABLE paper_trades ADD COLUMN strategy_key VARCHAR(64)",
+            "strategy_profile_key": (
+                "ALTER TABLE paper_trades ADD COLUMN strategy_profile_key VARCHAR(64)"
+            ),
+        }.items():
+            if column not in trade_columns:
+                await conn.execute(text(ddl))
 
         equity_columns = {
             row[1]
@@ -106,6 +126,19 @@ class Database:
             "ON orderbook_events(timestamp)",
             "CREATE INDEX IF NOT EXISTS ix_strategy_analysis_period_profile "
             "ON strategy_analysis(period_start, period_end, profile_key)",
+            "CREATE INDEX IF NOT EXISTS ix_signals_strategy_key ON signals(strategy_key)",
+            "CREATE INDEX IF NOT EXISTS ix_signals_strategy_profile_key "
+            "ON signals(strategy_profile_key)",
+            "CREATE INDEX IF NOT EXISTS ix_signals_paper_profile_key ON signals(paper_profile_key)",
+            "CREATE INDEX IF NOT EXISTS ix_paper_trades_strategy_key ON paper_trades(strategy_key)",
+            "CREATE INDEX IF NOT EXISTS ix_paper_trades_strategy_profile_key "
+            "ON paper_trades(strategy_profile_key)",
+            "CREATE INDEX IF NOT EXISTS ix_historical_candles_lookup "
+            "ON historical_candles(exchange, symbol, timeframe, open_time)",
+            "CREATE INDEX IF NOT EXISTS ix_backtest_runs_strategy_symbol "
+            "ON backtest_runs(strategy_key, symbol, created_at)",
+            "CREATE INDEX IF NOT EXISTS ix_backtest_trades_run_id ON backtest_trades(run_id)",
+            "CREATE INDEX IF NOT EXISTS ix_jobs_status_type ON jobs(status, job_type)",
         ):
             await conn.execute(text(statement))
 

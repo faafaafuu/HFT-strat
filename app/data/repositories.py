@@ -10,6 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.data.models import (
+    BacktestEquityCurveModel,
+    BacktestRunModel,
+    BacktestTradeModel,
+    HistoricalCandleModel,
+    JobModel,
     MarketSnapshotModel,
     OrderbookEventModel,
     RuntimeSettingModel,
@@ -254,6 +259,12 @@ class SignalRepository:
         entry_price: float,
         reasons: list[str],
         market_context: dict[str, Any],
+        strategy_key: str | None = None,
+        strategy_profile_key: str | None = None,
+        paper_profile_key: str | None = None,
+        invalidation_level: float | None = None,
+        suggested_stop_pct: float | None = None,
+        suggested_take_pct: float | None = None,
     ) -> SignalModel:
         signal = SignalModel(
             exchange=exchange,
@@ -261,8 +272,14 @@ class SignalRepository:
             timestamp=timestamp,
             direction=direction,
             pattern=pattern,
+            strategy_key=strategy_key,
+            strategy_profile_key=strategy_profile_key,
+            paper_profile_key=paper_profile_key,
             score=score,
             entry_price=entry_price,
+            invalidation_level=invalidation_level,
+            suggested_stop_pct=suggested_stop_pct,
+            suggested_take_pct=suggested_take_pct,
             reasons_json=json.dumps(reasons, ensure_ascii=False),
             market_context_json=json.dumps(market_context, ensure_ascii=False, default=str),
             status="open",
@@ -276,16 +293,18 @@ class SignalRepository:
         exchange: str,
         symbol: str,
         since: datetime,
+        pattern: str | None = None,
     ) -> SignalModel | None:
+        filters = [
+            SignalModel.exchange == exchange,
+            SignalModel.symbol == symbol,
+            SignalModel.timestamp >= since,
+        ]
+        if pattern is not None:
+            filters.append(SignalModel.pattern == pattern)
         stmt = (
             select(SignalModel)
-            .where(
-                and_(
-                    SignalModel.exchange == exchange,
-                    SignalModel.symbol == symbol,
-                    SignalModel.timestamp >= since,
-                )
-            )
+            .where(and_(*filters))
             .order_by(SignalModel.timestamp.desc())
             .limit(1)
         )
@@ -488,6 +507,140 @@ class SignalRepository:
         )
         rows = (await self.session.execute(stmt)).all()
         return [(str(pattern), float(wr or 0) * 100, int(cnt or 0)) for pattern, wr, cnt in rows]
+
+
+class HistoricalDataRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def upsert_candles(self, rows: list[dict[str, Any]]) -> int:
+        if not rows:
+            return 0
+        for row in rows:
+            stmt = sqlite_insert(HistoricalCandleModel).values(**row)
+            stmt = stmt.on_conflict_do_update(
+                index_elements=["exchange", "symbol", "timeframe", "open_time"],
+                set_={
+                    "open": row["open"],
+                    "high": row["high"],
+                    "low": row["low"],
+                    "close": row["close"],
+                    "volume": row.get("volume", 0.0),
+                    "turnover": row.get("turnover", 0.0),
+                },
+            )
+            await self.session.execute(stmt)
+        return len(rows)
+
+    async def candles(
+        self,
+        exchange: str,
+        symbol: str,
+        timeframe: str,
+        since: datetime | None = None,
+        limit: int | None = None,
+    ) -> list[HistoricalCandleModel]:
+        filters = [
+            HistoricalCandleModel.exchange == exchange,
+            HistoricalCandleModel.symbol == symbol,
+            HistoricalCandleModel.timeframe == timeframe,
+        ]
+        if since is not None:
+            filters.append(HistoricalCandleModel.open_time >= since)
+        stmt = select(HistoricalCandleModel).where(*filters).order_by(
+            HistoricalCandleModel.open_time.asc()
+        )
+        if limit is not None:
+            stmt = stmt.limit(limit)
+        return list((await self.session.scalars(stmt)).all())
+
+    async def coverage(self) -> list[dict[str, Any]]:
+        stmt = (
+            select(
+                HistoricalCandleModel.exchange,
+                HistoricalCandleModel.symbol,
+                HistoricalCandleModel.timeframe,
+                func.min(HistoricalCandleModel.open_time),
+                func.max(HistoricalCandleModel.open_time),
+                func.count(HistoricalCandleModel.id),
+            )
+            .group_by(
+                HistoricalCandleModel.exchange,
+                HistoricalCandleModel.symbol,
+                HistoricalCandleModel.timeframe,
+            )
+            .order_by(HistoricalCandleModel.symbol.asc(), HistoricalCandleModel.timeframe.asc())
+        )
+        rows = (await self.session.execute(stmt)).all()
+        return [
+            {
+                "exchange": exchange,
+                "symbol": symbol,
+                "timeframe": timeframe,
+                "start": start,
+                "end": end,
+                "candles": int(count or 0),
+            }
+            for exchange, symbol, timeframe, start, end, count in rows
+        ]
+
+
+class BacktestRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def create_run(
+        self,
+        strategy_key: str,
+        symbol: str,
+        timeframe: str,
+        period_start: datetime | None,
+        period_end: datetime | None,
+        params: dict[str, Any],
+        metrics: dict[str, Any],
+        trades: list[dict[str, Any]],
+        equity_curve: list[dict[str, Any]],
+    ) -> BacktestRunModel:
+        run = BacktestRunModel(
+            strategy_key=strategy_key,
+            symbol=symbol,
+            timeframe=timeframe,
+            period_start=period_start,
+            period_end=period_end,
+            params_json=json.dumps(params, ensure_ascii=False, default=str),
+            metrics_json=json.dumps(metrics, ensure_ascii=False, default=str),
+            status="DONE",
+        )
+        self.session.add(run)
+        await self.session.flush()
+        for row in trades:
+            self.session.add(BacktestTradeModel(run_id=run.id, **row))
+        for row in equity_curve:
+            self.session.add(BacktestEquityCurveModel(run_id=run.id, **row))
+        return run
+
+    async def recent_runs(self, limit: int = 20) -> list[BacktestRunModel]:
+        stmt = select(BacktestRunModel).order_by(BacktestRunModel.created_at.desc()).limit(limit)
+        return list((await self.session.scalars(stmt)).all())
+
+
+class JobRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def create(self, job_type: str, params: dict[str, Any]) -> JobModel:
+        job = JobModel(
+            job_type=job_type,
+            status="PENDING",
+            params_json=json.dumps(params, ensure_ascii=False, default=str),
+        )
+        self.session.add(job)
+        await self.session.flush()
+        return job
+
+    async def list_recent(self, limit: int = 20) -> list[JobModel]:
+        stmt = select(JobModel).order_by(JobModel.created_at.desc()).limit(limit)
+        return list((await self.session.scalars(stmt)).all())
 
 
 def _aware(value: datetime) -> datetime:

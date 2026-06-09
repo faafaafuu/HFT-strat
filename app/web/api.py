@@ -3,6 +3,8 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Request
 from fastapi.encoders import jsonable_encoder
 
+from app.jobs.models import DOWNLOAD_HISTORY, RUN_BACKTEST, RUN_HYPEROPT
+from app.jobs.queue import JobQueue
 from app.web.auth import require_web_auth
 
 router = APIRouter(prefix="/api", dependencies=[Depends(require_web_auth)])
@@ -45,3 +47,87 @@ async def api_analytics_summary(request: Request):
 async def api_performance(request: Request):
     return jsonable_encoder(await request.app.state.performance_service.snapshot())
 
+
+@router.get("/strategy-lab/strategies")
+async def api_strategy_lab_strategies(request: Request):
+    return jsonable_encoder(await request.app.state.strategy_lab_service.strategies())
+
+
+@router.get("/strategy-lab/backtests")
+async def api_strategy_lab_backtests(request: Request):
+    return jsonable_encoder(await request.app.state.strategy_lab_service.backtest_runs())
+
+
+@router.get("/strategy-lab/jobs")
+async def api_strategy_lab_jobs(request: Request):
+    return jsonable_encoder(await request.app.state.strategy_lab_service.jobs())
+
+
+@router.get("/strategy-lab/data")
+async def api_strategy_lab_data(request: Request):
+    return jsonable_encoder(await request.app.state.strategy_lab_service.data_coverage())
+
+
+@router.get("/strategy-lab/diagnostics")
+async def api_strategy_lab_diagnostics(request: Request):
+    return jsonable_encoder(await request.app.state.strategy_lab_service.diagnostics())
+
+
+@router.post("/strategy-lab/history/download")
+async def api_download_history(request: Request):
+    params = await _request_params(request)
+    symbol = str(params.get("symbol", "BTCUSDT")).upper()
+    timeframe = str(params.get("timeframe", "1m"))
+    days = int(params.get("days", 30))
+    return jsonable_encoder(
+        await JobQueue(request.app.state.database).enqueue(
+            DOWNLOAD_HISTORY, {"symbol": symbol, "timeframe": timeframe, "days": days}
+        )
+    )
+
+
+@router.post("/strategy-lab/backtests/run")
+async def api_run_backtest(request: Request):
+    params = await _request_params(request)
+    strategy_key = str(params.get("strategy_key", "micro_stop_hunt_reclaim"))
+    symbol = str(params.get("symbol", "BTCUSDT")).upper()
+    timeframe = str(params.get("timeframe", "1m"))
+    days = int(params.get("days", 30))
+    return jsonable_encoder(
+        await JobQueue(request.app.state.database).enqueue(
+            RUN_BACKTEST,
+            {
+                "strategy_key": strategy_key,
+                "symbol": symbol,
+                "timeframe": timeframe,
+                "days": days,
+            },
+        )
+    )
+
+
+@router.post("/strategy-lab/hyperopt/run")
+async def api_run_hyperopt(request: Request):
+    params = await _request_params(request)
+    strategy_key = str(params.get("strategy_key", "micro_stop_hunt_reclaim"))
+    symbol = str(params.get("symbol", "BTCUSDT")).upper()
+    timeframe = str(params.get("timeframe", "1m"))
+    days = int(params.get("days", 30))
+    return jsonable_encoder(
+        await JobQueue(request.app.state.database).enqueue(
+            RUN_HYPEROPT,
+            {
+                "strategy_key": strategy_key,
+                "symbol": symbol,
+                "timeframe": timeframe,
+                "days": days,
+            },
+        )
+    )
+
+
+async def _request_params(request: Request) -> dict[str, object]:
+    if request.query_params:
+        return dict(request.query_params)
+    form = await request.form()
+    return dict(form)

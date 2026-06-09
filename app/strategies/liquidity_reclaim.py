@@ -1,0 +1,137 @@
+from __future__ import annotations
+
+from app.market.features import FeatureSnapshot
+from app.strategies.base import StrategySignal, context_from_snapshot, invalidation_level
+
+
+class MicroStopHuntReclaimStrategy:
+    key = "micro_stop_hunt_reclaim"
+    name = "Micro Stop Hunt Reclaim"
+
+    def __init__(
+        self,
+        lookback_minutes: int = 15,
+        return_minutes: int = 3,
+        min_price_sweep_pct: float = 0.15,
+        min_volume_spike: float = 1.3,
+        min_score: int = 7,
+    ) -> None:
+        self.lookback_minutes = lookback_minutes
+        self.return_minutes = return_minutes
+        self.min_price_sweep_pct = min_price_sweep_pct
+        self.min_volume_spike = min_volume_spike
+        self.min_score = min_score
+
+    def generate_signal(
+        self,
+        market_state: FeatureSnapshot,
+        *,
+        strategy_profile_key: str | None = None,
+        paper_profile_key: str | None = None,
+    ) -> StrategySignal | None:
+        if market_state.volume_spike_ratio < self.min_volume_spike:
+            return None
+        oi_change = market_state.oi_change_5m_pct or market_state.oi_change_15m_pct or 0.0
+        if market_state.returned_after_low_sweep:
+            direction = "LONG"
+            swept_level = market_state.swept_low_30m
+            reason = "Micro low sweep reclaimed"
+        elif market_state.returned_after_high_sweep:
+            direction = "SHORT"
+            swept_level = market_state.swept_high_30m
+            reason = "Micro high sweep reclaimed"
+        else:
+            return None
+        if swept_level is None:
+            return None
+        sweep_pct = abs((market_state.price - swept_level) / swept_level) * 100
+        if sweep_pct < self.min_price_sweep_pct:
+            return None
+        if oi_change < -0.5:
+            return None
+        score = self.min_score
+        score += 1 if market_state.volume_spike_ratio >= self.min_volume_spike * 1.5 else 0
+        score += 1 if oi_change >= 0 else 0
+        score += 1 if market_state.spread_pct is not None and market_state.spread_pct <= 0.05 else 0
+        return StrategySignal(
+            exchange=market_state.exchange,
+            symbol=market_state.symbol,
+            direction=direction,
+            strategy_key=self.key,
+            strategy_profile_key=strategy_profile_key,
+            paper_profile_key=paper_profile_key,
+            score=min(score, 10),
+            reasons=[
+                reason,
+                f"Reclaim distance {sweep_pct:.2f}%",
+                f"Volume {market_state.volume_spike_ratio:.2f}x",
+                f"OI {oi_change:+.2f}%",
+            ],
+            entry_reference=market_state.price,
+            invalidation_level=invalidation_level(direction, market_state.price, 0.4),
+            suggested_stop_pct=0.4,
+            suggested_take_pct=1.2,
+            market_context=context_from_snapshot(market_state),
+        )
+
+
+class FailedBreakoutFadeStrategy:
+    key = "failed_breakout_fade"
+    name = "Failed Breakout Fade"
+
+    def __init__(
+        self,
+        breakout_lookback_minutes: int = 30,
+        fail_return_minutes: int = 5,
+        min_fakeout_pct: float = 0.2,
+    ) -> None:
+        self.breakout_lookback_minutes = breakout_lookback_minutes
+        self.fail_return_minutes = fail_return_minutes
+        self.min_fakeout_pct = min_fakeout_pct
+
+    def generate_signal(
+        self,
+        market_state: FeatureSnapshot,
+        *,
+        strategy_profile_key: str | None = None,
+        paper_profile_key: str | None = None,
+    ) -> StrategySignal | None:
+        if market_state.returned_after_low_sweep and market_state.swept_low_30m:
+            direction = "LONG"
+            level = market_state.swept_low_30m
+            reason = "Failed downside breakout"
+        elif market_state.returned_after_high_sweep and market_state.swept_high_30m:
+            direction = "SHORT"
+            level = market_state.swept_high_30m
+            reason = "Failed upside breakout"
+        else:
+            return None
+        fakeout_pct = abs((market_state.price - level) / level) * 100
+        if fakeout_pct < self.min_fakeout_pct:
+            return None
+        if market_state.volume_spike_ratio < 1.1:
+            return None
+        score = 6
+        score += 2
+        score += 1 if market_state.volume_spike_ratio >= 1.3 else 0
+        score += 1 if market_state.spread_pct is not None and market_state.spread_pct <= 0.05 else 0
+        return StrategySignal(
+            exchange=market_state.exchange,
+            symbol=market_state.symbol,
+            direction=direction,
+            strategy_key=self.key,
+            strategy_profile_key=strategy_profile_key,
+            paper_profile_key=paper_profile_key,
+            score=min(score, 10),
+            reasons=[
+                reason,
+                "Price returned inside range",
+                f"Fakeout {fakeout_pct:.2f}%",
+                f"Volume {market_state.volume_spike_ratio:.2f}x",
+            ],
+            entry_reference=market_state.price,
+            invalidation_level=invalidation_level(direction, market_state.price, 0.5),
+            suggested_stop_pct=0.5,
+            suggested_take_pct=1.3,
+            market_context=context_from_snapshot(market_state),
+        )

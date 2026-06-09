@@ -117,6 +117,47 @@ class OutcomesConfig(BaseModel):
     sl_levels_pct: list[float] = Field(default_factory=lambda: [0.3, 0.5, 0.7])
 
 
+class StrategyProfileConfig(BaseModel):
+    enabled: bool = True
+    strategies: list[str] = Field(default_factory=list)
+    min_score: int = 7
+    symbols: str | list[str] = "auto"
+    paper_profile: str = "aggressive"
+
+
+class StrategyProfilesConfig(BaseModel):
+    profiles: dict[str, StrategyProfileConfig] = Field(
+        default_factory=lambda: {
+            "scalping_safe": StrategyProfileConfig(
+                enabled=True,
+                strategies=["stop_hunt_sweep", "micro_stop_hunt_reclaim", "failed_breakout_fade"],
+                min_score=8,
+                symbols="auto",
+                paper_profile="conservative",
+            ),
+            "scalping_aggressive": StrategyProfileConfig(
+                enabled=True,
+                strategies=[
+                    "oi_pump_price_move",
+                    "micro_stop_hunt_reclaim",
+                    "oi_momentum_scalper",
+                    "trend_pullback_scalper",
+                ],
+                min_score=7,
+                symbols="auto",
+                paper_profile="aggressive",
+            ),
+        }
+    )
+
+
+class BacktestConfig(BaseModel):
+    min_trades: int = 50
+    default_days: int = 30
+    taker_fee_pct: float = 0.055
+    slippage_pct: float = 0.01
+
+
 class StorageConfig(BaseModel):
     data_dir: str = "/app/data"
     logs_dir: str = "/app/logs"
@@ -323,6 +364,8 @@ class Settings(BaseModel):
     signals: SignalsConfig = Field(default_factory=SignalsConfig)
     thresholds: ThresholdsConfig = Field(default_factory=ThresholdsConfig)
     outcomes: OutcomesConfig = Field(default_factory=OutcomesConfig)
+    strategy_profiles: StrategyProfilesConfig = Field(default_factory=StrategyProfilesConfig)
+    backtest: BacktestConfig = Field(default_factory=BacktestConfig)
     storage: StorageConfig = Field(default_factory=StorageConfig)
     paper: PaperConfig = Field(default_factory=PaperConfig)
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)

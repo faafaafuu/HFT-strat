@@ -147,6 +147,38 @@ tr:last-child td {
   color: #c5ced8;
 }
 
+.stack {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+input,
+button,
+.button {
+  border: 1px solid #3a4653;
+  border-radius: 6px;
+  background: #10151b;
+  color: #e7eaee;
+  padding: 8px 10px;
+  font: inherit;
+}
+
+button,
+.button {
+  cursor: pointer;
+  background: #202832;
+}
+
+.code {
+  min-height: 40px;
+  overflow-x: auto;
+  border: 1px solid #2a313a;
+  border-radius: 6px;
+  padding: 10px;
+  background: #10151b;
+}
+
 @media (max-width: 760px) {
   .shell {
     grid-template-columns: 1fr;
@@ -168,4 +200,3 @@ tr:last-child td {
     white-space: nowrap;
   }
 }
-

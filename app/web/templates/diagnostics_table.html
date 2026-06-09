@@ -1,0 +1,18 @@
+<table>
+  <thead>
+    <tr><th>Group</th><th>Trades</th><th>WR</th><th>PF</th><th>Net PnL</th></tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td>{{ row.key }}</td>
+      <td>{{ row.trades }}</td>
+      <td>{{ row.winrate|pct }}</td>
+      <td>{{ row.profit_factor|num }}</td>
+      <td>{{ row.net_pnl|money }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="muted">No closed paper trades.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>

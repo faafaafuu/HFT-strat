@@ -116,6 +116,8 @@ class PaperExecutor:
             symbol=signal.symbol,
             direction=signal.direction,
             pattern=signal.pattern,
+            strategy_key=signal.strategy_key,
+            strategy_profile_key=signal.strategy_profile_key,
             score=signal.score,
             entry_price=plan.entry_price,
             stop_price=plan.stop_price,

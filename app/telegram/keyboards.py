@@ -18,7 +18,10 @@ def main_menu() -> InlineKeyboardMarkup:
                 InlineKeyboardButton("📉 Statistics", callback_data="stats"),
                 InlineKeyboardButton("📊 Heat Scanner", callback_data="scanner"),
             ],
-            [InlineKeyboardButton("📊 Paper Portfolio", callback_data="paper")],
+            [
+                InlineKeyboardButton("📊 Paper Portfolio", callback_data="paper"),
+                InlineKeyboardButton("🧪 Strategy Lab", callback_data="strategy_lab"),
+            ],
             [InlineKeyboardButton("⚙️ Settings", callback_data="settings")],
         ]
     )
@@ -29,7 +32,7 @@ def main_reply_keyboard() -> ReplyKeyboardMarkup:
         [
             ["📊 Dashboard", "📈 Signals"],
             ["📉 Heat", "🧪 Paper"],
-            ["⚙️ Settings"],
+            ["🧪 Strategy Lab", "⚙️ Settings"],
         ],
         resize_keyboard=True,
         is_persistent=True,
@@ -155,6 +158,30 @@ def paper_trades_menu(profile_key: str, status: str) -> InlineKeyboardMarkup:
                 InlineKeyboardButton("🏠 Home", callback_data="home"),
                 InlineKeyboardButton("🔄 Refresh", callback_data=f"p{status}:{profile_key}"),
             ]
+        ]
+    )
+
+
+def strategy_lab_menu() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("Strategies", callback_data="sl:strategies"),
+                InlineKeyboardButton("Backtests", callback_data="sl:backtests"),
+            ],
+            [
+                InlineKeyboardButton("Results", callback_data="sl:results"),
+                InlineKeyboardButton("Data", callback_data="sl:data"),
+            ],
+            [
+                InlineKeyboardButton("Compare", callback_data="sl:compare"),
+                InlineKeyboardButton("Diagnostics", callback_data="sl:diagnostics"),
+            ],
+            [
+                InlineKeyboardButton("← Back", callback_data="home"),
+                InlineKeyboardButton("🏠 Home", callback_data="home"),
+                InlineKeyboardButton("🔄 Refresh", callback_data="strategy_lab"),
+            ],
         ]
     )
 

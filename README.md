@@ -359,6 +359,7 @@ The Telegram interface uses a persistent lower menu plus inline section buttons,
 - `📈 Signals`
 - `📉 Heat`
 - `🧪 Paper`
+- `🧪 Strategy Lab`
 - `⚙️ Settings`
 
 Sections use `← Back`, `🏠 Home`, and `🔄 Refresh`. Long signal lists are paginated, and settings such as min score, cooldown, auto symbol selection, max symbols, and notifications can be changed from buttons. Runtime changes are saved to SQLite in `runtime_settings`, not written to `config.yaml`.
@@ -398,6 +399,109 @@ Signal alerts include chart and action buttons:
 ```
 
 `/status` shows uptime, last heartbeat, active websocket connections, selected symbols, last signal time, RAM usage, active asyncio tasks, DB size, and open paper trades. `/pause` keeps collecting market snapshots but stops creating new signals. `/resume` enables signal creation again.
+
+## Web Dashboard
+
+The web dashboard runs as a separate FastAPI/Jinja/HTMX service and reads only SQLite/services. It does not call Bybit or any private trading API.
+
+Start production services:
+
+```bash
+docker compose up -d --build
+```
+
+Open:
+
+```text
+http://SERVER_IP:8080
+```
+
+Health endpoints are public and do not require Basic Auth:
+
+```bash
+curl http://SERVER_IP:8080/health
+curl http://SERVER_IP:8080/api/health
+```
+
+Expected response:
+
+```json
+{"status":"ok"}
+```
+
+Useful commands:
+
+```bash
+make web-logs
+make web-restart
+make web-health
+```
+
+If `WEB_USERNAME` and `WEB_PASSWORD` are set in `.env`, browser login is required for dashboard pages and protected API endpoints.
+
+## Strategy Lab
+
+Strategy Lab adds a strategy registry and offline research workflow. Current registered strategies:
+
+- `oi_pump_price_move`
+- `stop_hunt_sweep`
+- `micro_stop_hunt_reclaim`
+- `oi_momentum_scalper`
+- `failed_breakout_fade`
+- `trend_pullback_scalper`
+
+Strategy profiles are configured under `strategy_profiles` and map strategies to paper profiles for analysis:
+
+```yaml
+strategy_profiles:
+  profiles:
+    scalping_safe:
+      enabled: true
+      strategies: [stop_hunt_sweep, micro_stop_hunt_reclaim, failed_breakout_fade]
+      min_score: 8
+      symbols: auto
+      paper_profile: conservative
+```
+
+Web page:
+
+```text
+/strategy-lab
+```
+
+Diagnostics page:
+
+```text
+/analytics/diagnostics
+```
+
+Download Bybit historical candles:
+
+```bash
+make download-history SYMBOL=BTCUSDT TIMEFRAME=1m DAYS=30
+```
+
+Run backtest:
+
+```bash
+make backtest STRATEGY=micro_stop_hunt_reclaim SYMBOL=BTCUSDT DAYS=30
+```
+
+Run one queued Web job:
+
+```bash
+make job-worker
+```
+
+Backtest/hyperopt uses stored candles from SQLite, applies fees and slippage, checks TP/SL/timeout on future candles only, and stores results in:
+
+- `historical_candles`
+- `backtest_runs`
+- `backtest_trades`
+- `backtest_equity_curve`
+- `jobs`
+
+Live trading, private trading endpoints, and real orders are not implemented in this phase.
 
 ## Statistics
 

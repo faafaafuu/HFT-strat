@@ -55,6 +55,34 @@ outcomes:
   tp_levels_pct: [0.5, 1.0, 1.5]
   sl_levels_pct: [0.3, 0.5, 0.7]
 
+strategy_profiles:
+  profiles:
+    scalping_safe:
+      enabled: true
+      strategies:
+        - stop_hunt_sweep
+        - micro_stop_hunt_reclaim
+        - failed_breakout_fade
+      min_score: 8
+      symbols: auto
+      paper_profile: conservative
+    scalping_aggressive:
+      enabled: true
+      strategies:
+        - oi_pump_price_move
+        - micro_stop_hunt_reclaim
+        - oi_momentum_scalper
+        - trend_pullback_scalper
+      min_score: 7
+      symbols: auto
+      paper_profile: aggressive
+
+backtest:
+  min_trades: 50
+  default_days: 30
+  taker_fee_pct: 0.055
+  slippage_pct: 0.01
+
 storage:
   data_dir: /app/data
   logs_dir: /app/logs

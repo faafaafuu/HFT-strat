@@ -92,8 +92,16 @@ class SignalModel(Base):
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     direction: Mapped[str] = mapped_column(String(16))
     pattern: Mapped[str] = mapped_column(String(64), index=True)
+    strategy_key: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    strategy_profile_key: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, index=True
+    )
+    paper_profile_key: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     score: Mapped[int] = mapped_column(Integer)
     entry_price: Mapped[float] = mapped_column(Float)
+    invalidation_level: Mapped[float | None] = mapped_column(Float, nullable=True)
+    suggested_stop_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
+    suggested_take_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
     reasons_json: Mapped[str] = mapped_column(Text)
     market_context_json: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(32), default="open")
@@ -184,6 +192,10 @@ class PaperTradeModel(Base):
     symbol: Mapped[str] = mapped_column(String(64), index=True)
     direction: Mapped[str] = mapped_column(String(16))
     pattern: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    strategy_key: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    strategy_profile_key: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, index=True
+    )
     score: Mapped[int] = mapped_column(Integer)
     entry_price: Mapped[float] = mapped_column(Float)
     stop_price: Mapped[float] = mapped_column(Float)
@@ -265,3 +277,92 @@ class StrategyAnalysisModel(Base):
     avg_mfe: Mapped[float] = mapped_column(Float, default=0.0)
     avg_mae: Mapped[float] = mapped_column(Float, default=0.0)
     conclusion_json: Mapped[str] = mapped_column(Text)
+
+
+class HistoricalCandleModel(Base):
+    __tablename__ = "historical_candles"
+    __table_args__ = (
+        UniqueConstraint(
+            "exchange",
+            "symbol",
+            "timeframe",
+            "open_time",
+            name="uq_historical_candle_identity",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    exchange: Mapped[str] = mapped_column(String(32), index=True)
+    symbol: Mapped[str] = mapped_column(String(64), index=True)
+    timeframe: Mapped[str] = mapped_column(String(16), index=True)
+    open_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    open: Mapped[float] = mapped_column(Float)
+    high: Mapped[float] = mapped_column(Float)
+    low: Mapped[float] = mapped_column(Float)
+    close: Mapped[float] = mapped_column(Float)
+    volume: Mapped[float] = mapped_column(Float, default=0.0)
+    turnover: Mapped[float] = mapped_column(Float, default=0.0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
+
+class BacktestRunModel(Base):
+    __tablename__ = "backtest_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    strategy_key: Mapped[str] = mapped_column(String(64), index=True)
+    symbol: Mapped[str] = mapped_column(String(64), index=True)
+    timeframe: Mapped[str] = mapped_column(String(16), index=True)
+    period_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    period_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    params_json: Mapped[str] = mapped_column(Text)
+    metrics_json: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(32), default="DONE", index=True)
+
+
+class BacktestTradeModel(Base):
+    __tablename__ = "backtest_trades"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    run_id: Mapped[int] = mapped_column(ForeignKey("backtest_runs.id"), index=True)
+    exchange: Mapped[str] = mapped_column(String(32), index=True)
+    symbol: Mapped[str] = mapped_column(String(64), index=True)
+    strategy_key: Mapped[str] = mapped_column(String(64), index=True)
+    direction: Mapped[str] = mapped_column(String(16))
+    entry_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    exit_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    entry_price: Mapped[float] = mapped_column(Float)
+    exit_price: Mapped[float] = mapped_column(Float)
+    stop_price: Mapped[float] = mapped_column(Float)
+    take_price: Mapped[float] = mapped_column(Float)
+    pnl_usd: Mapped[float] = mapped_column(Float, default=0.0)
+    fees_usd: Mapped[float] = mapped_column(Float, default=0.0)
+    pnl_pct: Mapped[float] = mapped_column(Float, default=0.0)
+    mfe_pct: Mapped[float] = mapped_column(Float, default=0.0)
+    mae_pct: Mapped[float] = mapped_column(Float, default=0.0)
+    status: Mapped[str] = mapped_column(String(32), index=True)
+
+
+class BacktestEquityCurveModel(Base):
+    __tablename__ = "backtest_equity_curve"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    run_id: Mapped[int] = mapped_column(ForeignKey("backtest_runs.id"), index=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    equity: Mapped[float] = mapped_column(Float)
+    balance: Mapped[float] = mapped_column(Float)
+    drawdown_pct: Mapped[float] = mapped_column(Float, default=0.0)
+
+
+class JobModel(Base):
+    __tablename__ = "jobs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    job_type: Mapped[str] = mapped_column(String(64), index=True)
+    status: Mapped[str] = mapped_column(String(32), default="PENDING", index=True)
+    params_json: Mapped[str] = mapped_column(Text)
+    result_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)

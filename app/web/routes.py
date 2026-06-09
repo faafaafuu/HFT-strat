@@ -62,3 +62,20 @@ async def performance(request: Request):
         request, "performance.html", {"page": "performance", "performance": snapshot}
     )
 
+
+@router.get("/strategy-lab", response_class=HTMLResponse)
+async def strategy_lab(request: Request):
+    lab = await request.app.state.strategy_lab_service.overview()
+    return request.app.state.templates.TemplateResponse(
+        request, "strategy_lab.html", {"page": "strategy_lab", "lab": lab}
+    )
+
+
+@router.get("/analytics/diagnostics", response_class=HTMLResponse)
+async def diagnostics(request: Request):
+    diagnostics_data = await request.app.state.strategy_lab_service.diagnostics()
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "diagnostics.html",
+        {"page": "analytics", "diagnostics": diagnostics_data},
+    )

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="top">
+  <h1>Paper Diagnostics</h1>
+  <span class="muted">Why paper trading is losing money</span>
+</div>
+
+<section class="grid">
+  <div class="card"><h2>By Strategy</h2>{% set rows = diagnostics.by_strategy %}{% include "diagnostics_table.html" %}</div>
+  <div class="card"><h2>By Pattern</h2>{% set rows = diagnostics.by_pattern %}{% include "diagnostics_table.html" %}</div>
+  <div class="card"><h2>By Symbol</h2>{% set rows = diagnostics.by_symbol %}{% include "diagnostics_table.html" %}</div>
+  <div class="card"><h2>By Score</h2>{% set rows = diagnostics.by_score %}{% include "diagnostics_table.html" %}</div>
+  <div class="card"><h2>By Hour</h2>{% set rows = diagnostics.by_hour %}{% include "diagnostics_table.html" %}</div>
+</section>
+{% endblock %}

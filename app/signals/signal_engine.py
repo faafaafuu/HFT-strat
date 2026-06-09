@@ -10,8 +10,7 @@ from app.data.repositories import MarketRepository, SignalRepository
 from app.exchanges.base import MarketDataCallbacks, OrderbookEvent, TickerEvent, TradeEvent
 from app.logger import get_logger
 from app.market.features import MarketFeatureStore
-from app.signals.patterns import detect_patterns
-from app.signals.scoring import score_signal
+from app.strategies.registry import StrategyRegistry, default_registry
 from app.telegram.bot import TelegramService
 from app.utils.time import utc_now
 
@@ -90,6 +89,7 @@ class SignalEngine:
         self.log = get_logger("signal_engine")
         self._stop = asyncio.Event()
         self._last_snapshot_persist: dict[tuple[str, str], datetime] = {}
+        self.strategy_registry: StrategyRegistry = default_registry(settings)
 
     async def run(self) -> None:
         self.log.info(
@@ -141,17 +141,16 @@ class SignalEngine:
                     )
                 if self.telegram.paused:
                     continue
-                for candidate in detect_patterns(snapshot, self.settings.thresholds):
-                    score = score_signal(candidate, self.settings.thresholds)
-                    if score < self.settings.signals.min_score:
+                for candidate in self.strategy_registry.generate_signals(snapshot, self.settings):
+                    if candidate.score < self.settings.signals.min_score:
                         self.log.debug(
                             "signal candidate skipped below min_score exchange=%s symbol=%s "
-                            "pattern=%s direction=%s score=%s min_score=%s",
+                            "strategy=%s direction=%s score=%s min_score=%s",
                             candidate.exchange,
                             candidate.symbol,
-                            candidate.pattern,
+                            candidate.strategy_key,
                             candidate.direction,
-                            score,
+                            candidate.score,
                             self.settings.signals.min_score,
                         )
                         continue
@@ -162,16 +161,17 @@ class SignalEngine:
                         candidate.exchange,
                         candidate.symbol,
                         since=since,
+                        pattern=candidate.strategy_key,
                     )
                     if existing is not None:
                         self.log.debug(
                             "signal candidate skipped by cooldown exchange=%s symbol=%s "
-                            "pattern=%s direction=%s score=%s cooldown_minutes=%s",
+                            "strategy=%s direction=%s score=%s cooldown_minutes=%s",
                             candidate.exchange,
                             candidate.symbol,
-                            candidate.pattern,
+                            candidate.strategy_key,
                             candidate.direction,
-                            score,
+                            candidate.score,
                             self.settings.signals.cooldown_minutes_per_symbol,
                         )
                         continue
@@ -180,13 +180,21 @@ class SignalEngine:
                         symbol=candidate.symbol,
                         timestamp=utc_now(),
                         direction=candidate.direction,
-                        pattern=candidate.pattern,
-                        score=score,
-                        entry_price=candidate.entry_price,
+                        pattern=candidate.strategy_key,
+                        score=candidate.score,
+                        entry_price=candidate.entry_reference,
                         reasons=candidate.reasons,
-                        market_context=candidate.context,
+                        market_context=candidate.market_context,
+                        strategy_key=candidate.strategy_key,
+                        strategy_profile_key=candidate.strategy_profile_key,
+                        paper_profile_key=candidate.paper_profile_key,
+                        invalidation_level=candidate.invalidation_level,
+                        suggested_stop_pct=candidate.suggested_stop_pct,
+                        suggested_take_pct=candidate.suggested_take_pct,
                     )
-                    await self.telegram.send_signal(signal, candidate.reasons, candidate.context)
+                    await self.telegram.send_signal(
+                        signal, candidate.reasons, candidate.market_context
+                    )
                     paper_enabled = (
                         self.paper_manager is not None
                         and self.settings.app.mode == "paper_trading"

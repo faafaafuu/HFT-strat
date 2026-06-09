@@ -72,6 +72,26 @@ class _PerformanceService:
         }
 
 
+class _StrategyLabService:
+    async def overview(self):
+        return {
+            "strategies": [],
+            "backtests": [],
+            "jobs": [],
+            "coverage": [],
+            "diagnostics": {
+                "by_strategy": [],
+                "by_pattern": [],
+                "by_symbol": [],
+                "by_score": [],
+                "by_hour": [],
+            },
+        }
+
+    async def diagnostics(self):
+        return (await self.overview())["diagnostics"]
+
+
 def _app(tmp_path: Path, monkeypatch, auth: bool = True):
     if auth:
         monkeypatch.setenv("WEB_USERNAME", "admin")
@@ -93,6 +113,7 @@ def _app(tmp_path: Path, monkeypatch, auth: bool = True):
     app.state.paper_service = _PaperService()
     app.state.analytics_service = _AnalyticsService()
     app.state.performance_service = _PerformanceService()
+    app.state.strategy_lab_service = _StrategyLabService()
     return app
 
 
@@ -107,6 +128,14 @@ async def test_web_auth_required(tmp_path: Path, monkeypatch) -> None:
     response = await _get(_app(tmp_path, monkeypatch), "/")
 
     assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_health_is_public(tmp_path: Path, monkeypatch) -> None:
+    response = await _get(_app(tmp_path, monkeypatch), "/health")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
 
 
 @pytest.mark.asyncio
@@ -144,3 +173,10 @@ async def test_analytics_endpoint_works_on_empty_data(tmp_path: Path, monkeypatc
     assert payload["signals"]["total_signals"] == 0
     assert payload["paper"]["trades"] == 0
 
+
+@pytest.mark.asyncio
+async def test_strategy_lab_page_works_on_empty_data(tmp_path: Path, monkeypatch) -> None:
+    response = await _get(_app(tmp_path, monkeypatch), "/strategy-lab", auth=("admin", "secret"))
+
+    assert response.status_code == 200
+    assert "Strategy Lab" in response.text

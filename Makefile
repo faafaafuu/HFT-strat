@@ -1,5 +1,7 @@
 PY := $(shell if [ -x .venv/bin/python ]; then echo .venv/bin/python; else echo python; fi)
 GRAPHIFY := $(shell if [ -x .venv/bin/graphify ]; then echo .venv/bin/graphify; else echo graphify; fi)
+TIMEFRAME ?= 1m
+DAYS ?= 30
 
 dev:
 	docker compose -f docker-compose.dev.yml up
@@ -16,6 +18,8 @@ logs:
 logs-web:
 	docker logs -f market-heat-signal-bot-web
 
+web-logs: logs-web
+
 logs-dev:
 	docker logs -f market-heat-signal-bot-dev
 
@@ -25,8 +29,23 @@ logs-web-dev:
 restart-dev:
 	docker compose -f docker-compose.dev.yml restart
 
+web-restart:
+	docker compose restart web
+
+web-health:
+	curl -fsS http://127.0.0.1:8080/health
+
 backup:
 	$(PY) -m tools.backup_database
+
+download-history:
+	$(PY) -m tools.download_history --symbol $(SYMBOL) --timeframe $(TIMEFRAME) --days $(DAYS)
+
+backtest:
+	$(PY) -m tools.run_backtest --strategy $(STRATEGY) --symbol $(SYMBOL) --timeframe $(TIMEFRAME) --days $(DAYS)
+
+job-worker:
+	$(PY) -m tools.run_jobs
 
 verify-persistence:
 	$(PY) -m tools.verify_persistence

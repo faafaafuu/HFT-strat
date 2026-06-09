@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
@@ -36,6 +37,7 @@ class PaperTradeManager:
         self.log = get_logger("paper_manager")
         self.latest_prices: dict[tuple[str, str], float] = {}
         self._open_symbols: set[tuple[str, str]] = set()
+        self._price_update_lock = asyncio.Lock()
 
     async def ensure_account(self) -> None:
         async with self.database.session() as session:
@@ -133,6 +135,17 @@ class PaperTradeManager:
         self.latest_prices[key] = price
         if key not in self._open_symbols:
             return
+        async with self._price_update_lock:
+            await self._on_price_locked(exchange, symbol, price, timestamp, key)
+
+    async def _on_price_locked(
+        self,
+        exchange: str,
+        symbol: str,
+        price: float,
+        timestamp: datetime,
+        key: tuple[str, str],
+    ) -> None:
         async with self.database.session() as session:
             trades = list(
                 (

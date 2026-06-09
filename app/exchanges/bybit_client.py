@@ -109,11 +109,26 @@ class BybitClient:
         return safe_float(rows[0].get("openInterest"), default=0.0)
 
     async def kline(
-        self, symbol: str, interval: str = "1", limit: int = 200
+        self,
+        symbol: str,
+        interval: str = "1",
+        limit: int = 200,
+        start: int | None = None,
+        end: int | None = None,
     ) -> list[dict[str, Any]]:
+        params: dict[str, Any] = {
+            "category": self.category,
+            "symbol": symbol,
+            "interval": interval,
+            "limit": limit,
+        }
+        if start is not None:
+            params["start"] = start
+        if end is not None:
+            params["end"] = end
         result = await self._get(
             "/v5/market/kline",
-            {"category": self.category, "symbol": symbol, "interval": interval, "limit": limit},
+            params,
         )
         return list(result.get("list") or [])
 

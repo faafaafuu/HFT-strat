@@ -19,6 +19,7 @@ from app.services.analytics_service import AnalyticsService
 from app.services.paper_service import PaperService
 from app.services.signal_service import SignalService
 from app.services.status_service import RuntimeStatusContext, StatusService
+from app.services.strategy_lab_service import StrategyLabService
 from app.signals.patterns import detect_patterns
 from app.signals.scoring import score_signal
 from app.telegram.formatters import (
@@ -58,6 +59,7 @@ from app.telegram.keyboards import (
     signal_alert_menu,
     signal_detail_menu,
     signals_menu,
+    strategy_lab_menu,
 )
 from app.utils.time import utc_now
 
@@ -77,6 +79,7 @@ class TelegramCommands:
         self.signals = SignalService(service.database)
         self.paper_service = PaperService(service.database)
         self.analytics = AnalyticsService(service.database)
+        self.strategy_lab_service = StrategyLabService(service.database, service.settings)
 
     async def start(self, update: Update, _: ContextTypes.DEFAULT_TYPE) -> None:
         if not await self._authorize(update):
@@ -105,6 +108,8 @@ class TelegramCommands:
             await self.show_scanner(update)
         elif "Paper" in text:
             await self.show_paper(update)
+        elif "Strategy Lab" in text:
+            await self.show_strategy_lab(update)
         elif "Settings" in text:
             await self.show_settings(update)
         else:
@@ -231,6 +236,8 @@ class TelegramCommands:
             await self.show_paper_trades(update, data.split(":", 1)[1], status="CLOSED")
         elif data == "settings":
             await self.show_settings(update)
+        elif data == "strategy_lab" or data.startswith("sl:"):
+            await self.show_strategy_lab(update, section=data)
         elif data.startswith("settings:"):
             saved = await self.apply_setting(data)
             warning = None
@@ -389,6 +396,20 @@ class TelegramCommands:
         else:
             text = format_paper_profiles(profiles)
             markup = paper_profiles_menu([str(item["profile_key"]) for item in profiles])
+        self._store_cache(cache_key, text, markup)
+        await self._send_or_edit(update, text, markup)
+
+    async def show_strategy_lab(self, update: Update, section: str = "strategy_lab") -> None:
+        cache_key = f"strategy_lab:{section}"
+        cached = self._cached(cache_key)
+        if cached is not None:
+            text, markup = cached
+            await self._send_or_edit(update, text, markup)
+            return
+        await self._send_or_edit(update, "Loading...", strategy_lab_menu())
+        lab = await self.strategy_lab_service.overview()
+        text = _format_strategy_lab(lab, section)
+        markup = strategy_lab_menu()
         self._store_cache(cache_key, text, markup)
         await self._send_or_edit(update, text, markup)
 
@@ -784,6 +805,49 @@ def _int_part(data: str, index: int, default: int) -> int:
         return int(data.split(":")[index])
     except (IndexError, ValueError):
         return default
+
+
+def _format_strategy_lab(lab: dict[str, Any], section: str) -> str:
+    if section == "sl:diagnostics":
+        rows = lab.get("diagnostics", {}).get("by_strategy", [])[:8]
+        lines = ["<b>🧪 Strategy Diagnostics</b>", ""]
+        for row in rows:
+            lines.append(
+                f"{row['key']}\n"
+                f"PnL: {float(row['net_pnl']):+.2f} • WR {float(row['winrate']):.1f}% • "
+                f"Trades {row['trades']}"
+            )
+        return "\n".join(lines) if rows else "<b>🧪 Strategy Diagnostics</b>\n\nNo closed paper trades."
+    if section == "sl:data":
+        rows = lab.get("coverage", [])[:10]
+        lines = ["<b>🧪 Historical Data</b>", ""]
+        for row in rows:
+            lines.append(f"{row['symbol']} {row['timeframe']} • {row['candles']} candles")
+        return "\n".join(lines) if rows else "<b>🧪 Historical Data</b>\n\nNo candles loaded."
+    if section in {"sl:backtests", "sl:results"}:
+        rows = lab.get("backtests", [])[:8]
+        lines = ["<b>🧪 Backtest Results</b>", ""]
+        for row in rows:
+            metrics = row.get("metrics", {})
+            lines.append(
+                f"{row['id']} • {row['strategy_key']} • {row['symbol']}\n"
+                f"WR {float(metrics.get('winrate', 0)):.1f}% • "
+                f"PF {float(metrics.get('profit_factor', 0)):.2f} • "
+                f"PnL {float(metrics.get('net_pnl', 0)):+.2f}"
+            )
+        return "\n".join(lines) if rows else "<b>🧪 Backtest Results</b>\n\nNo backtests yet."
+    strategies = lab.get("strategies", [])
+    jobs = lab.get("jobs", [])[:4]
+    lines = ["<b>🧪 Strategy Lab</b>", "", "<b>Strategies</b>"]
+    for item in strategies[:8]:
+        state = "ON" if item["enabled"] else "OFF"
+        lines.append(f"• {item['key']} • {state}")
+    if jobs:
+        lines.extend(["", "<b>Recent Jobs</b>"])
+        for job in jobs:
+            lines.append(f"• {job['id']} {job['job_type']} • {job['status']}")
+    lines.extend(["", "Run history/backtest/hyperopt from Web or Makefile."])
+    return "\n".join(lines)
 
 
 def _is_stale_callback(exc: BadRequest) -> bool:
