@@ -24,6 +24,7 @@ digraph imports {
   "app.jobs.__init__";
   "app.jobs.models";
   "app.jobs.queue";
+  "app.jobs.runner";
   "app.jobs.worker";
   "app.logger";
   "app.main";
@@ -142,6 +143,11 @@ digraph imports {
   "app.jobs.__init__" -> "app.jobs.queue";
   "app.jobs.queue" -> "app.data.database";
   "app.jobs.queue" -> "app.data.repositories";
+  "app.jobs.runner" -> "app.config";
+  "app.jobs.runner" -> "app.data.database";
+  "app.jobs.runner" -> "app.jobs.worker";
+  "app.jobs.runner" -> "app.logger";
+  "app.jobs.runner" -> "app.main";
   "app.jobs.worker" -> "app.backtesting.data_loader";
   "app.jobs.worker" -> "app.backtesting.engine";
   "app.jobs.worker" -> "app.config";
@@ -372,6 +378,7 @@ digraph imports {
   "tests.test_telegram_auth" -> "app.telegram.bot";
   "tests.test_telegram_auth" -> "app.telegram.commands";
   "tests.test_web_dashboard" -> "app.config";
+  "tests.test_web_dashboard" -> "app.web.api";
   "tests.test_web_dashboard" -> "app.web.main";
   "tools.backup_database" -> "app.config";
   "tools.backup_database" -> "app.data.database";

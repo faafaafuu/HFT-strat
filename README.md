@@ -75,10 +75,11 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-This starts two services:
+This starts three services:
 
 - `bot` / container `market-heat-signal-bot`: Telegram radar, signal engine, paper trading.
 - `web` / container `market-heat-signal-bot-web`: read-only FastAPI dashboard.
+- `worker` / container `market-heat-signal-bot-worker`: background job runner for history downloads, backtests, hyperopt, ML training, and density analysis.
 
 Persistent runtime data is stored on the host:
 
@@ -120,9 +121,12 @@ make dev-down
 make prod
 make logs
 make logs-web
+make logs-worker
 make logs-dev
 make logs-web-dev
+make logs-worker-dev
 make restart-dev
+make worker-restart
 make backup
 make verify-persistence
 ```
@@ -231,6 +235,32 @@ strategy_instances:
 
 Runtime enable/disable changes from web are stored in SQLite settings storage,
 not written back into `config.yaml`.
+
+Open the lab:
+
+```text
+/strategy-lab
+```
+
+Useful pages:
+
+- `/strategy-lab/instances` — edit instance thresholds and density parameters.
+- `/strategy-lab/backtests` — queue historical backtests.
+- `/strategy-lab/hyperopt` — queue parameter search.
+- `/strategy-lab/compare` — compare paper profiles and recent backtests.
+- `/strategy-lab/density` — inspect density events and density summaries.
+- `/analytics/why-losing` — diagnose weak strategy instances, profiles, symbols, hours, score buckets, and exit statuses.
+
+Backtest and hyperopt forms can target a specific `strategy_instance_id`. When
+an instance is selected, the job uses that instance's strategy key and config as
+base parameters.
+
+Queued jobs are stored in SQLite and are processed by the `worker` service in
+Docker. For a one-shot local run without Docker, process one pending job with:
+
+```bash
+make job-worker
+```
 
 Current strategy registry includes:
 

@@ -172,6 +172,7 @@ tr:last-child td {
 }
 
 input,
+select,
 button,
 .button {
   border: 1px solid #3a4653;
@@ -195,6 +196,18 @@ button,
   border-radius: 6px;
   padding: 10px;
   background: #10151b;
+}
+
+.compact-form {
+  border-top: 1px solid #2a313a;
+  padding-top: 12px;
+}
+
+.compact-form label {
+  display: grid;
+  gap: 4px;
+  color: #c5ced8;
+  font-size: 13px;
 }
 
 .auth-page {

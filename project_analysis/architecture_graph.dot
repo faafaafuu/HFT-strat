@@ -203,9 +203,11 @@ digraph architecture {
   "app.jobs" -> "app.jobs.queue" [style=dotted, label="contains"];
   "app.jobs.queue.JobQueue" [shape=component, label="JobQueue\n24 LOC"];
   "app.jobs.queue" -> "app.jobs.queue.JobQueue" [label="class"];
-  "app.jobs.worker" [label="app.jobs.worker\\n81 LOC • 1 classes • 3 funcs"];
+  "app.jobs.runner" [label="app.jobs.runner\\n36 LOC • 0 classes • 1 funcs"];
+  "app.jobs" -> "app.jobs.runner" [style=dotted, label="contains"];
+  "app.jobs.worker" [label="app.jobs.worker\\n83 LOC • 1 classes • 3 funcs"];
   "app.jobs" -> "app.jobs.worker" [style=dotted, label="contains"];
-  "app.jobs.worker.JobWorker" [shape=component, label="JobWorker\n64 LOC"];
+  "app.jobs.worker.JobWorker" [shape=component, label="JobWorker\n66 LOC"];
   "app.jobs.worker" -> "app.jobs.worker.JobWorker" [label="class"];
   "app.logger" [label="app.logger\\n14 LOC • 0 classes • 2 funcs"];
   "app.logger" -> "app.logger" [style=dotted, label="contains"];
@@ -273,9 +275,9 @@ digraph architecture {
   "app.optimization" -> "app.optimization.__init__" [style=dotted, label="contains"];
   "app.optimization.objective" [label="app.optimization.objective\\n3 LOC • 0 classes • 0 funcs"];
   "app.optimization" -> "app.optimization.objective" [style=dotted, label="contains"];
-  "app.optimization.optimizer" [label="app.optimization.optimizer\\n62 LOC • 1 classes • 2 funcs"];
+  "app.optimization.optimizer" [label="app.optimization.optimizer\\n65 LOC • 1 classes • 2 funcs"];
   "app.optimization" -> "app.optimization.optimizer" [style=dotted, label="contains"];
-  "app.optimization.optimizer.HyperOptimizer" [shape=component, label="HyperOptimizer\n55 LOC"];
+  "app.optimization.optimizer.HyperOptimizer" [shape=component, label="HyperOptimizer\n58 LOC"];
   "app.optimization.optimizer" -> "app.optimization.optimizer.HyperOptimizer" [label="class"];
   "app.optimization.reports" [label="app.optimization.reports\\n3 LOC • 0 classes • 0 funcs"];
   "app.optimization" -> "app.optimization.reports" [style=dotted, label="contains"];
@@ -337,9 +339,9 @@ digraph architecture {
   "app.services.status_service" -> "app.services.status_service.RuntimeStatusContext" [label="class"];
   "app.services.status_service.StatusService" [shape=component, label="StatusService\n68 LOC"];
   "app.services.status_service" -> "app.services.status_service.StatusService" [label="class"];
-  "app.services.strategy_lab_service" [label="app.services.strategy_lab_service\\n151 LOC • 1 classes • 10 funcs"];
+  "app.services.strategy_lab_service" [label="app.services.strategy_lab_service\\n290 LOC • 1 classes • 16 funcs"];
   "app.services" -> "app.services.strategy_lab_service" [style=dotted, label="contains"];
-  "app.services.strategy_lab_service.StrategyLabService" [shape=component, label="StrategyLabService\n122 LOC"];
+  "app.services.strategy_lab_service.StrategyLabService" [shape=component, label="StrategyLabService\n228 LOC"];
   "app.services.strategy_lab_service" -> "app.services.strategy_lab_service.StrategyLabService" [label="class"];
   "app.signals.__init__" [label="app.signals.__init__\\n1 LOC • 0 classes • 0 funcs"];
   "app.signals" -> "app.signals.__init__" [style=dotted, label="contains"];
@@ -427,7 +429,7 @@ digraph architecture {
   "app.utils" -> "app.utils.time" [style=dotted, label="contains"];
   "app.web.__init__" [label="app.web.__init__\\n1 LOC • 0 classes • 0 funcs"];
   "app.web" -> "app.web.__init__" [style=dotted, label="contains"];
-  "app.web.api" [label="app.web.api\\n140 LOC • 0 classes • 21 funcs"];
+  "app.web.api" [label="app.web.api\\n225 LOC • 0 classes • 27 funcs"];
   "app.web" -> "app.web.api" [style=dotted, label="contains"];
   "app.web.auth" [label="app.web.auth\\n53 LOC • 1 classes • 9 funcs"];
   "app.web" -> "app.web.auth" [style=dotted, label="contains"];
@@ -477,7 +479,7 @@ digraph architecture {
   "tests.test_telegram_auth" -> "tests.test_telegram_auth.test_callback_answers_before_background_processing.Query" [label="class"];
   "tests.test_telegram_auth.test_callback_answers_before_background_processing.Application" [shape=component, label="Application\n3 LOC"];
   "tests.test_telegram_auth" -> "tests.test_telegram_auth.test_callback_answers_before_background_processing.Application" [label="class"];
-  "tests.test_web_dashboard" [label="tests.test_web_dashboard\\n163 LOC • 6 classes • 20 funcs"];
+  "tests.test_web_dashboard" [label="tests.test_web_dashboard\\n186 LOC • 6 classes • 21 funcs"];
   "tests" -> "tests.test_web_dashboard" [style=dotted, label="contains"];
   "tests.test_web_dashboard._StatusService" [shape=component, label="_StatusService\n19 LOC"];
   "tests.test_web_dashboard" -> "tests.test_web_dashboard._StatusService" [label="class"];
@@ -489,7 +491,7 @@ digraph architecture {
   "tests.test_web_dashboard" -> "tests.test_web_dashboard._AnalyticsService" [label="class"];
   "tests.test_web_dashboard._PerformanceService" [shape=component, label="_PerformanceService\n15 LOC"];
   "tests.test_web_dashboard" -> "tests.test_web_dashboard._PerformanceService" [label="class"];
-  "tests.test_web_dashboard._StrategyLabService" [shape=component, label="_StrategyLabService\n18 LOC"];
+  "tests.test_web_dashboard._StrategyLabService" [shape=component, label="_StrategyLabService\n26 LOC"];
   "tests.test_web_dashboard" -> "tests.test_web_dashboard._StrategyLabService" [label="class"];
   "tools.__init__" [label="tools.__init__\\n1 LOC • 0 classes • 0 funcs"];
   "tools" -> "tools.__init__" [style=dotted, label="contains"];

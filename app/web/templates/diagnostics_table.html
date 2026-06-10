@@ -1,6 +1,6 @@
 <table>
   <thead>
-    <tr><th>Group</th><th>Trades</th><th>WR</th><th>PF</th><th>Net PnL</th></tr>
+    <tr><th>Group</th><th>Trades</th><th>WR</th><th>PF</th><th>Net PnL</th><th>Avg R</th><th>SL</th><th>TP</th></tr>
   </thead>
   <tbody>
     {% for row in rows %}
@@ -10,9 +10,12 @@
       <td>{{ row.winrate|pct }}</td>
       <td>{{ row.profit_factor|num }}</td>
       <td>{{ row.net_pnl|money }}</td>
+      <td>{{ row.expectancy_r|num }}</td>
+      <td>{{ row.sl_rate|pct }}</td>
+      <td>{{ row.tp_rate|pct }}</td>
     </tr>
     {% else %}
-    <tr><td colspan="5" class="muted">No closed paper trades.</td></tr>
+    <tr><td colspan="8" class="muted">No closed paper trades.</td></tr>
     {% endfor %}
   </tbody>
 </table>

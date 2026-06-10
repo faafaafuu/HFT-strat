@@ -4,12 +4,17 @@ import json
 from collections import defaultdict
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.config import Settings
 from app.data.database import Database
-from app.data.models import BacktestRunModel, PaperTradeModel
-from app.data.repositories import DensityRepository, HistoricalDataRepository, JobRepository
+from app.data.models import BacktestRunModel, DensityEventModel, PaperProfileModel, PaperTradeModel
+from app.data.repositories import (
+    DensityRepository,
+    HistoricalDataRepository,
+    JobRepository,
+    MLModelRepository,
+)
 from app.strategies.registry import default_registry
 
 
@@ -28,6 +33,9 @@ class StrategyLabService:
             "diagnostics": await self.diagnostics(),
             "instances": await self.instances(),
             "density_events": await self.density_events(),
+            "density_summary": await self.density_summary(),
+            "compare": await self.compare(),
+            "ml_status": await self.ml_status(),
         }
 
     async def strategies(self) -> list[dict[str, Any]]:
@@ -38,6 +46,7 @@ class StrategyLabService:
                 "enabled": item.enabled,
                 "profiles": item.profiles,
                 "instances": item.instances,
+                "description": item.description,
             }
             for item in self.registry.descriptors(self.settings)
         ]
@@ -74,6 +83,35 @@ class StrategyLabService:
                 "spoof_score": row.spoof_score,
             }
             for row in rows
+        ]
+
+    async def density_summary(self) -> list[dict[str, Any]]:
+        async with self.database.session() as session:
+            rows = (
+                await session.execute(
+                    select(
+                        DensityEventModel.symbol,
+                        DensityEventModel.event_type,
+                        func.count(DensityEventModel.id),
+                        func.avg(DensityEventModel.size_usd),
+                        func.avg(DensityEventModel.absorption_score),
+                        func.avg(DensityEventModel.spoof_score),
+                    )
+                    .group_by(DensityEventModel.symbol, DensityEventModel.event_type)
+                    .order_by(func.count(DensityEventModel.id).desc())
+                    .limit(30)
+                )
+            ).all()
+        return [
+            {
+                "symbol": symbol,
+                "event_type": event_type,
+                "events": int(count or 0),
+                "avg_size_usd": float(avg_size or 0.0),
+                "avg_absorption_score": float(avg_absorption or 0.0),
+                "avg_spoof_score": float(avg_spoof or 0.0),
+            }
+            for symbol, event_type, count, avg_size, avg_absorption, avg_spoof in rows
         ]
 
     async def backtest_runs(self, limit: int = 20) -> list[dict[str, Any]]:
@@ -115,9 +153,79 @@ class StrategyLabService:
                 "created_at": job.created_at,
                 "finished_at": job.finished_at,
                 "error": job.error,
+                "params": json.loads(job.params_json or "{}"),
+                "result": json.loads(job.result_json or "{}") if job.result_json else {},
             }
             for job in jobs
         ]
+
+    async def compare(self) -> dict[str, Any]:
+        async with self.database.session() as session:
+            profiles = list((await session.scalars(select(PaperProfileModel))).all())
+            trades = list(
+                (
+                    await session.scalars(
+                        select(PaperTradeModel).where(PaperTradeModel.status != "OPEN")
+                    )
+                ).all()
+            )
+            backtests = list(
+                (
+                    await session.scalars(
+                        select(BacktestRunModel).order_by(BacktestRunModel.created_at.desc())
+                    )
+                ).all()
+            )
+        profile_rows = []
+        by_profile = _bucket_trades(trades, "profile_key")
+        for profile in profiles:
+            stats = _trade_stats(by_profile.get(profile.profile_key, []))
+            profile_rows.append(
+                {
+                    "profile_key": profile.profile_key,
+                    "name": profile.name,
+                    "enabled": profile.enabled,
+                    "balance": profile.current_balance,
+                    "equity": profile.equity,
+                    "net_profit": profile.net_profit,
+                    "max_drawdown_pct": profile.max_drawdown_pct,
+                    **stats,
+                }
+            )
+        backtest_rows = []
+        latest_by_strategy: dict[str, BacktestRunModel] = {}
+        for run in backtests:
+            latest_by_strategy.setdefault(run.strategy_key, run)
+        for strategy_key, run in latest_by_strategy.items():
+            metrics = json.loads(run.metrics_json or "{}")
+            backtest_rows.append(
+                {
+                    "strategy_key": strategy_key,
+                    "symbol": run.symbol,
+                    "timeframe": run.timeframe,
+                    "created_at": run.created_at,
+                    "total_trades": int(metrics.get("total_trades", 0) or 0),
+                    "winrate": float(metrics.get("winrate", 0.0) or 0.0),
+                    "profit_factor": float(metrics.get("profit_factor", 0.0) or 0.0),
+                    "net_pnl": float(metrics.get("net_pnl", 0.0) or 0.0),
+                    "max_drawdown_pct": float(metrics.get("max_drawdown", 0.0) or 0.0),
+                }
+            )
+        return {"profiles": profile_rows, "backtests": backtest_rows}
+
+    async def ml_status(self) -> dict[str, Any]:
+        async with self.database.session() as session:
+            active = await MLModelRepository(session).active()
+        if active is None:
+            return {"active": False, "reason": "no_active_model"}
+        return {
+            "active": True,
+            "id": active.id,
+            "model_type": active.model_type,
+            "created_at": active.created_at,
+            "model_path": active.model_path,
+            "metrics": json.loads(active.metrics_json or "{}"),
+        }
 
     async def diagnostics(self) -> dict[str, list[dict[str, Any]]]:
         async with self.database.session() as session:
@@ -130,11 +238,49 @@ class StrategyLabService:
             )
         return {
             "by_strategy": _group_trade_pnl(trades, "strategy_key"),
+            "by_instance": _group_trade_pnl(trades, "strategy_instance_id"),
+            "by_profile": _group_trade_pnl(trades, "profile_key"),
             "by_pattern": _group_trade_pnl(trades, "pattern"),
             "by_symbol": _group_trade_pnl(trades, "symbol"),
             "by_score": _group_trade_pnl(trades, "score"),
             "by_hour": _group_trade_pnl(trades, "hour"),
+            "by_status": _group_trade_pnl(trades, "status"),
         }
+
+
+def _bucket_trades(trades: list[PaperTradeModel], field: str) -> dict[str, list[PaperTradeModel]]:
+    buckets: dict[str, list[PaperTradeModel]] = defaultdict(list)
+    for trade in trades:
+        buckets[str(getattr(trade, field) or "unknown")].append(trade)
+    return buckets
+
+
+def _trade_stats(values: list[PaperTradeModel]) -> dict[str, Any]:
+    wins = [trade for trade in values if trade.pnl_usd > 0]
+    losses = [trade for trade in values if trade.pnl_usd < 0]
+    gross_profit = sum(trade.pnl_usd for trade in wins)
+    gross_loss = abs(sum(trade.pnl_usd for trade in losses))
+    holding_minutes = [
+        (trade.closed_at - trade.opened_at).total_seconds() / 60
+        for trade in values
+        if trade.closed_at is not None
+    ]
+    return {
+        "trades": len(values),
+        "net_pnl": sum(trade.pnl_usd for trade in values),
+        "winrate": len(wins) / len(values) * 100 if values else 0.0,
+        "profit_factor": gross_profit / gross_loss if gross_loss else gross_profit,
+        "expectancy_r": (
+            sum(trade.realized_rr for trade in values) / len(values) if values else 0.0
+        ),
+        "avg_trade": sum(trade.pnl_usd for trade in values) / len(values) if values else 0.0,
+        "avg_holding_minutes": (
+            sum(holding_minutes) / len(holding_minutes) if holding_minutes else 0.0
+        ),
+        "tp_rate": _status_rate(values, "CLOSED_TP"),
+        "sl_rate": _status_rate(values, "CLOSED_SL"),
+        "timeout_rate": _status_rate(values, "EXPIRED"),
+    }
 
 
 def _group_trade_pnl(trades: list[PaperTradeModel], field: str) -> list[dict[str, Any]]:
@@ -142,25 +288,27 @@ def _group_trade_pnl(trades: list[PaperTradeModel], field: str) -> list[dict[str
     for trade in trades:
         if field == "hour":
             key = f"{trade.opened_at.hour:02d}:00"
+        elif field == "score":
+            key = f"{int(trade.score)}"
         else:
             key = str(getattr(trade, field) or "unknown")
         buckets[key].append(trade)
     rows = []
     for key, values in buckets.items():
-        wins = [trade for trade in values if trade.pnl_usd > 0]
-        losses = [trade for trade in values if trade.pnl_usd < 0]
-        gross_profit = sum(trade.pnl_usd for trade in wins)
-        gross_loss = abs(sum(trade.pnl_usd for trade in losses))
+        stats = _trade_stats(values)
         rows.append(
             {
                 "key": key,
-                "trades": len(values),
-                "net_pnl": sum(trade.pnl_usd for trade in values),
-                "winrate": len(wins) / len(values) * 100 if values else 0.0,
-                "profit_factor": gross_profit / gross_loss if gross_loss else gross_profit,
+                **stats,
                 "avg_mfe": 0.0,
                 "avg_mae": 0.0,
             }
         )
     rows.sort(key=lambda item: item["net_pnl"])
     return rows[:20]
+
+
+def _status_rate(trades: list[PaperTradeModel], status: str) -> float:
+    if not trades:
+        return 0.0
+    return len([trade for trade in trades if trade.status == status]) / len(trades) * 100

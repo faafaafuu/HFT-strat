@@ -64,6 +64,7 @@ class JobWorker:
                 symbol=str(params["symbol"]),
                 timeframe=str(params.get("timeframe", "1m")),
                 days=int(params.get("days", 30)),
+                params=dict(params.get("params") or {}),
             )
         if job_type == RUN_HYPEROPT:
             return await HyperOptimizer(self.database, self.settings).run(
@@ -71,6 +72,7 @@ class JobWorker:
                 symbol=str(params["symbol"]),
                 timeframe=str(params.get("timeframe", "1m")),
                 days=int(params.get("days", 30)),
+                base_params=dict(params.get("params") or {}),
             )
         if job_type == TRAIN_ML_MODEL:
             return await MLTrainer(self.database).train(

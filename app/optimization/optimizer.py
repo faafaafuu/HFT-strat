@@ -24,7 +24,9 @@ class HyperOptimizer:
         timeframe: str = "1m",
         days: int = 30,
         limit: int = 50,
+        base_params: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+        base_params = base_params or {}
         async with self.database.session() as session:
             candles = await HistoricalDataRepository(session).candles(
                 "bybit", symbol, timeframe, limit=None
@@ -37,6 +39,7 @@ class HyperOptimizer:
         results = []
         space = DENSITY_SEARCH_SPACE if strategy_key == "density_strategy" else None
         for params in grid(space=space, limit=limit):
+            params = {**base_params, **params}
             train_result = self.engine.run_on_candles(
                 strategy_key=strategy_key,
                 candles=train,

@@ -20,7 +20,12 @@ logs:
 logs-web:
 	docker logs -f market-heat-signal-bot-web
 
+logs-worker:
+	docker logs -f market-heat-signal-bot-worker
+
 web-logs: logs-web
+
+worker-logs: logs-worker
 
 logs-dev:
 	docker logs -f market-heat-signal-bot-dev
@@ -28,11 +33,17 @@ logs-dev:
 logs-web-dev:
 	docker logs -f market-heat-signal-bot-web-dev
 
+logs-worker-dev:
+	docker logs -f market-heat-signal-bot-worker-dev
+
 restart-dev:
 	docker compose -f docker-compose.dev.yml restart
 
 web-restart:
 	docker compose restart web
+
+worker-restart:
+	docker compose restart worker
 
 web-health:
 	curl -fsS http://127.0.0.1:8080/health

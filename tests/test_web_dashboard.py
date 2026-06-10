@@ -79,12 +79,20 @@ class _StrategyLabService:
             "backtests": [],
             "jobs": [],
             "coverage": [],
+            "instances": [],
+            "density_events": [],
+            "density_summary": [],
+            "compare": {"profiles": [], "backtests": []},
+            "ml_status": {"active": False, "reason": "no_active_model"},
             "diagnostics": {
                 "by_strategy": [],
+                "by_instance": [],
+                "by_profile": [],
                 "by_pattern": [],
                 "by_symbol": [],
                 "by_score": [],
                 "by_hour": [],
+                "by_status": [],
             },
         }
 
@@ -210,3 +218,22 @@ async def test_api_auth_required(tmp_path: Path, monkeypatch) -> None:
     response = await _get(_app(tmp_path, monkeypatch), "/api/analytics/summary")
 
     assert response.status_code == 401
+
+
+def test_strategy_instance_update_parser_coerces_supported_values() -> None:
+    from app.web.api import _strategy_instance_updates
+
+    updates = _strategy_instance_updates(
+        {
+            "min_score": "8",
+            "config.min_density_usd": "1000000",
+            "config.require_absorption": "true",
+            "unsupported": "ignored",
+        }
+    )
+
+    assert updates == {
+        "min_score": 8,
+        "config.min_density_usd": 1_000_000,
+        "config.require_absorption": True,
+    }

@@ -8,24 +8,24 @@ No cyclic imports detected.
 ## Strong Coupling
 | Module | Fan-in | Fan-out |
 |---|---:|---:|
-| `app.config` | 37 | 0 |
-| `app.data.database` | 25 | 1 |
+| `app.config` | 38 | 0 |
+| `app.data.database` | 26 | 1 |
 | `app.market.features` | 17 | 6 |
-| `app.data.models` | 20 | 1 |
 | `app.data.repositories` | 19 | 2 |
+| `app.data.models` | 20 | 1 |
 | `app.utils.time` | 19 | 0 |
+| `app.main` | 1 | 17 |
 | `app.telegram.commands` | 2 | 15 |
-| `app.main` | 0 | 17 |
 | `app.backtesting.engine` | 5 | 9 |
-| `app.strategies.registry` | 5 | 8 |
 | `app.signals.signal_engine` | 2 | 11 |
-| `app.telegram.bot` | 3 | 9 |
+| `app.strategies.registry` | 5 | 8 |
 | `app.web.main` | 1 | 11 |
+| `app.telegram.bot` | 3 | 9 |
 | `app.paper.manager` | 4 | 8 |
-| `app.jobs.worker` | 1 | 10 |
+| `app.jobs.worker` | 2 | 10 |
 
 ## Potential Scaling Problems
-- Current graph has 108 Python modules and 276 internal import edges.
+- Current graph has 109 Python modules and 282 internal import edges.
 - Large modules may become harder to test and review:
   - `app.telegram.commands`: 806 LOC
   - `app.data.repositories`: 715 LOC
@@ -56,6 +56,7 @@ No cyclic imports detected.
 ## Unused Files
 - `app.backtesting.jobs` (jobs.py, 3 LOC)
 - `app.exchanges.hyperliquid_client` (hyperliquid_client.py, 7 LOC)
+- `app.jobs.runner` (runner.py, 36 LOC)
 - `app.market.funding_tracker` (funding_tracker.py, 3 LOC)
 - `app.market.liquidation_tracker` (liquidation_tracker.py, 6 LOC)
 - `app.ml.feature_store` (feature_store.py, 3 LOC)
@@ -102,6 +103,7 @@ No cyclic imports detected.
 - `app.exchanges.bybit_client.BybitClient` (app.exchanges.bybit_client:24, 328 LOC)
 - `app.signals.signal_engine.SignalEngine` (app.signals.signal_engine:73, 271 LOC)
 - `app.data.repositories.SignalRepository` (app.data.repositories:250, 269 LOC)
+- `app.services.strategy_lab_service.StrategyLabService` (app.services.strategy_lab_service:21, 228 LOC)
 - `app.market.features.MarketFeatureStore` (app.market.features:42, 226 LOC)
 - `app.data.database.Database` (app.data.database:21, 223 LOC)
 - `app.paper.executor.PaperExecutor` (app.paper.executor:27, 191 LOC)
@@ -110,7 +112,6 @@ No cyclic imports detected.
 - `app.backtesting.engine.BacktestEngine` (app.backtesting.engine:17, 132 LOC)
 - `app.market.density_tracker.DensityTracker` (app.market.density_tracker:65, 123 LOC)
 - `app.data.repositories.MarketRepository` (app.data.repositories:32, 122 LOC)
-- `app.services.strategy_lab_service.StrategyLabService` (app.services.strategy_lab_service:16, 122 LOC)
 
 ## Large Functions
 - `app.signals.signal_engine.SignalEngine.evaluate_once` (app.signals.signal_engine:117, 148 LOC)

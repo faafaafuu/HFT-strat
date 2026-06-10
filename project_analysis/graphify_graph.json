@@ -2003,6 +2003,20 @@
       "source_location": "L18"
     },
     {
+      "id": "jobs_runner",
+      "label": "runner.py",
+      "file_type": "code",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L1"
+    },
+    {
+      "id": "jobs_runner_main",
+      "label": "main()",
+      "file_type": "code",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L16"
+    },
+    {
       "id": "jobs_worker",
       "label": "worker.py",
       "file_type": "code",
@@ -4485,119 +4499,168 @@
       "label": "StrategyLabService",
       "file_type": "code",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L16"
+      "source_location": "L21"
     },
     {
       "id": "services_strategy_lab_service_strategylabservice_init",
       "label": ".__init__()",
       "file_type": "code",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L17"
+      "source_location": "L22"
     },
     {
       "id": "app_services_strategy_lab_service_py_database",
       "label": "Database",
       "file_type": "code",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L17"
+      "source_location": "L22"
     },
     {
       "id": "app_services_strategy_lab_service_py_settings",
       "label": "Settings",
       "file_type": "code",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L17"
+      "source_location": "L22"
     },
     {
       "id": "services_strategy_lab_service_strategylabservice_overview",
       "label": ".overview()",
       "file_type": "code",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L22"
+      "source_location": "L27"
     },
     {
       "id": "app_services_strategy_lab_service_py_str",
       "label": "str",
       "file_type": "code",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L22"
+      "source_location": "L27"
     },
     {
       "id": "app_services_strategy_lab_service_py_any",
       "label": "Any",
       "file_type": "code",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L22"
+      "source_location": "L27"
     },
     {
       "id": "services_strategy_lab_service_strategylabservice_strategies",
       "label": ".strategies()",
       "file_type": "code",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L33"
+      "source_location": "L41"
     },
     {
       "id": "services_strategy_lab_service_strategylabservice_instances",
       "label": ".instances()",
       "file_type": "code",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L45"
+      "source_location": "L54"
     },
     {
       "id": "services_strategy_lab_service_strategylabservice_density_events",
       "label": ".density_events()",
       "file_type": "code",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L59"
+      "source_location": "L68"
     },
     {
       "id": "app_services_strategy_lab_service_py_int",
       "label": "int",
       "file_type": "code",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L59"
+      "source_location": "L68"
+    },
+    {
+      "id": "services_strategy_lab_service_strategylabservice_density_summary",
+      "label": ".density_summary()",
+      "file_type": "code",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L88"
     },
     {
       "id": "services_strategy_lab_service_strategylabservice_backtest_runs",
       "label": ".backtest_runs()",
       "file_type": "code",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L79"
+      "source_location": "L117"
     },
     {
       "id": "services_strategy_lab_service_strategylabservice_data_coverage",
       "label": ".data_coverage()",
       "file_type": "code",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L103"
+      "source_location": "L141"
     },
     {
       "id": "services_strategy_lab_service_strategylabservice_jobs",
       "label": ".jobs()",
       "file_type": "code",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L107"
+      "source_location": "L145"
+    },
+    {
+      "id": "services_strategy_lab_service_strategylabservice_compare",
+      "label": ".compare()",
+      "file_type": "code",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L162"
+    },
+    {
+      "id": "services_strategy_lab_service_strategylabservice_ml_status",
+      "label": ".ml_status()",
+      "file_type": "code",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L216"
     },
     {
       "id": "services_strategy_lab_service_strategylabservice_diagnostics",
       "label": ".diagnostics()",
       "file_type": "code",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L122"
+      "source_location": "L230"
     },
     {
-      "id": "services_strategy_lab_service_group_trade_pnl",
-      "label": "_group_trade_pnl()",
+      "id": "services_strategy_lab_service_bucket_trades",
+      "label": "_bucket_trades()",
       "file_type": "code",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L140"
+      "source_location": "L251"
     },
     {
       "id": "app_services_strategy_lab_service_py_papertrademodel",
       "label": "PaperTradeModel",
       "file_type": "code",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L140"
+      "source_location": "L251"
+    },
+    {
+      "id": "services_strategy_lab_service_trade_stats",
+      "label": "_trade_stats()",
+      "file_type": "code",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L258"
+    },
+    {
+      "id": "services_strategy_lab_service_group_trade_pnl",
+      "label": "_group_trade_pnl()",
+      "file_type": "code",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L286"
+    },
+    {
+      "id": "services_strategy_lab_service_status_rate",
+      "label": "_status_rate()",
+      "file_type": "code",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L311"
+    },
+    {
+      "id": "app_services_strategy_lab_service_py_float",
+      "label": "float",
+      "file_type": "code",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L311"
     },
     {
       "id": "signals_init",
@@ -7089,175 +7152,217 @@
       "label": "api_status()",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L21"
+      "source_location": "L23"
     },
     {
       "id": "app_web_api_py_request",
       "label": "Request",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L21"
+      "source_location": "L23"
     },
     {
       "id": "web_api_api_signals",
       "label": "api_signals()",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L26"
+      "source_location": "L28"
     },
     {
       "id": "app_web_api_py_int",
       "label": "int",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L26"
+      "source_location": "L28"
     },
     {
       "id": "web_api_api_paper_profiles",
       "label": "api_paper_profiles()",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L32"
+      "source_location": "L34"
     },
     {
       "id": "web_api_api_open_paper_trades",
       "label": "api_open_paper_trades()",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L37"
+      "source_location": "L39"
     },
     {
       "id": "web_api_api_closed_paper_trades",
       "label": "api_closed_paper_trades()",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L43"
+      "source_location": "L45"
     },
     {
       "id": "web_api_api_analytics_summary",
       "label": "api_analytics_summary()",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L49"
+      "source_location": "L51"
     },
     {
       "id": "web_api_api_performance",
       "label": "api_performance()",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L54"
+      "source_location": "L56"
     },
     {
       "id": "web_api_api_strategy_lab_strategies",
       "label": "api_strategy_lab_strategies()",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L59"
+      "source_location": "L61"
     },
     {
       "id": "web_api_api_strategy_lab_backtests",
       "label": "api_strategy_lab_backtests()",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L64"
+      "source_location": "L66"
     },
     {
       "id": "web_api_api_strategy_lab_jobs",
       "label": "api_strategy_lab_jobs()",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L69"
+      "source_location": "L71"
     },
     {
       "id": "web_api_api_strategy_lab_data",
       "label": "api_strategy_lab_data()",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L74"
+      "source_location": "L76"
     },
     {
       "id": "web_api_api_strategy_lab_diagnostics",
       "label": "api_strategy_lab_diagnostics()",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L79"
+      "source_location": "L81"
     },
     {
       "id": "web_api_api_strategy_lab_instances",
       "label": "api_strategy_lab_instances()",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L84"
+      "source_location": "L86"
+    },
+    {
+      "id": "web_api_api_strategy_lab_compare",
+      "label": "api_strategy_lab_compare()",
+      "file_type": "code",
+      "source_file": "app/web/api.py",
+      "source_location": "L91"
+    },
+    {
+      "id": "web_api_api_strategy_lab_ml_status",
+      "label": "api_strategy_lab_ml_status()",
+      "file_type": "code",
+      "source_file": "app/web/api.py",
+      "source_location": "L96"
     },
     {
       "id": "web_api_api_strategy_lab_density_events",
       "label": "api_strategy_lab_density_events()",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L89"
+      "source_location": "L101"
     },
     {
       "id": "app_web_api_py_str",
       "label": "str",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L89"
+      "source_location": "L101"
     },
     {
       "id": "web_api_api_toggle_strategy_instance",
       "label": "api_toggle_strategy_instance()",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L94"
+      "source_location": "L106"
+    },
+    {
+      "id": "web_api_api_update_strategy_instance_settings",
+      "label": "api_update_strategy_instance_settings()",
+      "file_type": "code",
+      "source_file": "app/web/api.py",
+      "source_location": "L119"
     },
     {
       "id": "web_api_api_download_history",
       "label": "api_download_history()",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L107"
+      "source_location": "L151"
     },
     {
       "id": "web_api_api_run_backtest",
       "label": "api_run_backtest()",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L120"
+      "source_location": "L164"
     },
     {
       "id": "web_api_api_run_hyperopt",
       "label": "api_run_hyperopt()",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L140"
+      "source_location": "L186"
     },
     {
       "id": "web_api_api_train_ml_model",
       "label": "api_train_ml_model()",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L160"
+      "source_location": "L208"
     },
     {
       "id": "web_api_api_run_density_analysis",
       "label": "api_run_density_analysis()",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L171"
+      "source_location": "L219"
     },
     {
       "id": "web_api_request_params",
       "label": "_request_params()",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L181"
+      "source_location": "L229"
     },
     {
       "id": "app_web_api_py_object",
       "label": "object",
       "file_type": "code",
       "source_file": "app/web/api.py",
-      "source_location": "L181"
+      "source_location": "L229"
+    },
+    {
+      "id": "web_api_strategy_params",
+      "label": "_strategy_params()",
+      "file_type": "code",
+      "source_file": "app/web/api.py",
+      "source_location": "L236"
+    },
+    {
+      "id": "web_api_strategy_instance_updates",
+      "label": "_strategy_instance_updates()",
+      "file_type": "code",
+      "source_file": "app/web/api.py",
+      "source_location": "L249"
+    },
+    {
+      "id": "web_api_coerce_value",
+      "label": "_coerce_value()",
+      "file_type": "code",
+      "source_file": "app/web/api.py",
+      "source_location": "L272"
     },
     {
       "id": "web_auth",
@@ -8154,119 +8259,126 @@
       "label": ".diagnostics()",
       "file_type": "code",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L91"
+      "source_location": "L99"
     },
     {
       "id": "tests_test_web_dashboard_app",
       "label": "_app()",
       "file_type": "code",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L95"
+      "source_location": "L103"
     },
     {
       "id": "tests_test_web_dashboard_py_path",
       "label": "Path",
       "file_type": "code",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L95"
+      "source_location": "L103"
     },
     {
       "id": "tests_test_web_dashboard_py_bool",
       "label": "bool",
       "file_type": "code",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L95"
+      "source_location": "L103"
     },
     {
       "id": "tests_test_web_dashboard_get",
       "label": "_get()",
       "file_type": "code",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L120"
+      "source_location": "L128"
     },
     {
       "id": "tests_test_web_dashboard_py_str",
       "label": "str",
       "file_type": "code",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L120"
+      "source_location": "L128"
     },
     {
       "id": "response",
       "label": "Response",
       "file_type": "code",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L120"
+      "source_location": "L128"
     },
     {
       "id": "tests_test_web_dashboard_authed_get",
       "label": "_authed_get()",
       "file_type": "code",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L126"
+      "source_location": "L134"
     },
     {
       "id": "tests_test_web_dashboard_test_web_auth_required",
       "label": "test_web_auth_required()",
       "file_type": "code",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L141"
+      "source_location": "L149"
     },
     {
       "id": "tests_test_web_dashboard_test_health_is_public",
       "label": "test_health_is_public()",
       "file_type": "code",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L149"
+      "source_location": "L157"
     },
     {
       "id": "tests_test_web_dashboard_test_web_requires_configured_credentials",
       "label": "test_web_requires_configured_credentials()",
       "file_type": "code",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L157"
+      "source_location": "L165"
     },
     {
       "id": "tests_test_web_dashboard_test_login_page_works_without_browser_popup",
       "label": "test_login_page_works_without_browser_popup()",
       "file_type": "code",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L165"
+      "source_location": "L173"
     },
     {
       "id": "tests_test_web_dashboard_test_status_page_works_on_empty_data",
       "label": "test_status_page_works_on_empty_data()",
       "file_type": "code",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L174"
+      "source_location": "L182"
     },
     {
       "id": "tests_test_web_dashboard_test_paper_profiles_page_works_on_empty_data",
       "label": "test_paper_profiles_page_works_on_empty_data()",
       "file_type": "code",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L183"
+      "source_location": "L191"
     },
     {
       "id": "tests_test_web_dashboard_test_analytics_endpoint_works_on_empty_data",
       "label": "test_analytics_endpoint_works_on_empty_data()",
       "file_type": "code",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L191"
+      "source_location": "L199"
     },
     {
       "id": "tests_test_web_dashboard_test_strategy_lab_page_works_on_empty_data",
       "label": "test_strategy_lab_page_works_on_empty_data()",
       "file_type": "code",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L201"
+      "source_location": "L209"
     },
     {
       "id": "tests_test_web_dashboard_test_api_auth_required",
       "label": "test_api_auth_required()",
       "file_type": "code",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L209"
+      "source_location": "L217"
+    },
+    {
+      "id": "tests_test_web_dashboard_test_strategy_instance_update_parser_coerces_supported_values",
+      "label": "test_strategy_instance_update_parser_coerces_supported_values()",
+      "file_type": "code",
+      "source_file": "tests/test_web_dashboard.py",
+      "source_location": "L223"
     },
     {
       "id": "tools_init",
@@ -8840,133 +8952,133 @@
       "label": "Development Mode",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L94"
+      "source_location": "L95"
     },
     {
       "id": "readme_web_dashboard",
       "label": "Web Dashboard",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L132"
+      "source_location": "L136"
     },
     {
       "id": "readme_strategy_lab",
       "label": "Strategy Lab",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L200"
+      "source_location": "L204"
     },
     {
       "id": "readme_density_strategy",
       "label": "Density Strategy",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L245"
+      "source_location": "L275"
     },
     {
       "id": "readme_trend_and_ml_filters",
       "label": "Trend And ML Filters",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L268"
+      "source_location": "L298"
     },
     {
       "id": "readme_configure_symbols",
       "label": "Configure Symbols",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L293"
+      "source_location": "L323"
     },
     {
       "id": "readme_bybit_performance",
       "label": "Bybit Performance",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L317"
+      "source_location": "L347"
     },
     {
       "id": "readme_read_signals",
       "label": "Read Signals",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L334"
+      "source_location": "L364"
     },
     {
       "id": "readme_paper_trading",
       "label": "Paper Trading",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L344"
+      "source_location": "L374"
     },
     {
       "id": "readme_storage_and_retention",
       "label": "Storage And Retention",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L452"
+      "source_location": "L482"
     },
     {
       "id": "readme_telegram_commands",
       "label": "Telegram Commands",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L476"
+      "source_location": "L506"
     },
     {
-      "id": "readme_web_dashboard_525",
+      "id": "readme_web_dashboard_555",
       "label": "Web Dashboard",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L525"
+      "source_location": "L555"
     },
     {
-      "id": "readme_strategy_lab_588",
+      "id": "readme_strategy_lab_618",
       "label": "Strategy Lab",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L588"
+      "source_location": "L618"
     },
     {
       "id": "readme_statistics",
       "label": "Statistics",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L663"
+      "source_location": "L693"
     },
     {
       "id": "readme_tests",
       "label": "Tests",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L684"
+      "source_location": "L714"
     },
     {
       "id": "readme_tooling",
       "label": "Tooling",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L700"
+      "source_location": "L730"
     },
     {
       "id": "readme_architecture_graphs",
       "label": "Architecture Graphs",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L713"
+      "source_location": "L743"
     },
     {
       "id": "readme_limitations",
       "label": "Limitations",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L746"
+      "source_location": "L776"
     },
     {
       "id": "readme_risk_notice",
       "label": "Risk Notice",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L755"
+      "source_location": "L785"
     }
   ],
   "input_tokens": 0,
@@ -16363,6 +16475,115 @@
       "weight": 1.0
     },
     {
+      "source": "jobs_runner",
+      "target": "asyncio",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "jobs_runner",
+      "target": "contextlib",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L4",
+      "weight": 1.0
+    },
+    {
+      "source": "jobs_runner",
+      "target": "os",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
+      "source": "jobs_runner",
+      "target": "signal",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "jobs_runner",
+      "target": "pathlib",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "jobs_runner",
+      "target": "app_config",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "jobs_runner",
+      "target": "app_data_database",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "jobs_runner",
+      "target": "app_jobs_worker",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "jobs_runner",
+      "target": "app_logger",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "jobs_runner",
+      "target": "app_main",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L13",
+      "weight": 1.0
+    },
+    {
+      "source": "jobs_runner",
+      "target": "jobs_runner_main",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L16",
+      "weight": 1.0
+    },
+    {
       "source": "jobs_worker",
       "target": "json",
       "relation": "imports",
@@ -20329,6 +20550,26 @@
       "target": "app_optimization_optimizer_py_int",
       "relation": "references",
       "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "app/optimization/optimizer.py",
+      "source_location": "L19",
+      "weight": 1.0
+    },
+    {
+      "source": "optimization_optimizer_hyperoptimizer_run",
+      "target": "app_optimization_optimizer_py_str",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "app/optimization/optimizer.py",
+      "source_location": "L19",
+      "weight": 1.0
+    },
+    {
+      "source": "optimization_optimizer_hyperoptimizer_run",
+      "target": "app_optimization_optimizer_py_any",
+      "relation": "references",
+      "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/optimization/optimizer.py",
       "source_location": "L19",
@@ -24878,7 +25119,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L13",
+      "source_location": "L18",
       "weight": 1.0
     },
     {
@@ -24887,7 +25128,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L16",
+      "source_location": "L21",
       "weight": 1.0
     },
     {
@@ -24896,7 +25137,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L17",
+      "source_location": "L22",
       "weight": 1.0
     },
     {
@@ -24906,7 +25147,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L17",
+      "source_location": "L22",
       "weight": 1.0
     },
     {
@@ -24916,7 +25157,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L17",
+      "source_location": "L22",
       "weight": 1.0
     },
     {
@@ -24925,7 +25166,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L22",
+      "source_location": "L27",
       "weight": 1.0
     },
     {
@@ -24935,7 +25176,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L22",
+      "source_location": "L27",
       "weight": 1.0
     },
     {
@@ -24945,7 +25186,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L22",
+      "source_location": "L27",
       "weight": 1.0
     },
     {
@@ -24954,7 +25195,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L33",
+      "source_location": "L41",
       "weight": 1.0
     },
     {
@@ -24964,7 +25205,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L33",
+      "source_location": "L41",
       "weight": 1.0
     },
     {
@@ -24974,7 +25215,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L33",
+      "source_location": "L41",
       "weight": 1.0
     },
     {
@@ -24983,7 +25224,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L45",
+      "source_location": "L54",
       "weight": 1.0
     },
     {
@@ -24993,7 +25234,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L45",
+      "source_location": "L54",
       "weight": 1.0
     },
     {
@@ -25003,7 +25244,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L45",
+      "source_location": "L54",
       "weight": 1.0
     },
     {
@@ -25012,7 +25253,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L59",
+      "source_location": "L68",
       "weight": 1.0
     },
     {
@@ -25022,7 +25263,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L59",
+      "source_location": "L68",
       "weight": 1.0
     },
     {
@@ -25032,7 +25273,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L59",
+      "source_location": "L68",
       "weight": 1.0
     },
     {
@@ -25042,7 +25283,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L59",
+      "source_location": "L68",
       "weight": 1.0
     },
     {
@@ -25052,7 +25293,36 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L59",
+      "source_location": "L68",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_strategylabservice",
+      "target": "services_strategy_lab_service_strategylabservice_density_summary",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L88",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_strategylabservice_density_summary",
+      "target": "app_services_strategy_lab_service_py_str",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L88",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_strategylabservice_density_summary",
+      "target": "app_services_strategy_lab_service_py_any",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L88",
       "weight": 1.0
     },
     {
@@ -25061,7 +25331,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L79",
+      "source_location": "L117",
       "weight": 1.0
     },
     {
@@ -25071,7 +25341,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L79",
+      "source_location": "L117",
       "weight": 1.0
     },
     {
@@ -25081,7 +25351,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L79",
+      "source_location": "L117",
       "weight": 1.0
     },
     {
@@ -25091,7 +25361,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L79",
+      "source_location": "L117",
       "weight": 1.0
     },
     {
@@ -25100,7 +25370,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L103",
+      "source_location": "L141",
       "weight": 1.0
     },
     {
@@ -25110,7 +25380,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L103",
+      "source_location": "L141",
       "weight": 1.0
     },
     {
@@ -25120,7 +25390,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L103",
+      "source_location": "L141",
       "weight": 1.0
     },
     {
@@ -25129,7 +25399,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L107",
+      "source_location": "L145",
       "weight": 1.0
     },
     {
@@ -25139,7 +25409,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L107",
+      "source_location": "L145",
       "weight": 1.0
     },
     {
@@ -25149,7 +25419,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L107",
+      "source_location": "L145",
       "weight": 1.0
     },
     {
@@ -25159,7 +25429,65 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L107",
+      "source_location": "L145",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_strategylabservice",
+      "target": "services_strategy_lab_service_strategylabservice_compare",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L162",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_strategylabservice_compare",
+      "target": "app_services_strategy_lab_service_py_str",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L162",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_strategylabservice_compare",
+      "target": "app_services_strategy_lab_service_py_any",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L162",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_strategylabservice",
+      "target": "services_strategy_lab_service_strategylabservice_ml_status",
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L216",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_strategylabservice_ml_status",
+      "target": "app_services_strategy_lab_service_py_str",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L216",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_strategylabservice_ml_status",
+      "target": "app_services_strategy_lab_service_py_any",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L216",
       "weight": 1.0
     },
     {
@@ -25168,7 +25496,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L122",
+      "source_location": "L230",
       "weight": 1.0
     },
     {
@@ -25178,7 +25506,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L122",
+      "source_location": "L230",
       "weight": 1.0
     },
     {
@@ -25188,7 +25516,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L122",
+      "source_location": "L230",
       "weight": 1.0
     },
     {
@@ -25198,7 +25526,95 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L122",
+      "source_location": "L230",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service",
+      "target": "services_strategy_lab_service_bucket_trades",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L251",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_bucket_trades",
+      "target": "app_services_strategy_lab_service_py_papertrademodel",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L251",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_bucket_trades",
+      "target": "app_services_strategy_lab_service_py_str",
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L251",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_bucket_trades",
+      "target": "app_services_strategy_lab_service_py_str",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L251",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_bucket_trades",
+      "target": "app_services_strategy_lab_service_py_papertrademodel",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L251",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service",
+      "target": "services_strategy_lab_service_trade_stats",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L258",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_trade_stats",
+      "target": "app_services_strategy_lab_service_py_papertrademodel",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L258",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_trade_stats",
+      "target": "app_services_strategy_lab_service_py_str",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L258",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_trade_stats",
+      "target": "app_services_strategy_lab_service_py_any",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L258",
       "weight": 1.0
     },
     {
@@ -25207,7 +25623,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L140",
+      "source_location": "L286",
       "weight": 1.0
     },
     {
@@ -25217,7 +25633,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L140",
+      "source_location": "L286",
       "weight": 1.0
     },
     {
@@ -25227,7 +25643,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L140",
+      "source_location": "L286",
       "weight": 1.0
     },
     {
@@ -25237,7 +25653,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L140",
+      "source_location": "L286",
       "weight": 1.0
     },
     {
@@ -25247,7 +25663,46 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L140",
+      "source_location": "L286",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service",
+      "target": "services_strategy_lab_service_status_rate",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L311",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_status_rate",
+      "target": "app_services_strategy_lab_service_py_papertrademodel",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L311",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_status_rate",
+      "target": "app_services_strategy_lab_service_py_str",
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L311",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_status_rate",
+      "target": "app_services_strategy_lab_service_py_float",
+      "relation": "references",
+      "context": "return_type",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L311",
       "weight": 1.0
     },
     {
@@ -25257,7 +25712,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L24",
+      "source_location": "L29",
       "weight": 1.0
     },
     {
@@ -25267,7 +25722,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L25",
+      "source_location": "L30",
       "weight": 1.0
     },
     {
@@ -25277,7 +25732,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L26",
+      "source_location": "L31",
       "weight": 1.0
     },
     {
@@ -25287,7 +25742,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L27",
+      "source_location": "L32",
       "weight": 1.0
     },
     {
@@ -25297,7 +25752,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L28",
+      "source_location": "L33",
       "weight": 1.0
     },
     {
@@ -25307,7 +25762,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L29",
+      "source_location": "L34",
       "weight": 1.0
     },
     {
@@ -25317,7 +25772,57 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L30",
+      "source_location": "L35",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_strategylabservice_overview",
+      "target": "services_strategy_lab_service_strategylabservice_density_summary",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L36",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_strategylabservice_overview",
+      "target": "services_strategy_lab_service_strategylabservice_compare",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L37",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_strategylabservice_overview",
+      "target": "services_strategy_lab_service_strategylabservice_ml_status",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L38",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_strategylabservice_compare",
+      "target": "services_strategy_lab_service_bucket_trades",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L180",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_strategylabservice_compare",
+      "target": "services_strategy_lab_service_trade_stats",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L182",
       "weight": 1.0
     },
     {
@@ -25327,7 +25832,27 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L132",
+      "source_location": "L240",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_trade_stats",
+      "target": "services_strategy_lab_service_status_rate",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L280",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_group_trade_pnl",
+      "target": "services_strategy_lab_service_trade_stats",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L298",
       "weight": 1.0
     },
     {
@@ -35300,7 +35825,7 @@
     },
     {
       "source": "web_api",
-      "target": "fastapi",
+      "target": "urllib_parse",
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -35310,17 +35835,17 @@
     },
     {
       "source": "web_api",
-      "target": "fastapi_encoders",
+      "target": "fastapi",
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L4",
+      "source_location": "L5",
       "weight": 1.0
     },
     {
       "source": "web_api",
-      "target": "app_data_repositories",
+      "target": "fastapi_encoders",
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -35330,12 +35855,22 @@
     },
     {
       "source": "web_api",
+      "target": "app_data_repositories",
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L8",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api",
       "target": "app_jobs_models",
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L7",
+      "source_location": "L9",
       "weight": 1.0
     },
     {
@@ -35345,7 +35880,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L14",
+      "source_location": "L16",
       "weight": 1.0
     },
     {
@@ -35355,7 +35890,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L15",
+      "source_location": "L17",
       "weight": 1.0
     },
     {
@@ -35364,7 +35899,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L21",
+      "source_location": "L23",
       "weight": 1.0
     },
     {
@@ -35374,7 +35909,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L21",
+      "source_location": "L23",
       "weight": 1.0
     },
     {
@@ -35383,7 +35918,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L26",
+      "source_location": "L28",
       "weight": 1.0
     },
     {
@@ -35393,7 +35928,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L26",
+      "source_location": "L28",
       "weight": 1.0
     },
     {
@@ -35403,7 +35938,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L26",
+      "source_location": "L28",
       "weight": 1.0
     },
     {
@@ -35413,7 +35948,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L26",
+      "source_location": "L28",
       "weight": 1.0
     },
     {
@@ -35422,7 +35957,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L32",
+      "source_location": "L34",
       "weight": 1.0
     },
     {
@@ -35432,7 +35967,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L32",
+      "source_location": "L34",
       "weight": 1.0
     },
     {
@@ -35441,7 +35976,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L37",
+      "source_location": "L39",
       "weight": 1.0
     },
     {
@@ -35451,7 +35986,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L37",
+      "source_location": "L39",
       "weight": 1.0
     },
     {
@@ -35461,7 +35996,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L37",
+      "source_location": "L39",
       "weight": 1.0
     },
     {
@@ -35470,7 +36005,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L43",
+      "source_location": "L45",
       "weight": 1.0
     },
     {
@@ -35480,7 +36015,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L43",
+      "source_location": "L45",
       "weight": 1.0
     },
     {
@@ -35490,7 +36025,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L43",
+      "source_location": "L45",
       "weight": 1.0
     },
     {
@@ -35499,7 +36034,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L49",
+      "source_location": "L51",
       "weight": 1.0
     },
     {
@@ -35509,7 +36044,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L49",
+      "source_location": "L51",
       "weight": 1.0
     },
     {
@@ -35518,7 +36053,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L54",
+      "source_location": "L56",
       "weight": 1.0
     },
     {
@@ -35528,7 +36063,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L54",
+      "source_location": "L56",
       "weight": 1.0
     },
     {
@@ -35537,7 +36072,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L59",
+      "source_location": "L61",
       "weight": 1.0
     },
     {
@@ -35547,7 +36082,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L59",
+      "source_location": "L61",
       "weight": 1.0
     },
     {
@@ -35556,7 +36091,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L64",
+      "source_location": "L66",
       "weight": 1.0
     },
     {
@@ -35566,7 +36101,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L64",
+      "source_location": "L66",
       "weight": 1.0
     },
     {
@@ -35575,7 +36110,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L69",
+      "source_location": "L71",
       "weight": 1.0
     },
     {
@@ -35585,7 +36120,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L69",
+      "source_location": "L71",
       "weight": 1.0
     },
     {
@@ -35594,7 +36129,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L74",
+      "source_location": "L76",
       "weight": 1.0
     },
     {
@@ -35604,7 +36139,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L74",
+      "source_location": "L76",
       "weight": 1.0
     },
     {
@@ -35613,7 +36148,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L79",
+      "source_location": "L81",
       "weight": 1.0
     },
     {
@@ -35623,7 +36158,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L79",
+      "source_location": "L81",
       "weight": 1.0
     },
     {
@@ -35632,7 +36167,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L84",
+      "source_location": "L86",
       "weight": 1.0
     },
     {
@@ -35642,7 +36177,45 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L84",
+      "source_location": "L86",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api",
+      "target": "web_api_api_strategy_lab_compare",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L91",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api_api_strategy_lab_compare",
+      "target": "app_web_api_py_request",
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L91",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api",
+      "target": "web_api_api_strategy_lab_ml_status",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L96",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api_api_strategy_lab_ml_status",
+      "target": "app_web_api_py_request",
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L96",
       "weight": 1.0
     },
     {
@@ -35651,7 +36224,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L89",
+      "source_location": "L101",
       "weight": 1.0
     },
     {
@@ -35661,7 +36234,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L89",
+      "source_location": "L101",
       "weight": 1.0
     },
     {
@@ -35671,7 +36244,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L89",
+      "source_location": "L101",
       "weight": 1.0
     },
     {
@@ -35680,7 +36253,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L94",
+      "source_location": "L106",
       "weight": 1.0
     },
     {
@@ -35690,7 +36263,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L94",
+      "source_location": "L106",
       "weight": 1.0
     },
     {
@@ -35700,7 +36273,36 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L94",
+      "source_location": "L106",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api",
+      "target": "web_api_api_update_strategy_instance_settings",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L119",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api_api_update_strategy_instance_settings",
+      "target": "app_web_api_py_request",
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L119",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api_api_update_strategy_instance_settings",
+      "target": "app_web_api_py_str",
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L119",
       "weight": 1.0
     },
     {
@@ -35709,7 +36311,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L107",
+      "source_location": "L151",
       "weight": 1.0
     },
     {
@@ -35719,7 +36321,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L107",
+      "source_location": "L151",
       "weight": 1.0
     },
     {
@@ -35728,7 +36330,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L120",
+      "source_location": "L164",
       "weight": 1.0
     },
     {
@@ -35738,7 +36340,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L120",
+      "source_location": "L164",
       "weight": 1.0
     },
     {
@@ -35747,7 +36349,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L140",
+      "source_location": "L186",
       "weight": 1.0
     },
     {
@@ -35757,7 +36359,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L140",
+      "source_location": "L186",
       "weight": 1.0
     },
     {
@@ -35766,7 +36368,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L160",
+      "source_location": "L208",
       "weight": 1.0
     },
     {
@@ -35776,7 +36378,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L160",
+      "source_location": "L208",
       "weight": 1.0
     },
     {
@@ -35785,7 +36387,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L171",
+      "source_location": "L219",
       "weight": 1.0
     },
     {
@@ -35795,7 +36397,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L171",
+      "source_location": "L219",
       "weight": 1.0
     },
     {
@@ -35804,7 +36406,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L181",
+      "source_location": "L229",
       "weight": 1.0
     },
     {
@@ -35814,7 +36416,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L181",
+      "source_location": "L229",
       "weight": 1.0
     },
     {
@@ -35824,7 +36426,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L181",
+      "source_location": "L229",
       "weight": 1.0
     },
     {
@@ -35834,7 +36436,154 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L181",
+      "source_location": "L229",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api",
+      "target": "web_api_strategy_params",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L236",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api_strategy_params",
+      "target": "app_web_api_py_request",
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L236",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api_strategy_params",
+      "target": "app_web_api_py_str",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L236",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api_strategy_params",
+      "target": "app_web_api_py_object",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L236",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api_strategy_params",
+      "target": "app_web_api_py_str",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L236",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api",
+      "target": "web_api_strategy_instance_updates",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L249",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api_strategy_instance_updates",
+      "target": "app_web_api_py_str",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L249",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api_strategy_instance_updates",
+      "target": "app_web_api_py_object",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L249",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api_strategy_instance_updates",
+      "target": "app_web_api_py_str",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L249",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api_strategy_instance_updates",
+      "target": "app_web_api_py_object",
+      "relation": "references",
+      "context": "generic_arg",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L249",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api",
+      "target": "web_api_coerce_value",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L272",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api_coerce_value",
+      "target": "app_web_api_py_object",
+      "relation": "references",
+      "context": "parameter_type",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L272",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api_coerce_value",
+      "target": "app_web_api_py_object",
+      "relation": "references",
+      "context": "return_type",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L272",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api_api_update_strategy_instance_settings",
+      "target": "web_api_request_params",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L123",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api_api_update_strategy_instance_settings",
+      "target": "web_api_strategy_instance_updates",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L124",
       "weight": 1.0
     },
     {
@@ -35844,7 +36593,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L108",
+      "source_location": "L152",
       "weight": 1.0
     },
     {
@@ -35854,7 +36603,17 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L121",
+      "source_location": "L165",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api_api_run_backtest",
+      "target": "web_api_strategy_params",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L166",
       "weight": 1.0
     },
     {
@@ -35864,7 +36623,17 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L141",
+      "source_location": "L187",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api_api_run_hyperopt",
+      "target": "web_api_strategy_params",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L188",
       "weight": 1.0
     },
     {
@@ -35874,7 +36643,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L161",
+      "source_location": "L209",
       "weight": 1.0
     },
     {
@@ -35884,7 +36653,27 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L172",
+      "source_location": "L220",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api_strategy_params",
+      "target": "web_api_coerce_value",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L244",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api_strategy_instance_updates",
+      "target": "web_api_coerce_value",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app/web/api.py",
+      "source_location": "L268",
       "weight": 1.0
     },
     {
@@ -38303,7 +39092,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L91",
+      "source_location": "L99",
       "weight": 1.0
     },
     {
@@ -38312,7 +39101,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L95",
+      "source_location": "L103",
       "weight": 1.0
     },
     {
@@ -38322,7 +39111,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L95",
+      "source_location": "L103",
       "weight": 1.0
     },
     {
@@ -38332,7 +39121,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L95",
+      "source_location": "L103",
       "weight": 1.0
     },
     {
@@ -38341,7 +39130,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L120",
+      "source_location": "L128",
       "weight": 1.0
     },
     {
@@ -38351,7 +39140,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L120",
+      "source_location": "L128",
       "weight": 1.0
     },
     {
@@ -38361,7 +39150,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L120",
+      "source_location": "L128",
       "weight": 1.0
     },
     {
@@ -38371,7 +39160,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L120",
+      "source_location": "L128",
       "weight": 1.0
     },
     {
@@ -38381,7 +39170,7 @@
       "context": "return_type",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L120",
+      "source_location": "L128",
       "weight": 1.0
     },
     {
@@ -38390,7 +39179,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L126",
+      "source_location": "L134",
       "weight": 1.0
     },
     {
@@ -38400,7 +39189,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L126",
+      "source_location": "L134",
       "weight": 1.0
     },
     {
@@ -38410,7 +39199,7 @@
       "context": "return_type",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L126",
+      "source_location": "L134",
       "weight": 1.0
     },
     {
@@ -38419,7 +39208,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L141",
+      "source_location": "L149",
       "weight": 1.0
     },
     {
@@ -38429,7 +39218,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L141",
+      "source_location": "L149",
       "weight": 1.0
     },
     {
@@ -38438,7 +39227,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L149",
+      "source_location": "L157",
       "weight": 1.0
     },
     {
@@ -38448,7 +39237,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L149",
+      "source_location": "L157",
       "weight": 1.0
     },
     {
@@ -38457,7 +39246,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L157",
+      "source_location": "L165",
       "weight": 1.0
     },
     {
@@ -38467,7 +39256,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L157",
+      "source_location": "L165",
       "weight": 1.0
     },
     {
@@ -38476,7 +39265,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L165",
+      "source_location": "L173",
       "weight": 1.0
     },
     {
@@ -38486,7 +39275,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L165",
+      "source_location": "L173",
       "weight": 1.0
     },
     {
@@ -38495,7 +39284,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L174",
+      "source_location": "L182",
       "weight": 1.0
     },
     {
@@ -38505,7 +39294,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L174",
+      "source_location": "L182",
       "weight": 1.0
     },
     {
@@ -38514,7 +39303,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L183",
+      "source_location": "L191",
       "weight": 1.0
     },
     {
@@ -38524,7 +39313,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L183",
+      "source_location": "L191",
       "weight": 1.0
     },
     {
@@ -38533,7 +39322,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L191",
+      "source_location": "L199",
       "weight": 1.0
     },
     {
@@ -38543,7 +39332,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L191",
+      "source_location": "L199",
       "weight": 1.0
     },
     {
@@ -38552,7 +39341,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L201",
+      "source_location": "L209",
       "weight": 1.0
     },
     {
@@ -38562,7 +39351,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L201",
+      "source_location": "L209",
       "weight": 1.0
     },
     {
@@ -38571,7 +39360,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L209",
+      "source_location": "L217",
       "weight": 1.0
     },
     {
@@ -38581,7 +39370,16 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L209",
+      "source_location": "L217",
+      "weight": 1.0
+    },
+    {
+      "source": "tests_test_web_dashboard",
+      "target": "tests_test_web_dashboard_test_strategy_instance_update_parser_coerces_supported_values",
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_web_dashboard.py",
+      "source_location": "L223",
       "weight": 1.0
     },
     {
@@ -38591,7 +39389,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L92",
+      "source_location": "L100",
       "weight": 1.0
     },
     {
@@ -38601,7 +39399,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L111",
+      "source_location": "L119",
       "weight": 1.0
     },
     {
@@ -38611,7 +39409,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L112",
+      "source_location": "L120",
       "weight": 1.0
     },
     {
@@ -38621,7 +39419,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L113",
+      "source_location": "L121",
       "weight": 1.0
     },
     {
@@ -38631,7 +39429,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L114",
+      "source_location": "L122",
       "weight": 1.0
     },
     {
@@ -38641,7 +39439,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L115",
+      "source_location": "L123",
       "weight": 1.0
     },
     {
@@ -38651,7 +39449,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L116",
+      "source_location": "L124",
       "weight": 1.0
     },
     {
@@ -38661,7 +39459,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L142",
+      "source_location": "L150",
       "weight": 1.0
     },
     {
@@ -38671,31 +39469,11 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L142",
-      "weight": 1.0
-    },
-    {
-      "source": "tests_test_web_dashboard_test_health_is_public",
-      "target": "tests_test_web_dashboard_get",
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_web_dashboard.py",
       "source_location": "L150",
       "weight": 1.0
     },
     {
       "source": "tests_test_web_dashboard_test_health_is_public",
-      "target": "tests_test_web_dashboard_app",
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L150",
-      "weight": 1.0
-    },
-    {
-      "source": "tests_test_web_dashboard_test_web_requires_configured_credentials",
       "target": "tests_test_web_dashboard_get",
       "relation": "calls",
       "context": "call",
@@ -38705,7 +39483,7 @@
       "weight": 1.0
     },
     {
-      "source": "tests_test_web_dashboard_test_web_requires_configured_credentials",
+      "source": "tests_test_web_dashboard_test_health_is_public",
       "target": "tests_test_web_dashboard_app",
       "relation": "calls",
       "context": "call",
@@ -38715,7 +39493,7 @@
       "weight": 1.0
     },
     {
-      "source": "tests_test_web_dashboard_test_login_page_works_without_browser_popup",
+      "source": "tests_test_web_dashboard_test_web_requires_configured_credentials",
       "target": "tests_test_web_dashboard_get",
       "relation": "calls",
       "context": "call",
@@ -38725,7 +39503,7 @@
       "weight": 1.0
     },
     {
-      "source": "tests_test_web_dashboard_test_login_page_works_without_browser_popup",
+      "source": "tests_test_web_dashboard_test_web_requires_configured_credentials",
       "target": "tests_test_web_dashboard_app",
       "relation": "calls",
       "context": "call",
@@ -38735,13 +39513,33 @@
       "weight": 1.0
     },
     {
+      "source": "tests_test_web_dashboard_test_login_page_works_without_browser_popup",
+      "target": "tests_test_web_dashboard_get",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_web_dashboard.py",
+      "source_location": "L174",
+      "weight": 1.0
+    },
+    {
+      "source": "tests_test_web_dashboard_test_login_page_works_without_browser_popup",
+      "target": "tests_test_web_dashboard_app",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_web_dashboard.py",
+      "source_location": "L174",
+      "weight": 1.0
+    },
+    {
       "source": "tests_test_web_dashboard_test_status_page_works_on_empty_data",
       "target": "tests_test_web_dashboard_authed_get",
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L175",
+      "source_location": "L183",
       "weight": 1.0
     },
     {
@@ -38751,7 +39549,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L175",
+      "source_location": "L183",
       "weight": 1.0
     },
     {
@@ -38761,7 +39559,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L184",
+      "source_location": "L192",
       "weight": 1.0
     },
     {
@@ -38771,7 +39569,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L184",
+      "source_location": "L192",
       "weight": 1.0
     },
     {
@@ -38781,7 +39579,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L192",
+      "source_location": "L200",
       "weight": 1.0
     },
     {
@@ -38791,7 +39589,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L192",
+      "source_location": "L200",
       "weight": 1.0
     },
     {
@@ -38801,7 +39599,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L202",
+      "source_location": "L210",
       "weight": 1.0
     },
     {
@@ -38811,7 +39609,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L202",
+      "source_location": "L210",
       "weight": 1.0
     },
     {
@@ -38821,7 +39619,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L210",
+      "source_location": "L218",
       "weight": 1.0
     },
     {
@@ -38831,7 +39629,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L210",
+      "source_location": "L218",
       "weight": 1.0
     },
     {
@@ -41289,7 +42087,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L94",
+      "source_location": "L95",
       "weight": 1.0
     },
     {
@@ -41298,7 +42096,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L132",
+      "source_location": "L136",
       "weight": 1.0
     },
     {
@@ -41307,7 +42105,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L200",
+      "source_location": "L204",
       "weight": 1.0
     },
     {
@@ -41316,7 +42114,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L245",
+      "source_location": "L275",
       "weight": 1.0
     },
     {
@@ -41325,7 +42123,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L268",
+      "source_location": "L298",
       "weight": 1.0
     },
     {
@@ -41334,7 +42132,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L293",
+      "source_location": "L323",
       "weight": 1.0
     },
     {
@@ -41343,7 +42141,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L317",
+      "source_location": "L347",
       "weight": 1.0
     },
     {
@@ -41352,7 +42150,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L334",
+      "source_location": "L364",
       "weight": 1.0
     },
     {
@@ -41361,7 +42159,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L344",
+      "source_location": "L374",
       "weight": 1.0
     },
     {
@@ -41370,7 +42168,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L452",
+      "source_location": "L482",
       "weight": 1.0
     },
     {
@@ -41379,25 +42177,25 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L476",
+      "source_location": "L506",
       "weight": 1.0
     },
     {
       "source": "readme_market_heat_signal_bot",
-      "target": "readme_web_dashboard_525",
+      "target": "readme_web_dashboard_555",
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L525",
+      "source_location": "L555",
       "weight": 1.0
     },
     {
       "source": "readme_market_heat_signal_bot",
-      "target": "readme_strategy_lab_588",
+      "target": "readme_strategy_lab_618",
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L588",
+      "source_location": "L618",
       "weight": 1.0
     },
     {
@@ -41406,7 +42204,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L663",
+      "source_location": "L693",
       "weight": 1.0
     },
     {
@@ -41415,7 +42213,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L684",
+      "source_location": "L714",
       "weight": 1.0
     },
     {
@@ -41424,7 +42222,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L700",
+      "source_location": "L730",
       "weight": 1.0
     },
     {
@@ -41433,7 +42231,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L713",
+      "source_location": "L743",
       "weight": 1.0
     },
     {
@@ -41442,7 +42240,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L746",
+      "source_location": "L776",
       "weight": 1.0
     },
     {
@@ -41451,7 +42249,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L755",
+      "source_location": "L785",
       "weight": 1.0
     },
     {
@@ -42052,6 +42850,56 @@
       "confidence": "EXTRACTED",
       "source_file": "app/jobs/queue.py",
       "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "jobs_runner",
+      "target": "app_config_load_settings",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "jobs_runner",
+      "target": "data_database_database",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "jobs_runner",
+      "target": "jobs_worker_jobworker",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "jobs_runner",
+      "target": "app_logger_setup_logging",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "jobs_runner",
+      "target": "app_main_apply_runtime_settings",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L13",
       "weight": 1.0
     },
     {
@@ -43446,6 +44294,26 @@
     },
     {
       "source": "services_strategy_lab_service",
+      "target": "data_models_densityeventmodel",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service",
+      "target": "data_models_paperprofilemodel",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service",
       "target": "data_models_papertrademodel",
       "relation": "imports",
       "context": "import",
@@ -43486,12 +44354,22 @@
     },
     {
       "source": "services_strategy_lab_service",
+      "target": "data_repositories_mlmodelrepository",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service",
       "target": "strategies_registry_default_registry",
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L13",
+      "source_location": "L18",
       "weight": 1.0
     },
     {
@@ -44871,7 +45749,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L6",
+      "source_location": "L8",
       "weight": 1.0
     },
     {
@@ -44881,7 +45759,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L14",
+      "source_location": "L16",
       "weight": 1.0
     },
     {
@@ -44891,7 +45769,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "app/web/api.py",
-      "source_location": "L15",
+      "source_location": "L17",
       "weight": 1.0
     },
     {
@@ -45465,6 +46343,16 @@
       "weight": 1.0
     },
     {
+      "source": "tests_test_web_dashboard",
+      "target": "web_api_strategy_instance_updates",
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_web_dashboard.py",
+      "source_location": "L224",
+      "weight": 1.0
+    },
+    {
       "source": "tools_backup_database",
       "target": "app_config_load_settings",
       "relation": "imports",
@@ -45672,6 +46560,56 @@
       "confidence": "EXTRACTED",
       "source_file": "app/backtesting/engine.py",
       "source_location": "L165",
+      "weight": 1.0
+    },
+    {
+      "source": "jobs_runner_main",
+      "target": "app_config_load_settings",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L17",
+      "weight": 1.0
+    },
+    {
+      "source": "jobs_runner_main",
+      "target": "app_logger_setup_logging",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L18",
+      "weight": 1.0
+    },
+    {
+      "source": "jobs_runner_main",
+      "target": "data_database_database",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L19",
+      "weight": 1.0
+    },
+    {
+      "source": "jobs_runner_main",
+      "target": "app_main_apply_runtime_settings",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L21",
+      "weight": 1.0
+    },
+    {
+      "source": "jobs_runner_main",
+      "target": "jobs_worker_jobworker",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "app/jobs/runner.py",
+      "source_location": "L22",
       "weight": 1.0
     },
     {
@@ -46581,7 +47519,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L102",
+      "source_location": "L110",
       "weight": 1.0
     },
     {
@@ -46591,7 +47529,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L103",
+      "source_location": "L111",
       "weight": 1.0
     },
     {
@@ -46601,7 +47539,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L104",
+      "source_location": "L112",
       "weight": 1.0
     },
     {
@@ -46611,7 +47549,17 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/test_web_dashboard.py",
-      "source_location": "L110",
+      "source_location": "L118",
+      "weight": 1.0
+    },
+    {
+      "source": "tests_test_web_dashboard_test_strategy_instance_update_parser_coerces_supported_values",
+      "target": "web_api_strategy_instance_updates",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/test_web_dashboard.py",
+      "source_location": "L226",
       "weight": 1.0
     },
     {
@@ -57862,6 +58810,15 @@
       "weight": 0.8
     },
     {
+      "source": "app_services_strategy_lab_service_py_float",
+      "target": "app_config_settings",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L9",
+      "weight": 0.8
+    },
+    {
       "source": "services_strategy_lab_service_strategylabservice",
       "target": "data_database_database",
       "relation": "uses",
@@ -57925,6 +58882,15 @@
       "weight": 0.8
     },
     {
+      "source": "app_services_strategy_lab_service_py_float",
+      "target": "data_database_database",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L10",
+      "weight": 0.8
+    },
+    {
       "source": "services_strategy_lab_service_strategylabservice",
       "target": "data_models_backtestrunmodel",
       "relation": "uses",
@@ -57988,6 +58954,159 @@
       "weight": 0.8
     },
     {
+      "source": "app_services_strategy_lab_service_py_float",
+      "target": "data_models_backtestrunmodel",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L11",
+      "weight": 0.8
+    },
+    {
+      "source": "services_strategy_lab_service_strategylabservice",
+      "target": "data_models_densityeventmodel",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L11",
+      "weight": 0.8
+    },
+    {
+      "source": "app_services_strategy_lab_service_py_database",
+      "target": "data_models_densityeventmodel",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L11",
+      "weight": 0.8
+    },
+    {
+      "source": "app_services_strategy_lab_service_py_settings",
+      "target": "data_models_densityeventmodel",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L11",
+      "weight": 0.8
+    },
+    {
+      "source": "app_services_strategy_lab_service_py_str",
+      "target": "data_models_densityeventmodel",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L11",
+      "weight": 0.8
+    },
+    {
+      "source": "app_services_strategy_lab_service_py_any",
+      "target": "data_models_densityeventmodel",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L11",
+      "weight": 0.8
+    },
+    {
+      "source": "app_services_strategy_lab_service_py_int",
+      "target": "data_models_densityeventmodel",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L11",
+      "weight": 0.8
+    },
+    {
+      "source": "app_services_strategy_lab_service_py_papertrademodel",
+      "target": "data_models_densityeventmodel",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L11",
+      "weight": 0.8
+    },
+    {
+      "source": "app_services_strategy_lab_service_py_float",
+      "target": "data_models_densityeventmodel",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L11",
+      "weight": 0.8
+    },
+    {
+      "source": "services_strategy_lab_service_strategylabservice",
+      "target": "data_models_paperprofilemodel",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L11",
+      "weight": 0.8
+    },
+    {
+      "source": "app_services_strategy_lab_service_py_database",
+      "target": "data_models_paperprofilemodel",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L11",
+      "weight": 0.8
+    },
+    {
+      "source": "app_services_strategy_lab_service_py_settings",
+      "target": "data_models_paperprofilemodel",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L11",
+      "weight": 0.8
+    },
+    {
+      "source": "app_services_strategy_lab_service_py_str",
+      "target": "data_models_paperprofilemodel",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L11",
+      "weight": 0.8
+    },
+    {
+      "source": "app_services_strategy_lab_service_py_any",
+      "target": "data_models_paperprofilemodel",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L11",
+      "weight": 0.8
+    },
+    {
+      "source": "app_services_strategy_lab_service_py_int",
+      "target": "data_models_paperprofilemodel",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L11",
+      "weight": 0.8
+    },
+    {
+      "source": "app_services_strategy_lab_service_py_papertrademodel",
+      "target": "data_models_paperprofilemodel",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L11",
+      "weight": 0.8
+    },
+    {
+      "source": "app_services_strategy_lab_service_py_float",
+      "target": "data_models_paperprofilemodel",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L11",
+      "weight": 0.8
+    },
+    {
       "source": "services_strategy_lab_service_strategylabservice",
       "target": "data_models_papertrademodel",
       "relation": "uses",
@@ -58051,6 +59170,15 @@
       "weight": 0.8
     },
     {
+      "source": "app_services_strategy_lab_service_py_float",
+      "target": "data_models_papertrademodel",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L11",
+      "weight": 0.8
+    },
+    {
       "source": "services_strategy_lab_service_strategylabservice",
       "target": "data_repositories_densityrepository",
       "relation": "uses",
@@ -58114,6 +59242,15 @@
       "weight": 0.8
     },
     {
+      "source": "app_services_strategy_lab_service_py_float",
+      "target": "data_repositories_densityrepository",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L12",
+      "weight": 0.8
+    },
+    {
       "source": "services_strategy_lab_service_strategylabservice",
       "target": "data_repositories_historicaldatarepository",
       "relation": "uses",
@@ -58177,6 +59314,15 @@
       "weight": 0.8
     },
     {
+      "source": "app_services_strategy_lab_service_py_float",
+      "target": "data_repositories_historicaldatarepository",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L12",
+      "weight": 0.8
+    },
+    {
       "source": "services_strategy_lab_service_strategylabservice",
       "target": "data_repositories_jobrepository",
       "relation": "uses",
@@ -58233,6 +59379,87 @@
     {
       "source": "app_services_strategy_lab_service_py_papertrademodel",
       "target": "data_repositories_jobrepository",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L12",
+      "weight": 0.8
+    },
+    {
+      "source": "app_services_strategy_lab_service_py_float",
+      "target": "data_repositories_jobrepository",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L12",
+      "weight": 0.8
+    },
+    {
+      "source": "services_strategy_lab_service_strategylabservice",
+      "target": "data_repositories_mlmodelrepository",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L12",
+      "weight": 0.8
+    },
+    {
+      "source": "app_services_strategy_lab_service_py_database",
+      "target": "data_repositories_mlmodelrepository",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L12",
+      "weight": 0.8
+    },
+    {
+      "source": "app_services_strategy_lab_service_py_settings",
+      "target": "data_repositories_mlmodelrepository",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L12",
+      "weight": 0.8
+    },
+    {
+      "source": "app_services_strategy_lab_service_py_str",
+      "target": "data_repositories_mlmodelrepository",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L12",
+      "weight": 0.8
+    },
+    {
+      "source": "app_services_strategy_lab_service_py_any",
+      "target": "data_repositories_mlmodelrepository",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L12",
+      "weight": 0.8
+    },
+    {
+      "source": "app_services_strategy_lab_service_py_int",
+      "target": "data_repositories_mlmodelrepository",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L12",
+      "weight": 0.8
+    },
+    {
+      "source": "app_services_strategy_lab_service_py_papertrademodel",
+      "target": "data_repositories_mlmodelrepository",
+      "relation": "uses",
+      "confidence": "INFERRED",
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L12",
+      "weight": 0.8
+    },
+    {
+      "source": "app_services_strategy_lab_service_py_float",
+      "target": "data_repositories_mlmodelrepository",
       "relation": "uses",
       "confidence": "INFERRED",
       "source_file": "app/services/strategy_lab_service.py",
@@ -64761,7 +65988,7 @@
       "relation": "uses",
       "confidence": "INFERRED",
       "source_file": "app/web/api.py",
-      "source_location": "L6",
+      "source_location": "L8",
       "weight": 0.8
     },
     {
@@ -64770,7 +65997,7 @@
       "relation": "uses",
       "confidence": "INFERRED",
       "source_file": "app/web/api.py",
-      "source_location": "L6",
+      "source_location": "L8",
       "weight": 0.8
     },
     {
@@ -64779,7 +66006,7 @@
       "relation": "uses",
       "confidence": "INFERRED",
       "source_file": "app/web/api.py",
-      "source_location": "L6",
+      "source_location": "L8",
       "weight": 0.8
     },
     {
@@ -64788,7 +66015,7 @@
       "relation": "uses",
       "confidence": "INFERRED",
       "source_file": "app/web/api.py",
-      "source_location": "L6",
+      "source_location": "L8",
       "weight": 0.8
     },
     {
@@ -64797,7 +66024,7 @@
       "relation": "uses",
       "confidence": "INFERRED",
       "source_file": "app/web/api.py",
-      "source_location": "L14",
+      "source_location": "L16",
       "weight": 0.8
     },
     {
@@ -64806,7 +66033,7 @@
       "relation": "uses",
       "confidence": "INFERRED",
       "source_file": "app/web/api.py",
-      "source_location": "L14",
+      "source_location": "L16",
       "weight": 0.8
     },
     {
@@ -64815,7 +66042,7 @@
       "relation": "uses",
       "confidence": "INFERRED",
       "source_file": "app/web/api.py",
-      "source_location": "L14",
+      "source_location": "L16",
       "weight": 0.8
     },
     {
@@ -64824,7 +66051,7 @@
       "relation": "uses",
       "confidence": "INFERRED",
       "source_file": "app/web/api.py",
-      "source_location": "L14",
+      "source_location": "L16",
       "weight": 0.8
     },
     {
@@ -66518,7 +67745,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/jobs/worker.py",
-      "source_location": "L69",
+      "source_location": "L70",
       "weight": 1.0
     },
     {
@@ -66529,7 +67756,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/jobs/worker.py",
-      "source_location": "L76",
+      "source_location": "L78",
       "weight": 1.0
     },
     {
@@ -66540,7 +67767,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/jobs/worker.py",
-      "source_location": "L81",
+      "source_location": "L83",
       "weight": 1.0
     },
     {
@@ -66716,7 +67943,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/optimization/optimizer.py",
-      "source_location": "L29",
+      "source_location": "L31",
       "weight": 1.0
     },
     {
@@ -66727,7 +67954,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/optimization/optimizer.py",
-      "source_location": "L39",
+      "source_location": "L41",
       "weight": 1.0
     },
     {
@@ -66738,7 +67965,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/optimization/optimizer.py",
-      "source_location": "L46",
+      "source_location": "L49",
       "weight": 1.0
     },
     {
@@ -67255,7 +68482,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L20",
+      "source_location": "L25",
       "weight": 1.0
     },
     {
@@ -67266,7 +68493,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L61",
+      "source_location": "L70",
       "weight": 1.0
     },
     {
@@ -67277,7 +68504,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L105",
+      "source_location": "L143",
       "weight": 1.0
     },
     {
@@ -67288,7 +68515,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/services/strategy_lab_service.py",
-      "source_location": "L109",
+      "source_location": "L147",
+      "weight": 1.0
+    },
+    {
+      "source": "services_strategy_lab_service_strategylabservice_ml_status",
+      "target": "data_repositories_mlmodelrepository",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "app/services/strategy_lab_service.py",
+      "source_location": "L218",
       "weight": 1.0
     },
     {
@@ -68443,7 +69681,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/web/api.py",
-      "source_location": "L100",
+      "source_location": "L112",
+      "weight": 1.0
+    },
+    {
+      "source": "web_api_api_update_strategy_instance_settings",
+      "target": "data_repositories_runtimesettingsrepository",
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "app/web/api.py",
+      "source_location": "L128",
       "weight": 1.0
     },
     {
@@ -68454,7 +69703,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/web/api.py",
-      "source_location": "L113",
+      "source_location": "L157",
       "weight": 1.0
     },
     {
@@ -68465,7 +69714,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/web/api.py",
-      "source_location": "L127",
+      "source_location": "L171",
       "weight": 1.0
     },
     {
@@ -68476,7 +69725,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/web/api.py",
-      "source_location": "L147",
+      "source_location": "L193",
       "weight": 1.0
     },
     {
@@ -68487,7 +69736,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/web/api.py",
-      "source_location": "L163",
+      "source_location": "L211",
       "weight": 1.0
     },
     {
@@ -68498,7 +69747,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "app/web/api.py",
-      "source_location": "L174",
+      "source_location": "L222",
       "weight": 1.0
     },
     {

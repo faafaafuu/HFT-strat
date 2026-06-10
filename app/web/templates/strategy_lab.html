@@ -34,7 +34,7 @@
   <div class="card">
     <h2>Strategy Instances</h2>
     <table>
-      <thead><tr><th>ID</th><th>Strategy</th><th>Score</th><th>Paper</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>ID</th><th>Strategy</th><th>Score</th><th>Paper</th><th>Status</th><th>Config</th><th></th></tr></thead>
       <tbody>
         {% for item in lab.instances %}
         <tr>
@@ -43,6 +43,7 @@
           <td>{{ item.min_score }}</td>
           <td>{{ item.paper_profile }}</td>
           <td><span class="pill">{{ "ON" if item.enabled else "OFF" }}</span></td>
+          <td><code>{{ item.config }}</code></td>
           <td>
             <button hx-post="/api/strategy-lab/instances/{{ item.id }}/toggle" hx-target="#job-result">
               Toggle
@@ -57,6 +58,35 @@
 
 <section class="grid">
   <div class="card">
+    <h2>Edit Instance</h2>
+    {% for item in lab.instances %}
+    <form class="stack compact-form" hx-post="/api/strategy-lab/instances/{{ item.id }}/settings" hx-target="#job-result">
+      <strong>{{ item.id }}</strong>
+      <label>Min Score <input name="min_score" value="{{ item.min_score }}"></label>
+      <label>Paper Profile <input name="paper_profile" value="{{ item.paper_profile }}"></label>
+      <label>Min Density USD <input name="config.min_density_usd" value="{{ item.config.min_density_usd or '' }}"></label>
+      <label>Max Distance % <input name="config.max_distance_pct" value="{{ item.config.max_distance_pct or '' }}"></label>
+      <label>Min Lifetime Sec <input name="config.min_lifetime_sec" value="{{ item.config.min_lifetime_sec or '' }}"></label>
+      <label>Require Absorption
+        <select name="config.require_absorption">
+          <option value="true" {% if item.config.require_absorption %}selected{% endif %}>true</option>
+          <option value="false" {% if not item.config.require_absorption %}selected{% endif %}>false</option>
+        </select>
+      </label>
+      <label>Require Trend
+        <select name="config.require_trend_alignment">
+          <option value="true" {% if item.config.require_trend_alignment %}selected{% endif %}>true</option>
+          <option value="false" {% if not item.config.require_trend_alignment %}selected{% endif %}>false</option>
+        </select>
+      </label>
+      <button type="submit">Save {{ item.id }}</button>
+    </form>
+    {% else %}
+    <p class="muted">No strategy instances configured.</p>
+    {% endfor %}
+  </div>
+
+  <div class="card">
     <h2>Run Jobs</h2>
     <form class="stack" hx-post="/api/strategy-lab/history/download" hx-target="#job-result">
       <input name="symbol" value="BTCUSDT">
@@ -65,6 +95,12 @@
       <button type="submit">Download History</button>
     </form>
     <form class="stack" hx-post="/api/strategy-lab/backtests/run" hx-target="#job-result">
+      <select name="strategy_instance_id">
+        <option value="">manual strategy_key</option>
+        {% for item in lab.instances %}
+        <option value="{{ item.id }}">{{ item.id }}</option>
+        {% endfor %}
+      </select>
       <input name="strategy_key" value="micro_stop_hunt_reclaim">
       <input name="symbol" value="BTCUSDT">
       <input name="timeframe" value="1m">
@@ -72,8 +108,16 @@
       <button type="submit">Run Backtest</button>
     </form>
     <form class="stack" hx-post="/api/strategy-lab/hyperopt/run" hx-target="#job-result">
+      <select name="strategy_instance_id">
+        <option value="">manual strategy_key</option>
+        {% for item in lab.instances %}
+        <option value="{{ item.id }}">{{ item.id }}</option>
+        {% endfor %}
+      </select>
       <input name="strategy_key" value="density_strategy">
       <input name="symbol" value="BTCUSDT">
+      <input name="timeframe" value="1m">
+      <input name="days" value="30">
       <button type="submit">Run Hyperopt</button>
     </form>
     <form class="stack" hx-post="/api/strategy-lab/ml/train" hx-target="#job-result">
@@ -110,6 +154,39 @@
 
 <section class="grid">
   <div class="card">
+    <h2>Density Summary</h2>
+    <table>
+      <thead><tr><th>Symbol</th><th>Type</th><th>Events</th><th>Avg Size</th><th>Abs</th><th>Spoof</th></tr></thead>
+      <tbody>
+        {% for row in lab.density_summary %}
+        <tr>
+          <td>{{ row.symbol }}</td>
+          <td>{{ row.event_type }}</td>
+          <td>{{ row.events }}</td>
+          <td>{{ row.avg_size_usd|money }}</td>
+          <td>{{ row.avg_absorption_score|num }}</td>
+          <td>{{ row.avg_spoof_score|num }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="muted">No density summary yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h2>ML Status</h2>
+    {% if lab.ml_status.active %}
+    <p><strong>Active:</strong> {{ lab.ml_status.model_type }}</p>
+    <p><strong>Model:</strong> {{ lab.ml_status.model_path }}</p>
+    <pre class="code">{{ lab.ml_status.metrics }}</pre>
+    {% else %}
+    <p class="muted">No active ML model. Train job will activate only if enough data and validation quality pass.</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="grid">
+  <div class="card">
     <h2>Recent Backtests</h2>
     <table>
       <thead><tr><th>ID</th><th>Strategy</th><th>Symbol</th><th>WR</th><th>PF</th><th>PnL</th></tr></thead>
@@ -132,12 +209,18 @@
   <div class="card">
     <h2>Jobs</h2>
     <table>
-      <thead><tr><th>ID</th><th>Type</th><th>Status</th><th>Error</th></tr></thead>
+      <thead><tr><th>ID</th><th>Type</th><th>Status</th><th>Params</th><th>Error</th></tr></thead>
       <tbody>
         {% for job in lab.jobs %}
-        <tr><td>{{ job.id }}</td><td>{{ job.job_type }}</td><td>{{ job.status }}</td><td>{{ job.error or "" }}</td></tr>
+        <tr>
+          <td>{{ job.id }}</td>
+          <td>{{ job.job_type }}</td>
+          <td>{{ job.status }}</td>
+          <td><code>{{ job.params }}</code></td>
+          <td>{{ job.error or "" }}</td>
+        </tr>
         {% else %}
-        <tr><td colspan="4" class="muted">No jobs yet.</td></tr>
+        <tr><td colspan="5" class="muted">No jobs yet.</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -160,10 +243,57 @@
   </div>
   <div class="card">
     <h2>Why Losing</h2>
-    <p class="muted">Worst groups by net PnL.</p>
+    <p class="muted">Worst strategy instances by net PnL.</p>
+    {% set rows = lab.diagnostics.by_instance %}
+    {% include "diagnostics_table.html" %}
+    <p class="muted">Worst strategies by net PnL.</p>
     {% set rows = lab.diagnostics.by_strategy %}
     {% include "diagnostics_table.html" %}
     <p><a class="button" href="/analytics/why-losing">Open why-losing report</a></p>
+  </div>
+</section>
+
+<section class="grid">
+  <div class="card">
+    <h2>Compare Paper Profiles</h2>
+    <table>
+      <thead><tr><th>Profile</th><th>Balance</th><th>PnL</th><th>Trades</th><th>WR</th><th>PF</th><th>DD</th></tr></thead>
+      <tbody>
+        {% for row in lab.compare.profiles %}
+        <tr>
+          <td>{{ row.profile_key }}</td>
+          <td>{{ row.balance|money }}</td>
+          <td>{{ row.net_pnl|money }}</td>
+          <td>{{ row.trades }}</td>
+          <td>{{ row.winrate|pct }}</td>
+          <td>{{ row.profit_factor|num }}</td>
+          <td>{{ row.max_drawdown_pct|pct }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="muted">No paper profiles found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h2>Compare Backtests</h2>
+    <table>
+      <thead><tr><th>Strategy</th><th>Symbol</th><th>Trades</th><th>WR</th><th>PF</th><th>PnL</th></tr></thead>
+      <tbody>
+        {% for row in lab.compare.backtests %}
+        <tr>
+          <td>{{ row.strategy_key }}</td>
+          <td>{{ row.symbol }}</td>
+          <td>{{ row.total_trades }}</td>
+          <td>{{ row.winrate|pct }}</td>
+          <td>{{ row.profit_factor|num }}</td>
+          <td>{{ row.net_pnl|money }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="muted">No backtests found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </section>
 {% endblock %}

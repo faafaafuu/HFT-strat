@@ -37,8 +37,10 @@ digraph dependencies {
   "app.exchanges" -> "app.logger" [label="1"];
   "app.exchanges" -> "app.utils" [label="2"];
   "app.jobs" -> "app.backtesting" [label="2"];
-  "app.jobs" -> "app.config" [label="1"];
-  "app.jobs" -> "app.data" [label="5"];
+  "app.jobs" -> "app.config" [label="2"];
+  "app.jobs" -> "app.data" [label="6"];
+  "app.jobs" -> "app.logger" [label="1"];
+  "app.jobs" -> "app.main" [label="1"];
   "app.jobs" -> "app.ml" [label="1"];
   "app.jobs" -> "app.optimization" [label="1"];
   "app.jobs" -> "app.utils" [label="1"];
@@ -103,7 +105,7 @@ digraph dependencies {
   "tests" -> "app.signals" [label="4"];
   "tests" -> "app.strategies" [label="2"];
   "tests" -> "app.telegram" [label="3"];
-  "tests" -> "app.web" [label="1"];
+  "tests" -> "app.web" [label="2"];
   "tests" -> "tools" [label="1"];
   "tools" -> "app.backtesting" [label="2"];
   "tools" -> "app.config" [label="4"];
