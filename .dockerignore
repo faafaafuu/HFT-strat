@@ -9,5 +9,6 @@ data
 logs
 backups
 certs
+models
 *.db
 graphify-out

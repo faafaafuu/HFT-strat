@@ -2,46 +2,109 @@
 {% block content %}
 <div class="top">
   <h1>Strategy Lab</h1>
-  <span class="muted">Offline backtest and diagnostics</span>
+  <span class="muted">Strategies, density, backtests, hyperopt, ML</span>
 </div>
+
+<nav class="tabs">
+  <a href="/strategy-lab/strategies">Strategies</a>
+  <a href="/strategy-lab/instances">Instances</a>
+  <a href="/strategy-lab/backtests">Backtests</a>
+  <a href="/strategy-lab/hyperopt">Hyperopt</a>
+  <a href="/strategy-lab/compare">Compare</a>
+  <a href="/strategy-lab/density">Density</a>
+</nav>
 
 <section class="grid">
   <div class="card">
     <h2>Strategies</h2>
     <table>
-      <thead><tr><th>Strategy</th><th>Status</th><th>Profiles</th></tr></thead>
+      <thead><tr><th>Strategy</th><th>Status</th><th>Instances</th><th>Description</th></tr></thead>
       <tbody>
         {% for item in lab.strategies %}
         <tr>
           <td><strong>{{ item.name }}</strong><br><span class="muted">{{ item.key }}</span></td>
           <td><span class="pill">{{ "ON" if item.enabled else "OFF" }}</span></td>
-          <td>{{ item.profiles|join(", ") if item.profiles else "n/a" }}</td>
+          <td>{{ item.instances|join(", ") if item.instances else item.profiles|join(", ") }}</td>
+          <td>{{ item.description or "n/a" }}</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
   <div class="card">
-    <h2>Quick Jobs</h2>
+    <h2>Strategy Instances</h2>
+    <table>
+      <thead><tr><th>ID</th><th>Strategy</th><th>Score</th><th>Paper</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for item in lab.instances %}
+        <tr>
+          <td>{{ item.id }}</td>
+          <td>{{ item.strategy_key }}</td>
+          <td>{{ item.min_score }}</td>
+          <td>{{ item.paper_profile }}</td>
+          <td><span class="pill">{{ "ON" if item.enabled else "OFF" }}</span></td>
+          <td>
+            <button hx-post="/api/strategy-lab/instances/{{ item.id }}/toggle" hx-target="#job-result">
+              Toggle
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="grid">
+  <div class="card">
+    <h2>Run Jobs</h2>
     <form class="stack" hx-post="/api/strategy-lab/history/download" hx-target="#job-result">
-      <input name="symbol" placeholder="BTCUSDT" value="BTCUSDT">
-      <input name="timeframe" placeholder="1m" value="1m">
-      <input name="days" placeholder="30" value="30">
+      <input name="symbol" value="BTCUSDT">
+      <input name="timeframe" value="1m">
+      <input name="days" value="30">
       <button type="submit">Download History</button>
     </form>
     <form class="stack" hx-post="/api/strategy-lab/backtests/run" hx-target="#job-result">
-      <input name="strategy_key" placeholder="micro_stop_hunt_reclaim" value="micro_stop_hunt_reclaim">
-      <input name="symbol" placeholder="BTCUSDT" value="BTCUSDT">
-      <input name="timeframe" placeholder="1m" value="1m">
-      <input name="days" placeholder="30" value="30">
+      <input name="strategy_key" value="micro_stop_hunt_reclaim">
+      <input name="symbol" value="BTCUSDT">
+      <input name="timeframe" value="1m">
+      <input name="days" value="30">
       <button type="submit">Run Backtest</button>
     </form>
     <form class="stack" hx-post="/api/strategy-lab/hyperopt/run" hx-target="#job-result">
-      <input name="strategy_key" placeholder="micro_stop_hunt_reclaim" value="micro_stop_hunt_reclaim">
-      <input name="symbol" placeholder="BTCUSDT" value="BTCUSDT">
+      <input name="strategy_key" value="density_strategy">
+      <input name="symbol" value="BTCUSDT">
       <button type="submit">Run Hyperopt</button>
     </form>
+    <form class="stack" hx-post="/api/strategy-lab/ml/train" hx-target="#job-result">
+      <input name="model_type" value="heuristic_gbdt_proxy">
+      <button type="submit">Train ML Model</button>
+    </form>
+    <form class="stack" hx-post="/api/strategy-lab/density/analyze" hx-target="#job-result">
+      <input name="symbol" value="">
+      <button type="submit">Run Density Analysis</button>
+    </form>
     <pre id="job-result" class="code"></pre>
+  </div>
+  <div class="card">
+    <h2>Density Events</h2>
+    <table>
+      <thead><tr><th>Symbol</th><th>Side</th><th>Type</th><th>Size</th><th>Dist</th><th>Life</th></tr></thead>
+      <tbody>
+        {% for row in lab.density_events %}
+        <tr>
+          <td>{{ row.symbol }}</td>
+          <td>{{ row.side }}</td>
+          <td>{{ row.event_type }}</td>
+          <td>{{ row.size_usd|money }}</td>
+          <td>{{ row.distance_pct|pct }}</td>
+          <td>{{ row.lifetime_sec|num }}s</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="muted">No density events yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </section>
 
@@ -96,11 +159,11 @@
     </table>
   </div>
   <div class="card">
-    <h2>Paper Diagnostics</h2>
+    <h2>Why Losing</h2>
     <p class="muted">Worst groups by net PnL.</p>
     {% set rows = lab.diagnostics.by_strategy %}
     {% include "diagnostics_table.html" %}
-    <p><a class="button" href="/analytics/diagnostics">Open full diagnostics</a></p>
+    <p><a class="button" href="/analytics/why-losing">Open why-losing report</a></p>
   </div>
 </section>
 {% endblock %}

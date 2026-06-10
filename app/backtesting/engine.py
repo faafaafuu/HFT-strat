@@ -8,7 +8,7 @@ from app.backtesting.simulator import SimulatedTrade, simulate_exit
 from app.config import Settings
 from app.data.database import Database
 from app.data.models import HistoricalCandleModel
-from app.data.repositories import BacktestRepository, HistoricalDataRepository
+from app.data.repositories import BacktestRepository, DensityRepository, HistoricalDataRepository
 from app.market.features import FeatureSnapshot
 from app.strategies.registry import default_registry
 from app.utils.time import utc_now
@@ -36,6 +36,23 @@ class BacktestEngine:
             candles = await HistoricalDataRepository(session).candles(
                 "bybit", symbol, timeframe, since=since
             )
+            density_events = []
+            if strategy_key == "density_strategy":
+                density_events = await DensityRepository(session).recent_events(symbol=symbol, limit=10_000)
+        if strategy_key == "density_strategy" and not density_events:
+            return {
+                "strategy_key": strategy_key,
+                "timeframe": timeframe,
+                "metrics": {},
+                "trades": [],
+                "trade_rows": [],
+                "equity_curve": [],
+                "status": "insufficient_density_history",
+                "message": (
+                    "Недостаточно исторических L2/orderbook данных для корректного "
+                    "density backtest."
+                ),
+            }
         result = self.run_on_candles(
             strategy_key=strategy_key,
             candles=candles,

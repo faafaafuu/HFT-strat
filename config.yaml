@@ -77,11 +77,72 @@ strategy_profiles:
       symbols: auto
       paper_profile: aggressive
 
+strategy_instances:
+  instances:
+    density_conservative:
+      strategy_key: density_strategy
+      enabled: true
+      min_score: 8
+      paper_profile: conservative
+      symbols: auto
+      config:
+        min_density_usd: 1000000
+        max_distance_pct: 0.25
+        min_lifetime_sec: 20
+        require_absorption: true
+        require_trend_alignment: true
+    density_aggressive:
+      strategy_key: density_strategy
+      enabled: true
+      min_score: 7
+      paper_profile: aggressive
+      symbols: auto
+      config:
+        min_density_usd: 500000
+        max_distance_pct: 0.4
+        min_lifetime_sec: 8
+        require_absorption: false
+        require_trend_alignment: false
+
+density_strategy:
+  enabled: true
+  min_density_usd: 500000
+  max_distance_pct: 0.35
+  min_lifetime_sec: 10
+  large_density_multiplier: 3.0
+  relative_to_avg_depth: true
+  require_volume_spike: true
+  volume_spike_multiplier: 1.3
+  require_absorption: false
+  absorption_min_trades_usd: 200000
+  absorption_price_move_max_pct: 0.08
+  spoof_detection:
+    enabled: true
+    pull_threshold_pct: 70
+    pull_time_window_sec: 5
+  eaten_detection:
+    enabled: true
+    eaten_threshold_pct: 70
+    confirm_move_pct: 0.15
+    confirm_window_sec: 20
+  risk:
+    stop_behind_density_pct: 0.15
+    take_profit_rr: 2.0
+    max_holding_minutes: 60
+
 backtest:
   min_trades: 50
   default_days: 30
   taker_fee_pct: 0.055
   slippage_pct: 0.01
+  backtest_mode: candles_only
+
+web:
+  session_secret_env: WEB_SESSION_SECRET
+  session_cookie_name: mh_session
+  session_cookie_secure: false
+  session_cookie_same_site: lax
+  session_max_age_seconds: 86400
 
 storage:
   data_dir: /app/data

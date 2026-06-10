@@ -47,11 +47,12 @@ def objective_score(metrics: dict[str, Any], *, min_trades: int) -> float:
     if int(metrics.get("total_trades", 0)) < min_trades:
         return -9999.0 + int(metrics.get("total_trades", 0))
     return (
-        float(metrics.get("profit_factor", 0.0)) * 0.4
+        float(metrics.get("profit_factor", 0.0)) * 0.35
         + float(metrics.get("expectancy", 0.0)) * 0.3
-        + float(metrics.get("return_pct", 0.0)) * 0.2
+        + float(metrics.get("return_pct", 0.0)) * 0.15
         - float(metrics.get("max_drawdown", 0.0)) * 0.3
         - _overfit_penalty(metrics)
+        - _low_trade_count_penalty(metrics, min_trades)
     )
 
 
@@ -83,3 +84,10 @@ def _overfit_penalty(metrics: dict[str, Any]) -> float:
     if trades >= 100:
         return 0.0
     return (100 - trades) / 100
+
+
+def _low_trade_count_penalty(metrics: dict[str, Any], min_trades: int) -> float:
+    trades = int(metrics.get("total_trades", 0))
+    if trades >= min_trades * 2:
+        return 0.0
+    return max(0.0, (min_trades * 2 - trades) / max(min_trades, 1))

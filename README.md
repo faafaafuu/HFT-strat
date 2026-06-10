@@ -10,15 +10,18 @@ Async signal radar for Bybit linear futures. The bot does not place orders and d
 - Detects MVP patterns:
   - `oi_pump_price_move`
   - `stop_hunt_sweep`
+  - `density_strategy`
 - Scores every candidate from 0 to 10.
 - Sends only signals above `signals.min_score`.
 - Applies per-symbol cooldown to avoid duplicates.
 - Saves signals and market snapshots to SQLite.
 - Tracks outcomes after `5/15/30/60/180` minutes by default.
 - Can run multiple local paper trading portfolios with separate balances, risk rules, fees, slippage, partial TP, trailing stop, and statistics.
-- Provides Telegram commands and a persistent lower menu for dashboard, signals, heat, paper, and settings.
+- Provides Telegram commands and a persistent lower menu for dashboard, signals, heat, paper, Strategy Lab, and settings.
+- Provides a protected FastAPI/Jinja/HTMX dashboard with Strategy Lab, backtest, hyperopt, diagnostics, and performance pages.
+- Stores density events, strategy instances, backtest results, jobs, and ML model metadata in SQLite.
 
-Hyperliquid, liquidation feed, density events, dashboard, CSV export, and manual entry tracking are planned v2/v3 items.
+Hyperliquid, liquidation feed, CSV export, and real execution are not active in this phase.
 
 ## Install Locally
 
@@ -49,6 +52,7 @@ TELEGRAM_CHAT_ID=your_chat_id
 TELEGRAM_ALLOWED_USER_IDS=your_telegram_user_id
 WEB_USERNAME=admin
 WEB_PASSWORD=replace_with_a_long_password
+WEB_SESSION_SECRET=replace_with_a_long_random_session_secret
 WEB_PORT=8080
 ```
 
@@ -82,9 +86,10 @@ Persistent runtime data is stored on the host:
 ./data/bot.sqlite3
 ./logs/
 ./backups/
+./models/
 ```
 
-The container mounts these directories into `/app/data`, `/app/logs`, and `/app/backups`. `docker compose down`, `docker compose up`, and `docker compose up --build` do not remove this data.
+The container mounts these directories into `/app/data`, `/app/logs`, `/app/backups`, and `/app/models`. `docker compose down`, `docker compose up`, and `docker compose up --build` do not remove this data.
 
 ## Development Mode
 
@@ -135,12 +140,25 @@ Open:
 http://SERVER_IP:8080/
 ```
 
-Authentication is required via Basic Auth:
+Authentication uses a normal login page and a signed session cookie:
 
 ```env
 WEB_USERNAME=admin
 WEB_PASSWORD=replace_with_a_long_password
+WEB_SESSION_SECRET=replace_with_a_long_random_session_secret
 WEB_PORT=8080
+```
+
+Routes:
+
+- `GET /login`
+- `POST /login`
+- `POST /logout`
+
+If the dashboard is exposed through the included nginx TLS proxy, the default HTTPS endpoint is:
+
+```text
+https://SERVER_IP:9443/
 ```
 
 Pages:
@@ -150,7 +168,15 @@ Pages:
 - `/paper`
 - `/trades`
 - `/analytics`
+- `/analytics/why-losing`
 - `/performance`
+- `/strategy-lab`
+- `/strategy-lab/strategies`
+- `/strategy-lab/instances`
+- `/strategy-lab/backtests`
+- `/strategy-lab/hyperopt`
+- `/strategy-lab/compare`
+- `/strategy-lab/density`
 
 API:
 
@@ -162,11 +188,107 @@ GET /api/paper/trades/open
 GET /api/paper/trades/closed
 GET /api/analytics/summary
 GET /api/performance
+GET /api/strategy-lab/strategies
+GET /api/strategy-lab/instances
+GET /api/strategy-lab/density/events
 ```
 
 Analytics responses are cached briefly to avoid expensive recomputation on every
 browser refresh. The web service is read-only in this phase; live trading and
 private exchange APIs are not implemented.
+
+## Strategy Lab
+
+Strategy Lab separates strategy logic from paper profiles. One strategy can run
+as multiple independent instances with different thresholds and paper profiles:
+
+```yaml
+strategy_instances:
+  density_conservative:
+    strategy_key: density_strategy
+    enabled: true
+    min_score: 8
+    paper_profile: conservative
+    config:
+      min_density_usd: 1000000
+      max_distance_pct: 0.25
+      min_lifetime_sec: 20
+      require_absorption: true
+      require_trend_alignment: true
+
+  density_aggressive:
+    strategy_key: density_strategy
+    enabled: true
+    min_score: 7
+    paper_profile: aggressive
+    config:
+      min_density_usd: 500000
+      max_distance_pct: 0.4
+      min_lifetime_sec: 8
+      require_absorption: false
+      require_trend_alignment: false
+```
+
+Runtime enable/disable changes from web are stored in SQLite settings storage,
+not written back into `config.yaml`.
+
+Current strategy registry includes:
+
+- `oi_pump_price_move`
+- `stop_hunt_sweep`
+- `micro_stop_hunt_reclaim`
+- `oi_momentum_scalper`
+- `failed_breakout_fade`
+- `trend_pullback_scalper`
+- `density_strategy`
+
+## Density Strategy
+
+`density_strategy` trades only from real orderbook-derived density events. It
+tracks large bid/ask levels, lifetime, distance to price, refills, pulls, eaten
+levels, and absorption-like events without keeping unbounded orderbook history
+in RAM.
+
+Supported scenarios:
+
+- Density bounce
+- Eaten density breakout
+- Spoof pull reversal
+- Absorption at density
+
+Stored tables:
+
+- `density_events`
+- `density_levels`
+
+Density backtests require saved L2/density history. If only candles are present,
+the backtest returns `insufficient_density_history` instead of fabricating
+density signals from OHLC data.
+
+## Trend And ML Filters
+
+The trend filter adds global, daily, and local trend context using price
+structure, VWAP/EMA slope as supporting context, impulse, volatility regime, and
+range/trend classification. It writes `trend_alignment_score` into signal
+context and can adjust the final score conservatively.
+
+The ML layer is offline and advisory only. It can train a simple tabular quality
+model from stored signals, outcomes, paper/backtest results, density features,
+trend context, and recent performance. It never sends orders and never makes an
+entry decision by itself. If an active model is valid, it can only adjust signal
+score within a bounded range.
+
+Model artifacts are stored under:
+
+```text
+./models/
+```
+
+Metadata is stored in:
+
+```text
+ml_model_runs
+```
 
 ## Configure Symbols
 
@@ -517,13 +639,24 @@ Run one queued Web job:
 make job-worker
 ```
 
-Backtest/hyperopt uses stored candles from SQLite, applies fees and slippage, checks TP/SL/timeout on future candles only, and stores results in:
+Backtest, hyperopt, history download, ML training, and density analysis run as
+background jobs so Telegram callbacks and market-data loops are not blocked.
+Backtest/hyperopt uses stored candles from SQLite, applies fees and slippage,
+checks TP/SL/timeout on future candles only, and stores results in:
 
 - `historical_candles`
 - `backtest_runs`
 - `backtest_trades`
 - `backtest_equity_curve`
 - `jobs`
+
+Job types:
+
+- `download_history`
+- `run_backtest`
+- `run_hyperopt`
+- `train_ml_model`
+- `run_density_analysis`
 
 Live trading, private trading endpoints, and real orders are not implemented in this phase.
 

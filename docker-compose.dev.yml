@@ -9,6 +9,7 @@ services:
       - ./data:/app/data
       - ./logs:/app/logs
       - ./backups:/app/backups
+      - ./models:/app/models
       - ./storage:/app/storage:ro
     env_file:
       - .env
@@ -27,6 +28,7 @@ services:
       - ./data:/app/data
       - ./logs:/app/logs
       - ./backups:/app/backups
+      - ./models:/app/models
     env_file:
       - .env
     restart: unless-stopped

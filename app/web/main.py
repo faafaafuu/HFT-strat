@@ -20,6 +20,11 @@ from app.services.signal_service import SignalService
 from app.services.status_service import StatusService
 from app.services.strategy_lab_service import StrategyLabService
 from app.web.api import router as api_router
+from app.web.auth import (
+    _RedirectToLogin,
+    install_session_middleware,
+    redirect_auth_exception_handler,
+)
 from app.web.routes import router as page_router
 
 
@@ -64,6 +69,8 @@ def create_app(
             await database_local.close()
 
     app = FastAPI(title="Market Heat Signal Bot", lifespan=lifespan)
+    install_session_middleware(app, settings)
+    app.add_exception_handler(_RedirectToLogin, redirect_auth_exception_handler)
     base_dir = Path(__file__).resolve().parent
     templates = Jinja2Templates(directory=str(base_dir / "templates"))
     templates.env.filters["money"] = _money

@@ -117,6 +117,7 @@ class PaperExecutor:
             direction=signal.direction,
             pattern=signal.pattern,
             strategy_key=signal.strategy_key,
+            strategy_instance_id=signal.strategy_instance_id,
             strategy_profile_key=signal.strategy_profile_key,
             score=signal.score,
             entry_price=plan.entry_price,

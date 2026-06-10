@@ -1,15 +1,19 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import replace
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
+from sqlalchemy.exc import OperationalError
+
 from app.config import Settings
 from app.data.database import Database
-from app.data.repositories import MarketRepository, SignalRepository
+from app.data.repositories import DensityRepository, MarketRepository, SignalRepository
 from app.exchanges.base import MarketDataCallbacks, OrderbookEvent, TickerEvent, TradeEvent
 from app.logger import get_logger
 from app.market.features import MarketFeatureStore
+from app.ml.predictor import MLPredictor
 from app.strategies.registry import StrategyRegistry, default_registry
 from app.telegram.bot import TelegramService
 from app.utils.time import utc_now
@@ -90,6 +94,7 @@ class SignalEngine:
         self._stop = asyncio.Event()
         self._last_snapshot_persist: dict[tuple[str, str], datetime] = {}
         self.strategy_registry: StrategyRegistry = default_registry(settings)
+        self.ml_predictor = MLPredictor()
 
     async def run(self) -> None:
         self.log.info(
@@ -111,8 +116,8 @@ class SignalEngine:
 
     async def evaluate_once(self) -> None:
         paper_candidates = []
+        await self._persist_density_state()
         async with self.database.session() as session:
-            market_repo = MarketRepository(session)
             signal_repo = SignalRepository(session)
             for symbol in self.symbols:
                 snapshot = self.feature_store.snapshot(
@@ -124,24 +129,11 @@ class SignalEngine:
                 if snapshot is None:
                     continue
                 if self._should_persist_snapshot(snapshot.exchange, snapshot.symbol):
-                    await market_repo.add_market_snapshot(
-                        exchange=snapshot.exchange,
-                        symbol=snapshot.symbol,
-                        timestamp=snapshot.timestamp,
-                        price=snapshot.price,
-                        volume_1m=snapshot.volume_1m_usd,
-                        volume_5m=snapshot.volume_5m_usd,
-                        oi=snapshot.oi,
-                        oi_change_5m=snapshot.oi_change_5m_pct,
-                        oi_change_15m=snapshot.oi_change_15m_pct,
-                        funding_rate=snapshot.funding_rate_pct,
-                        spread_pct=snapshot.spread_pct,
-                        bid_depth_1pct=snapshot.bid_depth_1pct,
-                        ask_depth_1pct=snapshot.ask_depth_1pct,
-                    )
+                    await self._persist_market_snapshot(snapshot)
                 if self.telegram.paused:
                     continue
                 for candidate in self.strategy_registry.generate_signals(snapshot, self.settings):
+                    candidate = self._apply_quality_adjustments(candidate)
                     if candidate.score < self.settings.signals.min_score:
                         self.log.debug(
                             "signal candidate skipped below min_score exchange=%s symbol=%s "
@@ -186,11 +178,16 @@ class SignalEngine:
                         reasons=candidate.reasons,
                         market_context=candidate.market_context,
                         strategy_key=candidate.strategy_key,
+                        strategy_instance_id=candidate.strategy_instance_id,
                         strategy_profile_key=candidate.strategy_profile_key,
                         paper_profile_key=candidate.paper_profile_key,
                         invalidation_level=candidate.invalidation_level,
                         suggested_stop_pct=candidate.suggested_stop_pct,
                         suggested_take_pct=candidate.suggested_take_pct,
+                        confidence=candidate.confidence,
+                        ml_signal_quality_score=(
+                            candidate.market_context.get("ml_signal_quality_score")
+                        ),
                     )
                     await self.telegram.send_signal(
                         signal, candidate.reasons, candidate.market_context
@@ -266,6 +263,55 @@ class SignalEngine:
                     trade.risk_usd,
                 )
 
+    async def _persist_density_state(self) -> None:
+        events = self.feature_store.drain_density_events()
+        levels = self.feature_store.active_density_levels()
+        if not events and not levels:
+            return
+        try:
+            async with self.database.session() as session:
+                density_repo = DensityRepository(session)
+                await density_repo.add_events(events)
+                await density_repo.upsert_levels(levels)
+        except OperationalError as exc:
+            if "database is locked" in str(exc).lower():
+                self.log.warning(
+                    "density persistence skipped reason=sqlite_locked events=%s levels=%s",
+                    len(events),
+                    len(levels),
+                )
+                return
+            raise
+
+    async def _persist_market_snapshot(self, snapshot) -> None:
+        try:
+            async with self.database.session() as session:
+                market_repo = MarketRepository(session)
+                await market_repo.add_market_snapshot(
+                    exchange=snapshot.exchange,
+                    symbol=snapshot.symbol,
+                    timestamp=snapshot.timestamp,
+                    price=snapshot.price,
+                    volume_1m=snapshot.volume_1m_usd,
+                    volume_5m=snapshot.volume_5m_usd,
+                    oi=snapshot.oi,
+                    oi_change_5m=snapshot.oi_change_5m_pct,
+                    oi_change_15m=snapshot.oi_change_15m_pct,
+                    funding_rate=snapshot.funding_rate_pct,
+                    spread_pct=snapshot.spread_pct,
+                    bid_depth_1pct=snapshot.bid_depth_1pct,
+                    ask_depth_1pct=snapshot.ask_depth_1pct,
+                )
+        except OperationalError as exc:
+            if "database is locked" in str(exc).lower():
+                self.log.warning(
+                    "market snapshot persistence skipped reason=sqlite_locked exchange=%s symbol=%s",
+                    snapshot.exchange,
+                    snapshot.symbol,
+                )
+                return
+            raise
+
     def _should_persist_snapshot(self, exchange: str, symbol: str) -> bool:
         if not self.settings.storage.persist_market_snapshots:
             return False
@@ -278,3 +324,27 @@ class SignalEngine:
                 return False
         self._last_snapshot_persist[key] = now
         return True
+
+    def _apply_quality_adjustments(self, candidate):
+        context = dict(candidate.market_context)
+        context["score"] = candidate.score
+        trend_adjustment = _trend_adjustment(candidate.direction, context.get("trend_context") or {})
+        ml_quality = self.ml_predictor.quality_score(context)
+        ml_adjustment = self.ml_predictor.adjustment(ml_quality)
+        final_score = int(max(1, min(10, round(candidate.score + trend_adjustment + ml_adjustment))))
+        context["trend_adjustment"] = trend_adjustment
+        context["ml_signal_quality_score"] = ml_quality
+        context["ml_adjustment"] = ml_adjustment
+        return replace(
+            candidate,
+            score=final_score,
+            market_context=context,
+            confidence=min(0.98, max(0.05, (candidate.confidence or candidate.score / 10))),
+        )
+
+
+def _trend_adjustment(direction: str, trend_context: dict) -> float:
+    score = float(trend_context.get("trend_alignment_score", 0.0) or 0.0)
+    if direction == "LONG":
+        return max(-1.0, min(1.0, score * 0.5))
+    return max(-1.0, min(1.0, -score * 0.5))

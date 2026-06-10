@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login · Market Heat Radar</title>
+    <link rel="stylesheet" href="/static/css/app.css">
+  </head>
+  <body>
+    <main class="auth-page">
+      <section class="auth-card">
+        <h1>Market Heat Radar</h1>
+        <p class="muted">Sign in to open the research dashboard.</p>
+        {% if not configured %}
+          <p class="error">WEB_USERNAME and WEB_PASSWORD are not configured.</p>
+        {% elif error == "invalid" %}
+          <p class="error">Invalid username or password.</p>
+        {% elif error == "not_configured" %}
+          <p class="error">Web credentials are not configured.</p>
+        {% endif %}
+        <form method="post" action="/login" class="stack">
+          <input type="hidden" name="next" value="{{ next }}">
+          <label>
+            <span class="muted">Username</span>
+            <input name="username" autocomplete="username" required>
+          </label>
+          <label>
+            <span class="muted">Password</span>
+            <input name="password" type="password" autocomplete="current-password" required>
+          </label>
+          <button type="submit">Login</button>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>

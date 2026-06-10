@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -47,11 +48,18 @@ class Database:
             row[1] for row in (await conn.execute(text("PRAGMA table_info(signals)"))).fetchall()
         }
         if "manual_entry_price" not in existing:
-            await conn.execute(text("ALTER TABLE signals ADD COLUMN manual_entry_price FLOAT"))
+            await _add_column_if_missing(
+                conn, "signals", "manual_entry_price", "ALTER TABLE signals ADD COLUMN manual_entry_price FLOAT"
+            )
         if "manual_entered_at" not in existing:
-            await conn.execute(text("ALTER TABLE signals ADD COLUMN manual_entered_at DATETIME"))
+            await _add_column_if_missing(
+                conn, "signals", "manual_entered_at", "ALTER TABLE signals ADD COLUMN manual_entered_at DATETIME"
+            )
         for column, ddl in {
             "strategy_key": "ALTER TABLE signals ADD COLUMN strategy_key VARCHAR(64)",
+            "strategy_instance_id": (
+                "ALTER TABLE signals ADD COLUMN strategy_instance_id VARCHAR(64)"
+            ),
             "strategy_profile_key": (
                 "ALTER TABLE signals ADD COLUMN strategy_profile_key VARCHAR(64)"
             ),
@@ -59,32 +67,42 @@ class Database:
             "invalidation_level": "ALTER TABLE signals ADD COLUMN invalidation_level FLOAT",
             "suggested_stop_pct": "ALTER TABLE signals ADD COLUMN suggested_stop_pct FLOAT",
             "suggested_take_pct": "ALTER TABLE signals ADD COLUMN suggested_take_pct FLOAT",
+            "confidence": "ALTER TABLE signals ADD COLUMN confidence FLOAT",
+            "ml_signal_quality_score": (
+                "ALTER TABLE signals ADD COLUMN ml_signal_quality_score FLOAT"
+            ),
         }.items():
             if column not in existing:
-                await conn.execute(text(ddl))
+                await _add_column_if_missing(conn, "signals", column, ddl)
         trade_columns = {
             row[1]
             for row in (await conn.execute(text("PRAGMA table_info(paper_trades)"))).fetchall()
         }
         if "profile_id" not in trade_columns:
-            await conn.execute(text("ALTER TABLE paper_trades ADD COLUMN profile_id INTEGER"))
+            await _add_column_if_missing(
+                conn, "paper_trades", "profile_id", "ALTER TABLE paper_trades ADD COLUMN profile_id INTEGER"
+            )
         if "profile_key" not in trade_columns:
-            await conn.execute(
-                text(
-                    "ALTER TABLE paper_trades ADD COLUMN profile_key VARCHAR(64) DEFAULT 'default'"
-                )
+            await _add_column_if_missing(
+                conn,
+                "paper_trades",
+                "profile_key",
+                "ALTER TABLE paper_trades ADD COLUMN profile_key VARCHAR(64) DEFAULT 'default'",
             )
         await conn.execute(
             text("UPDATE paper_trades SET profile_key = 'default' WHERE profile_key IS NULL")
         )
         for column, ddl in {
             "strategy_key": "ALTER TABLE paper_trades ADD COLUMN strategy_key VARCHAR(64)",
+            "strategy_instance_id": (
+                "ALTER TABLE paper_trades ADD COLUMN strategy_instance_id VARCHAR(64)"
+            ),
             "strategy_profile_key": (
                 "ALTER TABLE paper_trades ADD COLUMN strategy_profile_key VARCHAR(64)"
             ),
         }.items():
             if column not in trade_columns:
-                await conn.execute(text(ddl))
+                await _add_column_if_missing(conn, "paper_trades", column, ddl)
 
         equity_columns = {
             row[1]
@@ -93,13 +111,18 @@ class Database:
             ).fetchall()
         }
         if "profile_id" not in equity_columns:
-            await conn.execute(text("ALTER TABLE paper_equity_curve ADD COLUMN profile_id INTEGER"))
+            await _add_column_if_missing(
+                conn,
+                "paper_equity_curve",
+                "profile_id",
+                "ALTER TABLE paper_equity_curve ADD COLUMN profile_id INTEGER",
+            )
         if "profile_key" not in equity_columns:
-            await conn.execute(
-                text(
-                    "ALTER TABLE paper_equity_curve "
-                    "ADD COLUMN profile_key VARCHAR(64) DEFAULT 'default'"
-                )
+            await _add_column_if_missing(
+                conn,
+                "paper_equity_curve",
+                "profile_key",
+                "ALTER TABLE paper_equity_curve ADD COLUMN profile_key VARCHAR(64) DEFAULT 'default'",
             )
         await conn.execute(
             text(
@@ -127,10 +150,14 @@ class Database:
             "CREATE INDEX IF NOT EXISTS ix_strategy_analysis_period_profile "
             "ON strategy_analysis(period_start, period_end, profile_key)",
             "CREATE INDEX IF NOT EXISTS ix_signals_strategy_key ON signals(strategy_key)",
+            "CREATE INDEX IF NOT EXISTS ix_signals_strategy_instance_id "
+            "ON signals(strategy_instance_id)",
             "CREATE INDEX IF NOT EXISTS ix_signals_strategy_profile_key "
             "ON signals(strategy_profile_key)",
             "CREATE INDEX IF NOT EXISTS ix_signals_paper_profile_key ON signals(paper_profile_key)",
             "CREATE INDEX IF NOT EXISTS ix_paper_trades_strategy_key ON paper_trades(strategy_key)",
+            "CREATE INDEX IF NOT EXISTS ix_paper_trades_strategy_instance_id "
+            "ON paper_trades(strategy_instance_id)",
             "CREATE INDEX IF NOT EXISTS ix_paper_trades_strategy_profile_key "
             "ON paper_trades(strategy_profile_key)",
             "CREATE INDEX IF NOT EXISTS ix_historical_candles_lookup "
@@ -139,6 +166,15 @@ class Database:
             "ON backtest_runs(strategy_key, symbol, created_at)",
             "CREATE INDEX IF NOT EXISTS ix_backtest_trades_run_id ON backtest_trades(run_id)",
             "CREATE INDEX IF NOT EXISTS ix_jobs_status_type ON jobs(status, job_type)",
+            "CREATE INDEX IF NOT EXISTS ix_density_events_symbol_timestamp "
+            "ON density_events(symbol, timestamp)",
+            "CREATE INDEX IF NOT EXISTS ix_density_events_side_event_type "
+            "ON density_events(side, event_type)",
+            "CREATE INDEX IF NOT EXISTS ix_density_levels_symbol_status "
+            "ON density_levels(symbol, status)",
+            "CREATE UNIQUE INDEX IF NOT EXISTS ux_density_level_identity "
+            "ON density_levels(exchange, symbol, side, price)",
+            "CREATE INDEX IF NOT EXISTS ix_ml_model_runs_active ON ml_model_runs(is_active)",
         ):
             await conn.execute(text(statement))
 
@@ -205,3 +241,15 @@ class Database:
             except Exception:
                 await session.rollback()
                 raise
+
+
+async def _add_column_if_missing(conn, table: str, column: str, ddl: str) -> None:
+    rows = (await conn.execute(text(f"PRAGMA table_info({table})"))).fetchall()
+    if column in {row[1] for row in rows}:
+        return
+    try:
+        await conn.execute(text(ddl))
+    except OperationalError as exc:
+        if "duplicate column name" in str(exc).lower():
+            return
+        raise

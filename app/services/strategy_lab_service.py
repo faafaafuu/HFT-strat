@@ -9,7 +9,7 @@ from sqlalchemy import select
 from app.config import Settings
 from app.data.database import Database
 from app.data.models import BacktestRunModel, PaperTradeModel
-from app.data.repositories import HistoricalDataRepository, JobRepository
+from app.data.repositories import DensityRepository, HistoricalDataRepository, JobRepository
 from app.strategies.registry import default_registry
 
 
@@ -26,6 +26,8 @@ class StrategyLabService:
             "jobs": await self.jobs(),
             "coverage": await self.data_coverage(),
             "diagnostics": await self.diagnostics(),
+            "instances": await self.instances(),
+            "density_events": await self.density_events(),
         }
 
     async def strategies(self) -> list[dict[str, Any]]:
@@ -35,8 +37,43 @@ class StrategyLabService:
                 "name": item.name,
                 "enabled": item.enabled,
                 "profiles": item.profiles,
+                "instances": item.instances,
             }
             for item in self.registry.descriptors(self.settings)
+        ]
+
+    async def instances(self) -> list[dict[str, Any]]:
+        return [
+            {
+                "id": instance_id,
+                "strategy_key": instance.strategy_key,
+                "enabled": instance.enabled,
+                "min_score": instance.min_score,
+                "paper_profile": instance.paper_profile,
+                "symbols": instance.symbols,
+                "config": instance.config,
+            }
+            for instance_id, instance in sorted(self.settings.strategy_instances.instances.items())
+        ]
+
+    async def density_events(self, symbol: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
+        async with self.database.session() as session:
+            rows = await DensityRepository(session).recent_events(symbol=symbol, limit=limit)
+        return [
+            {
+                "id": row.id,
+                "timestamp": row.timestamp,
+                "symbol": row.symbol,
+                "side": row.side,
+                "price": row.price,
+                "size_usd": row.size_usd,
+                "distance_pct": row.distance_pct,
+                "lifetime_sec": row.lifetime_sec,
+                "event_type": row.event_type,
+                "absorption_score": row.absorption_score,
+                "spoof_score": row.spoof_score,
+            }
+            for row in rows
         ]
 
     async def backtest_runs(self, limit: int = 20) -> list[dict[str, Any]]:

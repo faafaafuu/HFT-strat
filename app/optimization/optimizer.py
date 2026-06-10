@@ -7,7 +7,7 @@ from app.backtesting.metrics import objective_score
 from app.config import Settings
 from app.data.database import Database
 from app.data.repositories import HistoricalDataRepository
-from app.optimization.search_space import grid
+from app.optimization.search_space import DENSITY_SEARCH_SPACE, grid
 
 
 class HyperOptimizer:
@@ -35,7 +35,8 @@ class HyperOptimizer:
         train = candles[:split_at]
         test = candles[split_at:]
         results = []
-        for params in grid(limit=limit):
+        space = DENSITY_SEARCH_SPACE if strategy_key == "density_strategy" else None
+        for params in grid(space=space, limit=limit):
             train_result = self.engine.run_on_candles(
                 strategy_key=strategy_key,
                 candles=train,

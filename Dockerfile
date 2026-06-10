@@ -13,7 +13,7 @@ RUN python -m pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
 RUN useradd --create-home --uid 10001 appuser \
-    && mkdir -p /app/data /app/logs /app/backups \
+    && mkdir -p /app/data /app/logs /app/backups /app/models \
     && chown -R appuser:appuser /app
 
 COPY --chown=appuser:appuser . .

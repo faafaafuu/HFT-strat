@@ -166,16 +166,20 @@ def strategy_lab_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         [
             [
-                InlineKeyboardButton("Strategies", callback_data="sl:strategies"),
+                InlineKeyboardButton("Active Strategies", callback_data="sl:strategies"),
+                InlineKeyboardButton("Density Strategy", callback_data="sl:density"),
+            ],
+            [
                 InlineKeyboardButton("Backtests", callback_data="sl:backtests"),
+                InlineKeyboardButton("Hyperopt", callback_data="sl:hyperopt"),
+            ],
+            [
+                InlineKeyboardButton("ML Status", callback_data="sl:ml"),
+                InlineKeyboardButton("Trend Status", callback_data="sl:trend"),
             ],
             [
                 InlineKeyboardButton("Results", callback_data="sl:results"),
-                InlineKeyboardButton("Data", callback_data="sl:data"),
-            ],
-            [
-                InlineKeyboardButton("Compare", callback_data="sl:compare"),
-                InlineKeyboardButton("Diagnostics", callback_data="sl:diagnostics"),
+                InlineKeyboardButton("Density Events", callback_data="sl:density_events"),
             ],
             [
                 InlineKeyboardButton("← Back", callback_data="home"),

@@ -93,6 +93,9 @@ class SignalModel(Base):
     direction: Mapped[str] = mapped_column(String(16))
     pattern: Mapped[str] = mapped_column(String(64), index=True)
     strategy_key: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    strategy_instance_id: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, index=True
+    )
     strategy_profile_key: Mapped[str | None] = mapped_column(
         String(64), nullable=True, index=True
     )
@@ -102,6 +105,8 @@ class SignalModel(Base):
     invalidation_level: Mapped[float | None] = mapped_column(Float, nullable=True)
     suggested_stop_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
     suggested_take_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
+    confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    ml_signal_quality_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     reasons_json: Mapped[str] = mapped_column(Text)
     market_context_json: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(32), default="open")
@@ -193,6 +198,9 @@ class PaperTradeModel(Base):
     direction: Mapped[str] = mapped_column(String(16))
     pattern: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     strategy_key: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    strategy_instance_id: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, index=True
+    )
     strategy_profile_key: Mapped[str | None] = mapped_column(
         String(64), nullable=True, index=True
     )
@@ -366,3 +374,64 @@ class JobModel(Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class DensityEventModel(Base):
+    __tablename__ = "density_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    exchange: Mapped[str] = mapped_column(String(32), index=True)
+    symbol: Mapped[str] = mapped_column(String(64), index=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    side: Mapped[str] = mapped_column(String(8), index=True)
+    price: Mapped[float] = mapped_column(Float)
+    size_usd: Mapped[float] = mapped_column(Float)
+    distance_pct: Mapped[float] = mapped_column(Float)
+    lifetime_sec: Mapped[float] = mapped_column(Float)
+    event_type: Mapped[str] = mapped_column(String(32), index=True)
+    pulled_pct: Mapped[float] = mapped_column(Float, default=0.0)
+    eaten_pct: Mapped[float] = mapped_column(Float, default=0.0)
+    refill_count: Mapped[int] = mapped_column(Integer, default=0)
+    absorption_score: Mapped[float] = mapped_column(Float, default=0.0)
+    spoof_score: Mapped[float] = mapped_column(Float, default=0.0)
+    context_json: Mapped[str] = mapped_column(Text, default="{}")
+
+
+class DensityLevelModel(Base):
+    __tablename__ = "density_levels"
+    __table_args__ = (
+        UniqueConstraint(
+            "exchange", "symbol", "side", "price", name="uq_density_level_identity"
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    exchange: Mapped[str] = mapped_column(String(32), index=True)
+    symbol: Mapped[str] = mapped_column(String(64), index=True)
+    side: Mapped[str] = mapped_column(String(8), index=True)
+    price: Mapped[float] = mapped_column(Float, index=True)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    max_size_usd: Mapped[float] = mapped_column(Float)
+    current_size_usd: Mapped[float] = mapped_column(Float)
+    lifetime_sec: Mapped[float] = mapped_column(Float)
+    status: Mapped[str] = mapped_column(String(32), index=True)
+    stats_json: Mapped[str] = mapped_column(Text, default="{}")
+
+
+class MLModelRunModel(Base):
+    __tablename__ = "ml_model_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    model_type: Mapped[str] = mapped_column(String(64), index=True)
+    train_period_start: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    train_period_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    test_period_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    test_period_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    features_json: Mapped[str] = mapped_column(Text)
+    metrics_json: Mapped[str] = mapped_column(Text)
+    model_path: Mapped[str] = mapped_column(Text)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=False, index=True)

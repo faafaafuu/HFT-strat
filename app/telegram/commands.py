@@ -808,6 +808,29 @@ def _int_part(data: str, index: int, default: int) -> int:
 
 
 def _format_strategy_lab(lab: dict[str, Any], section: str) -> str:
+    if section == "sl:density":
+        instances = [item for item in lab.get("instances", []) if item["strategy_key"] == "density_strategy"]
+        lines = ["<b>🧪 Density Strategy</b>", ""]
+        for item in instances:
+            state = "ON" if item["enabled"] else "OFF"
+            lines.append(
+                f"{item['id']} • {state}\n"
+                f"Score {item['min_score']} • Paper {item['paper_profile']}"
+            )
+        return "\n".join(lines) if instances else "<b>🧪 Density Strategy</b>\n\nNo density instances."
+    if section == "sl:density_events":
+        rows = lab.get("density_events", [])[:8]
+        lines = ["<b>🧪 Density Events</b>", ""]
+        for row in rows:
+            lines.append(
+                f"{row['symbol']} • {row['side']} • {row['event_type']}\n"
+                f"${float(row['size_usd']):,.0f} • {float(row['distance_pct']):.2f}%"
+            )
+        return "\n".join(lines) if rows else "<b>🧪 Density Events</b>\n\nNo density events."
+    if section == "sl:ml":
+        return "<b>🧪 ML Status</b>\n\nML is offline-only. It adjusts signal quality only when an active model exists and never opens trades."
+    if section == "sl:trend":
+        return "<b>🧪 Trend Status</b>\n\nTrend context is added to every market snapshot: global, daily, local and alignment score."
     if section == "sl:diagnostics":
         rows = lab.get("diagnostics", {}).get("by_strategy", [])[:8]
         lines = ["<b>🧪 Strategy Diagnostics</b>", ""]

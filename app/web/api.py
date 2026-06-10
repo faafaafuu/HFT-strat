@@ -3,11 +3,18 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Request
 from fastapi.encoders import jsonable_encoder
 
-from app.jobs.models import DOWNLOAD_HISTORY, RUN_BACKTEST, RUN_HYPEROPT
+from app.data.repositories import RuntimeSettingsRepository
+from app.jobs.models import (
+    DOWNLOAD_HISTORY,
+    RUN_BACKTEST,
+    RUN_DENSITY_ANALYSIS,
+    RUN_HYPEROPT,
+    TRAIN_ML_MODEL,
+)
 from app.jobs.queue import JobQueue
-from app.web.auth import require_web_auth
+from app.web.auth import require_api_auth
 
-router = APIRouter(prefix="/api", dependencies=[Depends(require_web_auth)])
+router = APIRouter(prefix="/api", dependencies=[Depends(require_api_auth)])
 
 
 @router.get("/status")
@@ -73,6 +80,29 @@ async def api_strategy_lab_diagnostics(request: Request):
     return jsonable_encoder(await request.app.state.strategy_lab_service.diagnostics())
 
 
+@router.get("/strategy-lab/instances")
+async def api_strategy_lab_instances(request: Request):
+    return jsonable_encoder(await request.app.state.strategy_lab_service.instances())
+
+
+@router.get("/strategy-lab/density/events")
+async def api_strategy_lab_density_events(request: Request, symbol: str | None = None):
+    return jsonable_encoder(await request.app.state.strategy_lab_service.density_events(symbol=symbol))
+
+
+@router.post("/strategy-lab/instances/{instance_id}/toggle")
+async def api_toggle_strategy_instance(request: Request, instance_id: str):
+    instance = request.app.state.settings.strategy_instances.instances.get(instance_id)
+    if instance is None:
+        return {"ok": False, "error": "instance_not_found"}
+    instance.enabled = not instance.enabled
+    async with request.app.state.database.session() as session:
+        await RuntimeSettingsRepository(session).set(
+            f"strategy_instances.instances.{instance_id}.enabled", instance.enabled
+        )
+    return {"ok": True, "instance_id": instance_id, "enabled": instance.enabled}
+
+
 @router.post("/strategy-lab/history/download")
 async def api_download_history(request: Request):
     params = await _request_params(request)
@@ -122,6 +152,28 @@ async def api_run_hyperopt(request: Request):
                 "timeframe": timeframe,
                 "days": days,
             },
+        )
+    )
+
+
+@router.post("/strategy-lab/ml/train")
+async def api_train_ml_model(request: Request):
+    params = await _request_params(request)
+    return jsonable_encoder(
+        await JobQueue(request.app.state.database).enqueue(
+            TRAIN_ML_MODEL,
+            {"model_type": str(params.get("model_type", "heuristic_gbdt_proxy"))},
+        )
+    )
+
+
+@router.post("/strategy-lab/density/analyze")
+async def api_run_density_analysis(request: Request):
+    params = await _request_params(request)
+    return jsonable_encoder(
+        await JobQueue(request.app.state.database).enqueue(
+            RUN_DENSITY_ANALYSIS,
+            {"symbol": params.get("symbol") or None, "limit": int(params.get("limit", 500))},
         )
     )
 

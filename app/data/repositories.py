@@ -13,9 +13,12 @@ from app.data.models import (
     BacktestEquityCurveModel,
     BacktestRunModel,
     BacktestTradeModel,
+    DensityEventModel,
+    DensityLevelModel,
     HistoricalCandleModel,
     JobModel,
     MarketSnapshotModel,
+    MLModelRunModel,
     OrderbookEventModel,
     RuntimeSettingModel,
     SignalModel,
@@ -260,11 +263,14 @@ class SignalRepository:
         reasons: list[str],
         market_context: dict[str, Any],
         strategy_key: str | None = None,
+        strategy_instance_id: str | None = None,
         strategy_profile_key: str | None = None,
         paper_profile_key: str | None = None,
         invalidation_level: float | None = None,
         suggested_stop_pct: float | None = None,
         suggested_take_pct: float | None = None,
+        confidence: float | None = None,
+        ml_signal_quality_score: float | None = None,
     ) -> SignalModel:
         signal = SignalModel(
             exchange=exchange,
@@ -273,6 +279,7 @@ class SignalRepository:
             direction=direction,
             pattern=pattern,
             strategy_key=strategy_key,
+            strategy_instance_id=strategy_instance_id,
             strategy_profile_key=strategy_profile_key,
             paper_profile_key=paper_profile_key,
             score=score,
@@ -280,6 +287,8 @@ class SignalRepository:
             invalidation_level=invalidation_level,
             suggested_stop_pct=suggested_stop_pct,
             suggested_take_pct=suggested_take_pct,
+            confidence=confidence,
+            ml_signal_quality_score=ml_signal_quality_score,
             reasons_json=json.dumps(reasons, ensure_ascii=False),
             market_context_json=json.dumps(market_context, ensure_ascii=False, default=str),
             status="open",
@@ -641,6 +650,125 @@ class JobRepository:
     async def list_recent(self, limit: int = 20) -> list[JobModel]:
         stmt = select(JobModel).order_by(JobModel.created_at.desc()).limit(limit)
         return list((await self.session.scalars(stmt)).all())
+
+
+class DensityRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def add_events(self, events) -> int:
+        count = 0
+        for event in events:
+            self.session.add(
+                DensityEventModel(
+                    exchange=event.exchange,
+                    symbol=event.symbol,
+                    timestamp=event.timestamp,
+                    side=event.side,
+                    price=event.price,
+                    size_usd=event.size_usd,
+                    distance_pct=event.distance_pct,
+                    lifetime_sec=event.lifetime_sec,
+                    event_type=event.event_type,
+                    pulled_pct=event.pulled_pct,
+                    eaten_pct=event.eaten_pct,
+                    refill_count=event.refill_count,
+                    absorption_score=event.absorption_score,
+                    spoof_score=event.spoof_score,
+                    context_json=json.dumps(event.context or {}, ensure_ascii=False, default=str),
+                )
+            )
+            count += 1
+        return count
+
+    async def upsert_levels(self, levels) -> int:
+        count = 0
+        for level in levels:
+            values = {
+                "exchange": level.exchange,
+                "symbol": level.symbol,
+                "side": level.side,
+                "price": level.price,
+                "first_seen_at": level.first_seen_at,
+                "last_seen_at": level.last_seen_at,
+                "max_size_usd": level.max_size_usd,
+                "current_size_usd": level.current_size_usd,
+                "lifetime_sec": level.lifetime_sec,
+                "status": level.status,
+                "stats_json": json.dumps(level.stats or {}, ensure_ascii=False, default=str),
+            }
+            stmt = sqlite_insert(DensityLevelModel).values(**values)
+            stmt = stmt.on_conflict_do_update(
+                index_elements=["exchange", "symbol", "side", "price"],
+                set_={
+                    "last_seen_at": values["last_seen_at"],
+                    "max_size_usd": values["max_size_usd"],
+                    "current_size_usd": values["current_size_usd"],
+                    "lifetime_sec": values["lifetime_sec"],
+                    "status": values["status"],
+                    "stats_json": values["stats_json"],
+                },
+            )
+            await self.session.execute(stmt)
+            count += 1
+        return count
+
+    async def recent_events(
+        self,
+        symbol: str | None = None,
+        limit: int = 100,
+    ) -> list[DensityEventModel]:
+        filters = []
+        if symbol:
+            filters.append(DensityEventModel.symbol == symbol)
+        stmt = (
+            select(DensityEventModel)
+            .where(*filters)
+            .order_by(DensityEventModel.timestamp.desc())
+            .limit(limit)
+        )
+        return list((await self.session.scalars(stmt)).all())
+
+
+class MLModelRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def add_run(
+        self,
+        model_type: str,
+        features: list[str],
+        metrics: dict[str, Any],
+        model_path: str,
+        is_active: bool,
+        train_period_start: datetime | None = None,
+        train_period_end: datetime | None = None,
+        test_period_start: datetime | None = None,
+        test_period_end: datetime | None = None,
+    ) -> MLModelRunModel:
+        if is_active:
+            rows = list((await self.session.scalars(select(MLModelRunModel))).all())
+            for row in rows:
+                row.is_active = False
+        run = MLModelRunModel(
+            model_type=model_type,
+            train_period_start=train_period_start,
+            train_period_end=train_period_end,
+            test_period_start=test_period_start,
+            test_period_end=test_period_end,
+            features_json=json.dumps(features, ensure_ascii=False),
+            metrics_json=json.dumps(metrics, ensure_ascii=False, default=str),
+            model_path=model_path,
+            is_active=is_active,
+        )
+        self.session.add(run)
+        await self.session.flush()
+        return run
+
+    async def active(self) -> MLModelRunModel | None:
+        return await self.session.scalar(
+            select(MLModelRunModel).where(MLModelRunModel.is_active.is_(True)).limit(1)
+        )
 
 
 def _aware(value: datetime) -> datetime:

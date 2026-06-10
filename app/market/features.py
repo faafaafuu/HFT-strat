@@ -5,7 +5,9 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from app.exchanges.base import OrderbookEvent, TickerEvent, TradeEvent
+from app.market.density_tracker import DensityEvent, DensityLevel, DensityTracker
 from app.market.orderbook import OrderbookMetrics, calculate_orderbook_metrics
+from app.market.trend import TrendAnalyzer
 from app.utils.math import pct_change
 from app.utils.time import utc_now
 
@@ -32,6 +34,9 @@ class FeatureSnapshot:
     swept_high_30m: float | None
     returned_after_low_sweep: bool
     returned_after_high_sweep: bool
+    density_event: dict | None = None
+    trend_context: dict | None = None
+    ml_signal_quality_score: float | None = None
 
 
 class MarketFeatureStore:
@@ -57,6 +62,8 @@ class MarketFeatureStore:
         )
         self.funding: dict[tuple[str, str], float | None] = {}
         self.orderbooks: dict[tuple[str, str], OrderbookMetrics] = {}
+        self.density_tracker = DensityTracker()
+        self.trend_analyzer = TrendAnalyzer()
 
     def on_ticker(self, event: TickerEvent) -> None:
         key = (event.exchange, event.symbol)
@@ -78,6 +85,7 @@ class MarketFeatureStore:
         if metrics is not None:
             self.orderbooks[(event.exchange, event.symbol)] = metrics
             self.prices[(event.exchange, event.symbol)].append((event.timestamp, metrics.mid))
+            self.density_tracker.update(event, metrics.mid)
             self._trim_key((event.exchange, event.symbol), event.timestamp)
 
     def on_open_interest(
@@ -124,6 +132,11 @@ class MarketFeatureStore:
         oi_5m_ago = self._value_at_or_before(self.oi[key], now - timedelta(minutes=5))
         oi_15m_ago = self._value_at_or_before(self.oi[key], now - timedelta(minutes=15))
         book = self.orderbooks.get(key)
+        density_event = self.density_tracker.latest_actionable_event(exchange, symbol)
+        trend_context = self.trend_analyzer.analyze(
+            list(self.prices.get(key, [])),
+            list(self.trades.get(key, [])),
+        )
         sweep = self._sweep_state(
             key=key,
             now=now,
@@ -152,7 +165,16 @@ class MarketFeatureStore:
             swept_high_30m=sweep["high"],
             returned_after_low_sweep=bool(sweep["returned_low"]),
             returned_after_high_sweep=bool(sweep["returned_high"]),
+            density_event=density_event.to_context() if density_event else None,
+            trend_context=trend_context.to_context(),
+            ml_signal_quality_score=None,
         )
+
+    def drain_density_events(self, limit: int = 500) -> list[DensityEvent]:
+        return self.density_tracker.drain_events(limit=limit)
+
+    def active_density_levels(self) -> list[DensityLevel]:
+        return self.density_tracker.active_levels()
 
     def latest_price(self, exchange: str, symbol: str) -> float | None:
         values = self.prices.get((exchange, symbol))

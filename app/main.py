@@ -158,10 +158,15 @@ def _set_nested(settings, key: str, value: Any) -> None:
     target = settings
     parts = key.split(".")
     for part in parts[:-1]:
-        target = getattr(target, part, None)
+        if isinstance(target, dict):
+            target = target.get(part)
+        else:
+            target = getattr(target, part, None)
         if target is None:
             return
-    if hasattr(target, parts[-1]):
+    if isinstance(target, dict):
+        target[parts[-1]] = value
+    elif hasattr(target, parts[-1]):
         setattr(target, parts[-1], value)
 
 

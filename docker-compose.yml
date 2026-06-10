@@ -10,6 +10,7 @@ services:
       - ./data:/app/data
       - ./logs:/app/logs
       - ./backups:/app/backups
+      - ./models:/app/models
       - ./storage:/app/storage:ro
   web:
     build: .
@@ -27,6 +28,7 @@ services:
       - ./data:/app/data
       - ./logs:/app/logs
       - ./backups:/app/backups
+      - ./models:/app/models
     healthcheck:
       test:
         [

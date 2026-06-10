@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Market Heat Radar</title>
-    <link rel="stylesheet" href="/static/app.css">
+    <link rel="stylesheet" href="/static/css/app.css">
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
   </head>
   <body>
@@ -20,6 +20,9 @@
           <a class="{{ 'active' if page == 'strategy_lab' else '' }}" href="/strategy-lab">Strategy Lab</a>
           <a class="{{ 'active' if page == 'performance' else '' }}" href="/performance">Performance</a>
         </nav>
+        <form method="post" action="/logout" class="logout-form">
+          <button type="submit">Logout</button>
+        </form>
       </aside>
       <main class="main">
         {% block content %}{% endblock %}

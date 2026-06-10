@@ -21,6 +21,8 @@ class StrategySignal:
     suggested_stop_pct: float
     suggested_take_pct: float
     market_context: dict[str, Any]
+    strategy_instance_id: str | None = None
+    confidence: float = 0.0
 
 
 class Strategy(Protocol):
@@ -33,6 +35,7 @@ class Strategy(Protocol):
         *,
         strategy_profile_key: str | None = None,
         paper_profile_key: str | None = None,
+        config: dict[str, Any] | None = None,
     ) -> StrategySignal | None: ...
 
 
@@ -55,6 +58,9 @@ def context_from_snapshot(snapshot: FeatureSnapshot) -> dict[str, Any]:
         "swept_high_30m": snapshot.swept_high_30m,
         "returned_after_low_sweep": snapshot.returned_after_low_sweep,
         "returned_after_high_sweep": snapshot.returned_after_high_sweep,
+        "density_event": snapshot.density_event,
+        "trend_context": snapshot.trend_context,
+        "ml_signal_quality_score": snapshot.ml_signal_quality_score,
     }
 
 
@@ -63,4 +69,3 @@ def invalidation_level(direction: str, entry: float, stop_pct: float) -> float:
     if direction == "LONG":
         return entry * (1 - distance)
     return entry * (1 + distance)
-

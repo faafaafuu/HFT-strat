@@ -123,11 +123,26 @@ async def _get(app, path: str, auth: tuple[str, str] | None = None) -> httpx.Res
         return await client.get(path, auth=auth)
 
 
+async def _authed_get(app, path: str) -> httpx.Response:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://test", follow_redirects=False
+    ) as client:
+        login = await client.post(
+            "/login",
+            content="username=admin&password=secret&next=/",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        assert login.status_code == 303
+        return await client.get(path)
+
+
 @pytest.mark.asyncio
 async def test_web_auth_required(tmp_path: Path, monkeypatch) -> None:
     response = await _get(_app(tmp_path, monkeypatch), "/")
 
-    assert response.status_code == 401
+    assert response.status_code == 303
+    assert response.headers["location"].startswith("/login")
 
 
 @pytest.mark.asyncio
@@ -140,14 +155,24 @@ async def test_health_is_public(tmp_path: Path, monkeypatch) -> None:
 
 @pytest.mark.asyncio
 async def test_web_requires_configured_credentials(tmp_path: Path, monkeypatch) -> None:
-    response = await _get(_app(tmp_path, monkeypatch, auth=False), "/", auth=("admin", "secret"))
+    response = await _get(_app(tmp_path, monkeypatch, auth=False), "/")
 
-    assert response.status_code == 503
+    assert response.status_code == 303
+    assert response.headers["location"].startswith("/login")
+
+
+@pytest.mark.asyncio
+async def test_login_page_works_without_browser_popup(tmp_path: Path, monkeypatch) -> None:
+    response = await _get(_app(tmp_path, monkeypatch), "/login")
+
+    assert response.status_code == 200
+    assert "username" in response.text
+    assert "password" in response.text
 
 
 @pytest.mark.asyncio
 async def test_status_page_works_on_empty_data(tmp_path: Path, monkeypatch) -> None:
-    response = await _get(_app(tmp_path, monkeypatch), "/", auth=("admin", "secret"))
+    response = await _authed_get(_app(tmp_path, monkeypatch), "/")
 
     assert response.status_code == 200
     assert "Dashboard" in response.text
@@ -156,7 +181,7 @@ async def test_status_page_works_on_empty_data(tmp_path: Path, monkeypatch) -> N
 
 @pytest.mark.asyncio
 async def test_paper_profiles_page_works_on_empty_data(tmp_path: Path, monkeypatch) -> None:
-    response = await _get(_app(tmp_path, monkeypatch), "/paper", auth=("admin", "secret"))
+    response = await _authed_get(_app(tmp_path, monkeypatch), "/paper")
 
     assert response.status_code == 200
     assert "Paper Trading" in response.text
@@ -164,9 +189,7 @@ async def test_paper_profiles_page_works_on_empty_data(tmp_path: Path, monkeypat
 
 @pytest.mark.asyncio
 async def test_analytics_endpoint_works_on_empty_data(tmp_path: Path, monkeypatch) -> None:
-    response = await _get(
-        _app(tmp_path, monkeypatch), "/api/analytics/summary", auth=("admin", "secret")
-    )
+    response = await _authed_get(_app(tmp_path, monkeypatch), "/api/analytics/summary")
 
     assert response.status_code == 200
     payload = response.json()
@@ -176,7 +199,14 @@ async def test_analytics_endpoint_works_on_empty_data(tmp_path: Path, monkeypatc
 
 @pytest.mark.asyncio
 async def test_strategy_lab_page_works_on_empty_data(tmp_path: Path, monkeypatch) -> None:
-    response = await _get(_app(tmp_path, monkeypatch), "/strategy-lab", auth=("admin", "secret"))
+    response = await _authed_get(_app(tmp_path, monkeypatch), "/strategy-lab")
 
     assert response.status_code == 200
     assert "Strategy Lab" in response.text
+
+
+@pytest.mark.asyncio
+async def test_api_auth_required(tmp_path: Path, monkeypatch) -> None:
+    response = await _get(_app(tmp_path, monkeypatch), "/api/analytics/summary")
+
+    assert response.status_code == 401

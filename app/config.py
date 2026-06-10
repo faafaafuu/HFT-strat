@@ -125,6 +125,15 @@ class StrategyProfileConfig(BaseModel):
     paper_profile: str = "aggressive"
 
 
+class StrategyInstanceConfig(BaseModel):
+    strategy_key: str
+    enabled: bool = True
+    min_score: int = 7
+    paper_profile: str = "aggressive"
+    symbols: str | list[str] = "auto"
+    config: dict[str, object] = Field(default_factory=dict)
+
+
 class StrategyProfilesConfig(BaseModel):
     profiles: dict[str, StrategyProfileConfig] = Field(
         default_factory=lambda: {
@@ -151,11 +160,95 @@ class StrategyProfilesConfig(BaseModel):
     )
 
 
+class StrategyInstancesConfig(BaseModel):
+    instances: dict[str, StrategyInstanceConfig] = Field(
+        default_factory=lambda: {
+            "density_conservative": StrategyInstanceConfig(
+                strategy_key="density_strategy",
+                enabled=True,
+                min_score=8,
+                paper_profile="conservative",
+                config={
+                    "min_density_usd": 1_000_000,
+                    "max_distance_pct": 0.25,
+                    "min_lifetime_sec": 20,
+                    "require_absorption": True,
+                    "require_trend_alignment": True,
+                },
+            ),
+            "density_aggressive": StrategyInstanceConfig(
+                strategy_key="density_strategy",
+                enabled=True,
+                min_score=7,
+                paper_profile="aggressive",
+                config={
+                    "min_density_usd": 500_000,
+                    "max_distance_pct": 0.4,
+                    "min_lifetime_sec": 8,
+                    "require_absorption": False,
+                    "require_trend_alignment": False,
+                },
+            ),
+        }
+    )
+
+
+class DensitySpoofDetectionConfig(BaseModel):
+    enabled: bool = True
+    pull_threshold_pct: float = 70
+    pull_time_window_sec: int = 5
+
+
+class DensityEatenDetectionConfig(BaseModel):
+    enabled: bool = True
+    eaten_threshold_pct: float = 70
+    confirm_move_pct: float = 0.15
+    confirm_window_sec: int = 20
+
+
+class DensityRiskConfig(BaseModel):
+    stop_behind_density_pct: float = 0.15
+    take_profit_rr: float = 2.0
+    max_holding_minutes: int = 60
+
+
+class DensityStrategyConfig(BaseModel):
+    enabled: bool = True
+    min_density_usd: float = 500_000
+    max_distance_pct: float = 0.35
+    min_lifetime_sec: int = 10
+    large_density_multiplier: float = 3.0
+    relative_to_avg_depth: bool = True
+    require_volume_spike: bool = True
+    volume_spike_multiplier: float = 1.3
+    require_absorption: bool = False
+    absorption_min_trades_usd: float = 200_000
+    absorption_price_move_max_pct: float = 0.08
+    spoof_detection: DensitySpoofDetectionConfig = Field(
+        default_factory=DensitySpoofDetectionConfig
+    )
+    eaten_detection: DensityEatenDetectionConfig = Field(
+        default_factory=DensityEatenDetectionConfig
+    )
+    risk: DensityRiskConfig = Field(default_factory=DensityRiskConfig)
+
+
 class BacktestConfig(BaseModel):
     min_trades: int = 50
     default_days: int = 30
     taker_fee_pct: float = 0.055
     slippage_pct: float = 0.01
+    backtest_mode: Literal[
+        "candles_only", "candles_plus_density_events", "candles_plus_orderbook_snapshots"
+    ] = "candles_only"
+
+
+class WebConfig(BaseModel):
+    session_secret_env: str = "WEB_SESSION_SECRET"
+    session_cookie_name: str = "mh_session"
+    session_cookie_secure: bool = False
+    session_cookie_same_site: Literal["lax", "strict", "none"] = "lax"
+    session_max_age_seconds: int = 86400
 
 
 class StorageConfig(BaseModel):
@@ -365,7 +458,10 @@ class Settings(BaseModel):
     thresholds: ThresholdsConfig = Field(default_factory=ThresholdsConfig)
     outcomes: OutcomesConfig = Field(default_factory=OutcomesConfig)
     strategy_profiles: StrategyProfilesConfig = Field(default_factory=StrategyProfilesConfig)
+    strategy_instances: StrategyInstancesConfig = Field(default_factory=StrategyInstancesConfig)
+    density_strategy: DensityStrategyConfig = Field(default_factory=DensityStrategyConfig)
     backtest: BacktestConfig = Field(default_factory=BacktestConfig)
+    web: WebConfig = Field(default_factory=WebConfig)
     storage: StorageConfig = Field(default_factory=StorageConfig)
     paper: PaperConfig = Field(default_factory=PaperConfig)
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
