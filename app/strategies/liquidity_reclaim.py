@@ -1,7 +1,14 @@
 from __future__ import annotations
 
 from app.market.features import FeatureSnapshot
-from app.strategies.base import StrategySignal, context_from_snapshot, invalidation_level
+from app.strategies.base import (
+    StrategySignal,
+    clamp_score,
+    context_from_snapshot,
+    invalidation_level,
+    scale_points,
+    spread_bonus,
+)
 
 
 class MicroStopHuntReclaimStrategy:
@@ -31,7 +38,9 @@ class MicroStopHuntReclaimStrategy:
     ) -> StrategySignal | None:
         if market_state.volume_spike_ratio < self.min_volume_spike:
             return None
-        oi_change = market_state.oi_change_5m_pct or market_state.oi_change_15m_pct or 0.0
+        oi_change = market_state.oi_change_5m_pct
+        if oi_change is None:
+            oi_change = market_state.oi_change_15m_pct
         if market_state.returned_after_low_sweep:
             direction = "LONG"
             swept_level = market_state.swept_low_30m
@@ -47,12 +56,16 @@ class MicroStopHuntReclaimStrategy:
         sweep_pct = abs((market_state.price - swept_level) / swept_level) * 100
         if sweep_pct < self.min_price_sweep_pct:
             return None
-        if oi_change < -0.5:
+        if oi_change is not None and oi_change < -0.5:
             return None
-        score = self.min_score
-        score += 1 if market_state.volume_spike_ratio >= self.min_volume_spike * 1.5 else 0
-        score += 1 if oi_change >= 0 else 0
-        score += 1 if market_state.spread_pct is not None and market_state.spread_pct <= 0.05 else 0
+        score = clamp_score(
+            5
+            + scale_points(sweep_pct, self.min_price_sweep_pct, 2.0)
+            + scale_points(market_state.volume_spike_ratio, self.min_volume_spike, 2.0)
+            + (0.5 if oi_change is not None and oi_change > 0 else 0.0)
+            + spread_bonus(market_state.spread_pct)
+        )
+        oi_change = oi_change or 0.0
         return StrategySignal(
             exchange=market_state.exchange,
             symbol=market_state.symbol,
@@ -60,7 +73,7 @@ class MicroStopHuntReclaimStrategy:
             strategy_key=self.key,
             strategy_profile_key=strategy_profile_key,
             paper_profile_key=paper_profile_key,
-            score=min(score, 10),
+            score=score,
             reasons=[
                 reason,
                 f"Reclaim distance {sweep_pct:.2f}%",
@@ -111,10 +124,12 @@ class FailedBreakoutFadeStrategy:
             return None
         if market_state.volume_spike_ratio < 1.1:
             return None
-        score = 6
-        score += 2
-        score += 1 if market_state.volume_spike_ratio >= 1.3 else 0
-        score += 1 if market_state.spread_pct is not None and market_state.spread_pct <= 0.05 else 0
+        score = clamp_score(
+            5
+            + scale_points(fakeout_pct, self.min_fakeout_pct, 2.5)
+            + scale_points(market_state.volume_spike_ratio, 1.1, 2.0)
+            + spread_bonus(market_state.spread_pct)
+        )
         return StrategySignal(
             exchange=market_state.exchange,
             symbol=market_state.symbol,
@@ -122,7 +137,7 @@ class FailedBreakoutFadeStrategy:
             strategy_key=self.key,
             strategy_profile_key=strategy_profile_key,
             paper_profile_key=paper_profile_key,
-            score=min(score, 10),
+            score=score,
             reasons=[
                 reason,
                 "Price returned inside range",

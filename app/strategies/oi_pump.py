@@ -4,8 +4,11 @@ from app.config import ThresholdsConfig
 from app.market.features import FeatureSnapshot
 from app.strategies.base import (
     StrategySignal,
+    clamp_score,
     context_from_snapshot,
     invalidation_level,
+    scale_points,
+    spread_bonus,
 )
 
 
@@ -36,15 +39,16 @@ class OIPumpPriceMoveStrategy:
         if market_state.spread_pct is not None and market_state.spread_pct > 0.05:
             return None
         direction = "LONG" if price_change > 0 else "SHORT"
-        score = 5
-        if oi_change >= self.thresholds.oi_change_15m_pct:
-            score += 2
-        if market_state.volume_spike_ratio >= self.thresholds.volume_spike_multiplier:
-            score += 1
-        if market_state.spread_pct is not None and market_state.spread_pct <= 0.05:
-            score += 1
-        if abs(price_change) >= self.thresholds.price_change_5m_pct:
-            score += 1
+        # Base 5 for passing all filters; bonuses grow with the margin above each threshold.
+        score = clamp_score(
+            5
+            + scale_points(abs(price_change), self.thresholds.price_change_5m_pct, 2.0)
+            + scale_points(oi_change, self.thresholds.oi_change_15m_pct, 2.0)
+            + scale_points(
+                market_state.volume_spike_ratio, self.thresholds.volume_spike_multiplier, 1.0
+            )
+            + spread_bonus(market_state.spread_pct)
+        )
         context = context_from_snapshot(market_state)
         return StrategySignal(
             exchange=market_state.exchange,
@@ -53,7 +57,7 @@ class OIPumpPriceMoveStrategy:
             strategy_key=self.key,
             strategy_profile_key=strategy_profile_key,
             paper_profile_key=paper_profile_key,
-            score=min(score, 10),
+            score=score,
             reasons=[
                 f"Price {'up' if direction == 'LONG' else 'down'} {price_change:.2f}% за 5m",
                 f"OI +{oi_change:.2f}% за 15m",
@@ -103,11 +107,13 @@ class OIMomentumScalperStrategy:
         if market_state.spread_pct is not None and market_state.spread_pct > self.max_spread_pct:
             return None
         direction = "LONG" if price_change > 0 else "SHORT"
-        score = 6
-        score += 1 if abs(price_change) >= self.price_change_3m_pct else 0
-        score += 1 if oi_change >= self.oi_change_10m_pct else 0
-        score += 1 if market_state.volume_spike_ratio >= self.volume_spike else 0
-        score += 1 if (market_state.spread_pct or 0) <= self.max_spread_pct else 0
+        score = clamp_score(
+            5
+            + scale_points(abs(price_change), self.price_change_3m_pct, 2.0)
+            + scale_points(oi_change, self.oi_change_10m_pct, 2.0)
+            + scale_points(market_state.volume_spike_ratio, self.volume_spike, 1.0)
+            + spread_bonus(market_state.spread_pct)
+        )
         return StrategySignal(
             exchange=market_state.exchange,
             symbol=market_state.symbol,
@@ -115,7 +121,7 @@ class OIMomentumScalperStrategy:
             strategy_key=self.key,
             strategy_profile_key=strategy_profile_key,
             paper_profile_key=paper_profile_key,
-            score=min(score, 10),
+            score=score,
             reasons=[
                 f"Impulse {price_change:.2f}% за 5m",
                 f"OI +{oi_change:.2f}%",

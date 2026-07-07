@@ -96,45 +96,42 @@ def test_density_strategy_generates_bounce_signal() -> None:
     assert signal.market_context["density_setup"] == "density_bounce"
 
 
-class _SessionContext:
-    async def __aenter__(self):
-        return object()
-
-    async def __aexit__(self, exc_type, exc, tb):
-        return False
-
-
-class _DatabaseStub:
-    def session(self):
-        return _SessionContext()
-
-
-class _HistoricalRepoStub:
-    def __init__(self, _session) -> None:
-        pass
-
-    async def candles(self, *_args, **_kwargs):
-        return []
-
-
-class _DensityRepoStub:
-    def __init__(self, _session) -> None:
-        pass
-
-    async def recent_events(self, *_args, **_kwargs):
-        return []
-
-
 @pytest.mark.asyncio
-async def test_density_backtest_requires_density_history(monkeypatch) -> None:
-    monkeypatch.setattr("app.backtesting.engine.HistoricalDataRepository", _HistoricalRepoStub)
-    monkeypatch.setattr("app.backtesting.engine.DensityRepository", _DensityRepoStub)
+async def test_density_backtest_requires_density_history() -> None:
+    from datetime import datetime, timedelta
 
-    result = await BacktestEngine(_DatabaseStub(), Settings()).run(
-        strategy_key="density_strategy",
-        symbol="BTCUSDT",
-        persist=False,
-    )
+    from app.data.database import Database
+    from app.data.repositories import HistoricalDataRepository
+
+    database = Database("sqlite+aiosqlite:///:memory:")
+    await database.init()
+    try:
+        start = datetime(2026, 1, 1)
+        async with database.session() as session:
+            await HistoricalDataRepository(session).upsert_candles(
+                [
+                    {
+                        "exchange": "bybit",
+                        "symbol": "BTCUSDT",
+                        "timeframe": "1m",
+                        "open_time": start + timedelta(minutes=index),
+                        "open": 100.0,
+                        "high": 100.1,
+                        "low": 99.9,
+                        "close": 100.0,
+                        "volume": 10.0,
+                        "turnover": 1000.0,
+                    }
+                    for index in range(200)
+                ]
+            )
+        result = await BacktestEngine(database, Settings()).run(
+            strategy_key="density_strategy",
+            symbol="BTCUSDT",
+            persist=False,
+        )
+    finally:
+        await database.close()
 
     assert result["status"] == "insufficient_density_history"
     assert "L2/orderbook" in result["message"]

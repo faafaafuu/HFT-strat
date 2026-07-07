@@ -59,13 +59,19 @@ class JobWorker:
             )
             return {"candles": count}
         if job_type == RUN_BACKTEST:
-            return await BacktestEngine(self.database, self.settings).run(
+            result = await BacktestEngine(self.database, self.settings).run(
                 strategy_key=str(params["strategy_key"]),
                 symbol=str(params["symbol"]),
                 timeframe=str(params.get("timeframe", "1m")),
                 days=int(params.get("days", 30)),
                 params=dict(params.get("params") or {}),
             )
+            # Trades and equity curve are persisted by the engine; keep the job result compact.
+            return {
+                key: value
+                for key, value in result.items()
+                if key not in {"trades", "trade_rows", "equity_curve"}
+            }
         if job_type == RUN_HYPEROPT:
             return await HyperOptimizer(self.database, self.settings).run(
                 strategy_key=str(params["strategy_key"]),

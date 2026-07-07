@@ -11,8 +11,8 @@ from app.backtesting.metrics import compute_backtest_metrics
 from app.backtesting.simulator import SimulatedTrade, simulate_exit
 from app.config import Settings
 from app.data.database import Database
-from app.data.models import HistoricalCandleModel, MarketSnapshotModel
-from app.data.repositories import BacktestRepository, DensityRepository, HistoricalDataRepository
+from app.data.models import DensityEventModel, HistoricalCandleModel, MarketSnapshotModel
+from app.data.repositories import BacktestRepository, HistoricalDataRepository
 from app.market.features import FeatureSnapshot
 from app.strategies.registry import default_registry
 
@@ -139,8 +139,17 @@ class BacktestEngine:
             candles = await repo.candles("bybit", symbol, timeframe, since=since)
             density_events = []
             if strategy_key == "density_strategy":
-                density_events = await DensityRepository(session).recent_events(
-                    symbol=symbol, limit=10_000
+                density_events = list(
+                    (
+                        await session.scalars(
+                            select(DensityEventModel)
+                            .where(
+                                DensityEventModel.symbol == symbol,
+                                DensityEventModel.timestamp >= since,
+                            )
+                            .order_by(DensityEventModel.timestamp.asc())
+                        )
+                    ).all()
                 )
             snapshots = await _load_snapshot_series(session, symbol, since)
         if strategy_key == "density_strategy" and not density_events:
@@ -164,6 +173,7 @@ class BacktestEngine:
                     f"Нужно минимум {MIN_BACKTEST_CANDLES}."
                 ),
             )
+        density_series = DensityEventSeries(density_events) if density_events else None
         if strategy_key in OI_REQUIRED_STRATEGIES and not len(snapshots):
             return _empty_result(
                 strategy_key,
@@ -181,6 +191,7 @@ class BacktestEngine:
             timeframe=timeframe,
             params=params,
             snapshots=snapshots,
+            density_events=density_series,
         )
         result["status"] = "ok"
         result["period_start"] = candles[0].open_time
@@ -211,6 +222,7 @@ class BacktestEngine:
         timeframe: str,
         params: dict[str, Any] | None = None,
         snapshots: MarketSnapshotSeries | None = None,
+        density_events: DensityEventSeries | None = None,
     ) -> dict[str, Any]:
         params = params or {}
         strategy = self.registry.get(strategy_key)
@@ -226,6 +238,7 @@ class BacktestEngine:
         trades: list[SimulatedTrade] = []
         equity_curve: list[dict[str, Any]] = []
         peak = initial_balance
+        step = timedelta(minutes=int(timeframe.rstrip("m")) if timeframe.endswith("m") else 1)
         warmup = min(max(60, _holding_candles(timeframe, 60)), max(1, len(candles) // 3))
         for index in range(warmup, len(candles) - 1):
             candle = candles[index]
@@ -233,7 +246,12 @@ class BacktestEngine:
                 continue
             window = candles[max(0, index + 1 - SNAPSHOT_WINDOW_CANDLES) : index + 1]
             point = snapshots.at(candle.open_time) if snapshots is not None else None
-            snapshot = _snapshot_from_candles(window, point)
+            density_event = (
+                density_events.at(candle.open_time + step, max_age=step)
+                if density_events is not None
+                else None
+            )
+            snapshot = _snapshot_from_candles(window, point, density_event)
             signal = strategy.generate_signal(snapshot)
             if signal is None:
                 continue
@@ -342,6 +360,7 @@ def _empty_result(
 def _snapshot_from_candles(
     candles: list[HistoricalCandleModel],
     point: MarketSnapshotPoint | None = None,
+    density_event: dict[str, Any] | None = None,
 ) -> FeatureSnapshot:
     current = candles[-1]
     price_5m_ago = candles[-6].close if len(candles) >= 6 else candles[0].close
@@ -377,6 +396,7 @@ def _snapshot_from_candles(
         swept_high_30m=local_high if returned_high else None,
         returned_after_low_sweep=returned_low,
         returned_after_high_sweep=returned_high,
+        density_event=density_event,
     )
 
 

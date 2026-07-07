@@ -69,3 +69,27 @@ def invalidation_level(direction: str, entry: float, stop_pct: float) -> float:
     if direction == "LONG":
         return entry * (1 - distance)
     return entry * (1 + distance)
+
+
+def scale_points(value: float | None, threshold: float, max_points: float) -> float:
+    """Graded bonus: 0 points at the threshold, max_points when the value doubles it."""
+    if value is None or threshold <= 0:
+        return 0.0
+    ratio = value / threshold
+    if ratio <= 1.0:
+        return 0.0
+    return min(max_points, (ratio - 1.0) * max_points)
+
+
+def spread_bonus(spread_pct: float | None, max_points: float = 0.5) -> float:
+    if spread_pct is None:
+        return 0.0
+    if spread_pct <= 0.02:
+        return max_points
+    if spread_pct <= 0.05:
+        return max_points / 2
+    return 0.0
+
+
+def clamp_score(value: float) -> int:
+    return int(max(1, min(10, round(value))))

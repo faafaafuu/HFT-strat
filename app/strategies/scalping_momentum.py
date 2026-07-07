@@ -1,7 +1,14 @@
 from __future__ import annotations
 
 from app.market.features import FeatureSnapshot
-from app.strategies.base import StrategySignal, context_from_snapshot, invalidation_level
+from app.strategies.base import (
+    StrategySignal,
+    clamp_score,
+    context_from_snapshot,
+    invalidation_level,
+    scale_points,
+    spread_bonus,
+)
 
 
 class TrendPullbackScalperStrategy:
@@ -33,10 +40,14 @@ class TrendPullbackScalperStrategy:
         if market_state.volume_spike_ratio < self.continuation_volume_multiplier:
             return None
         direction = "LONG" if price_change > 0 else "SHORT"
-        score = 6
-        score += 1 if abs(price_change) >= self.pullback_pct else 0
-        score += 1 if market_state.volume_spike_ratio >= self.continuation_volume_multiplier else 0
-        score += 1 if market_state.spread_pct is not None and market_state.spread_pct <= 0.05 else 0
+        score = clamp_score(
+            5
+            + scale_points(abs(price_change), self.pullback_pct, 2.5)
+            + scale_points(
+                market_state.volume_spike_ratio, self.continuation_volume_multiplier, 2.0
+            )
+            + spread_bonus(market_state.spread_pct)
+        )
         return StrategySignal(
             exchange=market_state.exchange,
             symbol=market_state.symbol,
@@ -44,7 +55,7 @@ class TrendPullbackScalperStrategy:
             strategy_key=self.key,
             strategy_profile_key=strategy_profile_key,
             paper_profile_key=paper_profile_key,
-            score=min(score, 10),
+            score=score,
             reasons=[
                 f"Trend impulse {price_change:.2f}%",
                 f"Continuation volume {market_state.volume_spike_ratio:.2f}x",
