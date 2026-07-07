@@ -13,9 +13,10 @@ async def _main() -> None:
     parser.add_argument("--symbol", required=True)
     parser.add_argument("--timeframe", default="1m")
     parser.add_argument("--days", type=int, default=30)
+    parser.add_argument("--db", default=None, help="Override database URL, e.g. sqlite+aiosqlite:///data/bot.sqlite3")
     args = parser.parse_args()
     settings = load_settings()
-    database = Database(settings.database.url, backups_dir=settings.storage.backups_dir)
+    database = Database(args.db or settings.database.url, backups_dir=settings.storage.backups_dir)
     await database.init()
     try:
         count = await download_bybit_history(
