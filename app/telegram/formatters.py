@@ -41,6 +41,10 @@ def bullet_list(items: list[str]) -> str:
     return "\n".join(f"• {escape(item)}" for item in items)
 
 
+def divider() -> str:
+    return "─" * 18
+
+
 def format_dashboard(
     online: bool,
     pairs_count: int,
@@ -59,20 +63,25 @@ def format_dashboard(
     open_paper_trades: int = 0,
 ) -> str:
     selected_symbols = selected_symbols or []
+    status_rows = code_table(
+        [
+            f"{'Status':<18} {'● Online' if online else '● Offline'}",
+            f"{'Pairs':<18} {pairs_count}",
+            f"{'Signals today':<18} {signals_today}",
+            f"{'Signals week':<18} {signals_week}",
+            f"{'WS connections':<18} {active_websocket_connections}",
+            f"{'RAM':<18} {memory_mb:.1f} MB",
+            f"{'Tasks':<18} {active_tasks}",
+            f"{'DB size':<18} {db_size_mb:.2f} MB",
+            f"{'Open paper trades':<18} {open_paper_trades}",
+            f"{'Last heartbeat':<18} {_time_or_na(last_heartbeat)}",
+            f"{'Last signal':<18} {_time_or_na(last_signal_time)}",
+        ]
+    )
     body = "\n".join(
         [
-            kv("Status", "Online" if online else "Offline"),
-            kv("Pairs", pairs_count),
-            kv("Signals today", signals_today),
-            kv("Signals week", signals_week),
-            kv("WS connections", active_websocket_connections),
-            kv("RAM", f"{memory_mb:.1f} MB"),
-            kv("Tasks", active_tasks),
-            kv("DB size", f"{db_size_mb:.2f} MB"),
-            kv("Open paper trades", open_paper_trades),
-            kv("Last heartbeat", _time_or_na(last_heartbeat)),
-            kv("Last signal", _time_or_na(last_signal_time)),
-            "",
+            status_rows,
+            divider(),
             "<b>Best pattern</b>",
             escape(_stat_row(best_pattern)),
             "",
@@ -173,11 +182,12 @@ def format_signal_message(
             "<b>Reasons</b>",
             bullet_list(_compact_reasons(reasons)),
             "",
-            "<b>Entry ref</b>",
-            escape(_price(signal.entry_price)),
-            "",
-            "<b>Invalidation</b>",
-            escape(_signal_invalidation(signal.direction, context)),
+            code_table(
+                [
+                    f"{'Entry ref':<13} {_price(signal.entry_price)}",
+                    f"{'Invalidation':<13} {_signal_invalidation(signal.direction, context)}",
+                ]
+            ),
         ]
     )
     return card(header, body)
@@ -348,10 +358,10 @@ def format_paper_profiles(profiles: list[dict[str, Any]]) -> str:
         name = str(profile.get("name") or profile.get("profile_key"))
         lines = [
             f"<b>{escape(name)}</b>",
-            f"Balance: ${float(profile.get('balance', 0)):.2f}",
+            f"Balance: ${float(profile.get('balance', 0)):,.2f} · "
             f"PnL: {float(profile.get('pnl_pct', 0)):+.1f}%",
-            f"Open: {int(profile.get('open_positions', 0))}",
-            f"Trades: {int(profile.get('trades', 0))}",
+            f"Open: {int(profile.get('open_positions', 0))} · "
+            f"Trades: {int(profile.get('trades', 0))} · "
             f"Status: {state}",
         ]
         blocks.append("\n".join(lines))

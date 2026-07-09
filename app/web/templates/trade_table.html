@@ -5,16 +5,16 @@
   </tr>
   {% for trade in trades %}
   <tr>
-    <td>{{ trade.id }}</td>
+    <td class="num">{{ trade.id }}</td>
     <td>{{ trade.profile_key }}</td>
     <td><b>{{ trade.symbol }}</b></td>
-    <td>{{ trade.direction }}</td>
+    <td><span class="{{ 'long' if trade.direction == 'LONG' else 'short' }}">{{ trade.direction }}</span></td>
     <td><span class="pill">{{ trade.status }}</span></td>
-    <td>{{ trade.entry_price|num }}</td>
-    <td>{{ trade.stop_price|num }}</td>
-    <td>{{ trade.take_price|num }}</td>
-    <td class="{{ 'positive' if trade.pnl_usd > 0 else 'negative' if trade.pnl_usd < 0 else '' }}">{{ trade.pnl_usd|money }}</td>
-    <td>{{ trade.opened_at }}</td>
+    <td class="num">{{ trade.entry_price|num }}</td>
+    <td class="num">{{ trade.stop_price|num }}</td>
+    <td class="num">{{ trade.take_price|num }}</td>
+    <td class="num {{ 'positive' if trade.pnl_usd > 0 else 'negative' if trade.pnl_usd < 0 else '' }}">{{ trade.pnl_usd|money }}</td>
+    <td class="time">{{ trade.opened_at|time }}</td>
   </tr>
   {% else %}
   <tr><td colspan="10" class="muted">No trades.</td></tr>

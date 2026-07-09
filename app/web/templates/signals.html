@@ -12,14 +12,14 @@
   </tr>
   {% for signal in signals %}
   <tr>
-    <td>{{ signal.id }}</td>
-    <td>{{ signal.timestamp }}</td>
+    <td class="num">{{ signal.id }}</td>
+    <td class="time">{{ signal.timestamp|time }}</td>
     <td>{{ signal.exchange }}</td>
     <td><b>{{ signal.symbol }}</b></td>
-    <td>{{ signal.direction }}</td>
-    <td>{{ signal.pattern }}</td>
-    <td>{{ signal.score }}/10</td>
-    <td>{{ signal.entry_price|num }}</td>
+    <td><span class="{{ 'long' if signal.direction == 'LONG' else 'short' }}">{{ signal.direction }}</span></td>
+    <td class="muted">{{ signal.pattern }}</td>
+    <td class="num">{{ signal.score }}/10</td>
+    <td class="num">{{ signal.entry_price|num }}</td>
     <td><span class="pill">{{ signal.status }}</span></td>
   </tr>
   {% else %}
@@ -27,4 +27,3 @@
   {% endfor %}
 </table>
 {% endblock %}
-

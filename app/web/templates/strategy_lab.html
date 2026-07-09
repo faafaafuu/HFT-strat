@@ -14,6 +14,35 @@
   <a href="/strategy-lab/density">Density</a>
 </nav>
 
+<section class="grid-2">
+  <div>
+    <div class="section-label">Strategies</div>
+    <div class="rows">
+      {% for item in lab.strategies %}
+      <div class="row-item">
+        <span>{{ item.key }}</span>
+        <span class="pill {{ 'on' if item.enabled else '' }}">{{ "ON" if item.enabled else "OFF" }}</span>
+      </div>
+      {% else %}
+      <p class="muted">No strategies registered.</p>
+      {% endfor %}
+    </div>
+  </div>
+  <div>
+    <div class="section-label">Recent Jobs</div>
+    <div class="rows">
+      {% for job in lab.jobs[:8] %}
+      <div class="row-item">
+        <span>#{{ job.id }} {{ job.job_type }}</span>
+        <span class="status {{ 'running' if job.status == 'running' else '' }}">{{ job.status }}</span>
+      </div>
+      {% else %}
+      <p class="muted">No jobs yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
 <section class="grid">
   <div class="card">
     <h2>Strategies</h2>
@@ -22,10 +51,10 @@
       <tbody>
         {% for item in lab.strategies %}
         <tr>
-          <td><strong>{{ item.name }}</strong><br><span class="muted">{{ item.key }}</span></td>
-          <td><span class="pill">{{ "ON" if item.enabled else "OFF" }}</span></td>
+          <td><strong>{{ item.name }}</strong><br><span class="muted mono">{{ item.key }}</span></td>
+          <td><span class="pill {{ 'on' if item.enabled else '' }}">{{ "ON" if item.enabled else "OFF" }}</span></td>
           <td>{{ item.instances|join(", ") if item.instances else item.profiles|join(", ") }}</td>
-          <td>{{ item.description or "n/a" }}</td>
+          <td class="muted">{{ item.description or "n/a" }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -40,9 +69,9 @@
         <tr>
           <td>{{ item.id }}</td>
           <td>{{ item.strategy_key }}</td>
-          <td>{{ item.min_score }}</td>
+          <td class="num">{{ item.min_score }}</td>
           <td>{{ item.paper_profile }}</td>
-          <td><span class="pill">{{ "ON" if item.enabled else "OFF" }}</span></td>
+          <td><span class="pill {{ 'on' if item.enabled else '' }}">{{ "ON" if item.enabled else "OFF" }}</span></td>
           <td><code>{{ item.config }}</code></td>
           <td>
             <button hx-post="/api/strategy-lab/instances/{{ item.id }}/toggle" hx-target="#job-result">
@@ -140,7 +169,7 @@
           <td>{{ row.symbol }}</td>
           <td>{{ row.side }}</td>
           <td>{{ row.event_type }}</td>
-          <td>{{ row.size_usd|money }}</td>
+          <td class="num">{{ row.size_usd|usd }}</td>
           <td>{{ row.distance_pct|pct }}</td>
           <td>{{ row.lifetime_sec|num }}s</td>
         </tr>
@@ -163,7 +192,7 @@
           <td>{{ row.symbol }}</td>
           <td>{{ row.event_type }}</td>
           <td>{{ row.events }}</td>
-          <td>{{ row.avg_size_usd|money }}</td>
+          <td class="num">{{ row.avg_size_usd|usd }}</td>
           <td>{{ row.avg_absorption_score|num }}</td>
           <td>{{ row.avg_spoof_score|num }}</td>
         </tr>
@@ -213,9 +242,9 @@
       <tbody>
         {% for job in lab.jobs %}
         <tr>
-          <td>{{ job.id }}</td>
+          <td class="num">{{ job.id }}</td>
           <td>{{ job.job_type }}</td>
-          <td>{{ job.status }}</td>
+          <td class="num" {% if job.status == 'running' %}style="color: var(--warning);"{% endif %}>{{ job.status }}</td>
           <td><code>{{ job.params }}</code></td>
           <td>{{ job.error or "" }}</td>
         </tr>
@@ -262,7 +291,7 @@
         {% for row in lab.compare.profiles %}
         <tr>
           <td>{{ row.profile_key }}</td>
-          <td>{{ row.balance|money }}</td>
+          <td class="num">{{ row.balance|usd }}</td>
           <td>{{ row.net_pnl|money }}</td>
           <td>{{ row.trades }}</td>
           <td>{{ row.winrate|pct }}</td>

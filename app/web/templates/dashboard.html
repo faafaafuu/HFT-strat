@@ -6,30 +6,59 @@
 </div>
 
 <section class="grid">
-  <div class="card"><div class="metric">Status</div><div class="value">{{ "Online" if status.online else "Offline" }}</div></div>
-  <div class="card"><div class="metric">Pairs</div><div class="value">{{ status.pairs_count }}</div></div>
+  <div class="card"><div class="metric">Status</div><div class="value {{ 'positive' if status.online else 'negative' }}">{{ "● Online" if status.online else "● Offline" }}</div></div>
+  <div class="card"><div class="metric">Pairs Tracked</div><div class="value">{{ status.pairs_count }}</div></div>
   <div class="card"><div class="metric">Signals Today</div><div class="value">{{ status.signals_today }}</div></div>
-  <div class="card"><div class="metric">Signals Week</div><div class="value">{{ status.signals_week }}</div></div>
+  <div class="card"><div class="metric">Signals (7d)</div><div class="value">{{ status.signals_week }}</div></div>
   <div class="card"><div class="metric">Open Paper Trades</div><div class="value">{{ status.open_paper_trades }}</div></div>
-  <div class="card"><div class="metric">DB Size</div><div class="value">{{ status.db_size_mb|num }} MB</div></div>
+  <div class="card"><div class="metric">RAM / DB</div><div class="value-sm">{{ status.memory_mb|num }} MB / {{ status.db_size_mb|num }} MB</div></div>
 </section>
 
-<section class="card">
+<section class="grid-2">
+  <div class="card">
+    <div class="metric">Best Pattern</div>
+    {% if status.best_pattern %}
+    <div class="stat-name">{{ status.best_pattern[0] }} <span class="stat-pct">{{ "%.1f"|format(status.best_pattern[1] * 100) }}%</span></div>
+    {% else %}
+    <div class="stat-name muted">n/a</div>
+    {% endif %}
+  </div>
+  <div class="card">
+    <div class="metric">Best Pair</div>
+    {% if status.best_pair %}
+    <div class="stat-name">{{ status.best_pair[0] }} <span class="stat-pct">{{ "%.1f"|format(status.best_pair[1] * 100) }}%</span></div>
+    {% else %}
+    <div class="stat-name muted">n/a</div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="card" style="margin-bottom: 22px;">
   <h2>Runtime</h2>
   <table>
     <tr><th>Metric</th><th>Value</th></tr>
-    <tr><td>WS Connections</td><td>{{ status.active_websocket_connections }}</td></tr>
-    <tr><td>RAM</td><td>{{ status.memory_mb|num }} MB</td></tr>
-    <tr><td>Active Tasks</td><td>{{ status.active_tasks }}</td></tr>
-    <tr><td>Last Heartbeat</td><td>{{ status.last_heartbeat|time }}</td></tr>
-    <tr><td>Last Signal</td><td>{{ status.last_signal_time|time }}</td></tr>
-    <tr><td>Uptime</td><td>{{ status.uptime }}</td></tr>
+    <tr><td>WS Connections</td><td class="num">{{ status.active_websocket_connections }}</td></tr>
+    <tr><td>RAM</td><td class="num">{{ status.memory_mb|num }} MB</td></tr>
+    <tr><td>Active Tasks</td><td class="num">{{ status.active_tasks }}</td></tr>
+    <tr><td>Last Heartbeat</td><td class="num">{{ status.last_heartbeat|time }}</td></tr>
+    <tr><td>Last Signal</td><td class="num">{{ status.last_signal_time|time }}</td></tr>
+    <tr><td>Uptime</td><td class="num">{{ status.uptime|duration }}</td></tr>
   </table>
 </section>
 
-<section class="card">
-  <h2>Selected Symbols</h2>
-  <p class="muted">{{ status.selected_symbols|join(", ") if status.selected_symbols else "No symbols selected yet." }}</p>
+<section>
+  <div class="section-label">Selected symbols</div>
+  {% if status.selected_symbols %}
+  <div class="chips">
+    {% for symbol in status.selected_symbols[:12] %}
+    <span class="chip">{{ symbol }}</span>
+    {% endfor %}
+    {% if status.selected_symbols|length > 12 %}
+    <span class="chip more">+{{ status.selected_symbols|length - 12 }}</span>
+    {% endif %}
+  </div>
+  {% else %}
+  <p class="muted">No symbols selected yet.</p>
+  {% endif %}
 </section>
 {% endblock %}
-

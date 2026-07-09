@@ -4,21 +4,24 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Market Heat Radar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/app.css">
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
   </head>
   <body>
     <div class="shell">
       <aside class="side">
-        <div class="brand">Market Heat Radar</div>
+        <div class="brand"><span class="brand-mark">M</span> Heat Radar</div>
         <nav class="nav">
-          <a class="{{ 'active' if page == 'dashboard' else '' }}" href="/">Dashboard</a>
-          <a class="{{ 'active' if page == 'signals' else '' }}" href="/signals">Signals</a>
-          <a class="{{ 'active' if page == 'paper' else '' }}" href="/paper">Paper</a>
-          <a class="{{ 'active' if page == 'trades' else '' }}" href="/trades">Trades</a>
-          <a class="{{ 'active' if page == 'analytics' else '' }}" href="/analytics">Analytics</a>
-          <a class="{{ 'active' if page == 'strategy_lab' else '' }}" href="/strategy-lab">Strategy Lab</a>
-          <a class="{{ 'active' if page == 'performance' else '' }}" href="/performance">Performance</a>
+          <a class="{{ 'active' if page == 'dashboard' else '' }}" href="/">📊 Dashboard</a>
+          <a class="{{ 'active' if page == 'signals' else '' }}" href="/signals">📈 Signals</a>
+          <a class="{{ 'active' if page == 'paper' else '' }}" href="/paper">🧪 Paper</a>
+          <a class="{{ 'active' if page == 'trades' else '' }}" href="/trades">📉 Trades</a>
+          <a class="{{ 'active' if page == 'analytics' else '' }}" href="/analytics">📉 Analytics</a>
+          <a class="{{ 'active' if page == 'strategy_lab' else '' }}" href="/strategy-lab">🧪 Strategy Lab</a>
+          <a class="{{ 'active' if page == 'performance' else '' }}" href="/performance">⚙️ Performance</a>
         </nav>
         <form method="post" action="/logout" class="logout-form">
           <button type="submit">Logout</button>

@@ -5,27 +5,28 @@
   <span class="muted">Profiles</span>
 </div>
 
-<table>
-  <tr>
-    <th>Profile</th><th>Status</th><th>Balance</th><th>Equity</th><th>PnL</th>
-    <th>Open</th><th>Trades</th><th>Winrate</th><th>PF</th><th>DD</th>
-  </tr>
+<div class="grid-2">
   {% for profile in profiles %}
-  <tr>
-    <td><b>{{ profile.name }}</b><br><span class="muted">{{ profile.profile_key }}</span></td>
-    <td><span class="pill">{{ "ON" if profile.enabled else "OFF" }}</span></td>
-    <td>{{ profile.balance|money }}</td>
-    <td>{{ profile.equity|money }}</td>
-    <td class="{{ 'positive' if profile.net_profit > 0 else 'negative' if profile.net_profit < 0 else '' }}">{{ profile.net_profit|money }}</td>
-    <td>{{ profile.open_positions }}</td>
-    <td>{{ profile.closed_trades }}</td>
-    <td>{{ profile.winrate|pct }}</td>
-    <td>{{ profile.profit_factor|num }}</td>
-    <td>{{ profile.max_drawdown_pct|pct }}</td>
-  </tr>
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px;">
+      <div>
+        <div class="stat-name">{{ profile.name }}</div>
+        <div class="muted mono" style="font-size: 11.5px;">{{ profile.profile_key }}</div>
+      </div>
+      <span class="pill {{ 'on' if profile.enabled else '' }}">{{ "ON" if profile.enabled else "OFF" }}</span>
+    </div>
+    <dl class="kv">
+      <dt>Balance</dt><dd>{{ profile.balance|usd }}</dd>
+      <dt>Equity</dt><dd>{{ profile.equity|usd }}</dd>
+      <dt>PnL</dt><dd class="{{ 'positive' if profile.net_profit > 0 else 'negative' if profile.net_profit < 0 else '' }}">{{ profile.net_profit|money }}</dd>
+      <dt>Winrate</dt><dd>{{ profile.winrate|pct }}</dd>
+      <dt>Profit Factor</dt><dd>{{ profile.profit_factor|num }}</dd>
+      <dt>Max Drawdown</dt><dd>{{ profile.max_drawdown_pct|pct }}</dd>
+      <dt>Open / Trades</dt><dd>{{ profile.open_positions }} / {{ profile.closed_trades }}</dd>
+    </dl>
+  </div>
   {% else %}
-  <tr><td colspan="10" class="muted">No paper profiles yet.</td></tr>
+  <p class="muted">No paper profiles yet.</p>
   {% endfor %}
-</table>
+</div>
 {% endblock %}
-

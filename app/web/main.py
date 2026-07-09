@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -74,9 +75,11 @@ def create_app(
     base_dir = Path(__file__).resolve().parent
     templates = Jinja2Templates(directory=str(base_dir / "templates"))
     templates.env.filters["money"] = _money
+    templates.env.filters["usd"] = _usd
     templates.env.filters["pct"] = _pct
     templates.env.filters["num"] = _num
     templates.env.filters["time"] = _time
+    templates.env.filters["duration"] = _duration
     app.state.templates = templates
     app.mount("/static", StaticFiles(directory=str(base_dir / "static")), name="static")
 
@@ -98,8 +101,16 @@ def _money(value: object) -> str:
         number = float(value or 0)
     except (TypeError, ValueError):
         number = 0.0
-    sign = "+" if number > 0 else ""
-    return f"{sign}${number:,.2f}"
+    sign = "+" if number > 0 else "-" if number < 0 else ""
+    return f"{sign}${abs(number):,.2f}"
+
+
+def _usd(value: object) -> str:
+    try:
+        number = float(value or 0)
+    except (TypeError, ValueError):
+        number = 0.0
+    return f"${number:,.2f}"
 
 
 def _pct(value: object) -> str:
@@ -107,8 +118,7 @@ def _pct(value: object) -> str:
         number = float(value or 0)
     except (TypeError, ValueError):
         number = 0.0
-    sign = "+" if number > 0 else ""
-    return f"{sign}{number:.2f}%"
+    return f"{number:.2f}%"
 
 
 def _num(value: object) -> str:
@@ -122,7 +132,24 @@ def _num(value: object) -> str:
 def _time(value: object) -> str:
     if value is None:
         return "n/a"
+    if isinstance(value, datetime):
+        aware = value if value.tzinfo else value.replace(tzinfo=UTC)
+        return aware.astimezone(UTC).strftime("%Y-%m-%d %H:%M UTC")
     return str(value)
+
+
+def _duration(value: object) -> str:
+    if not isinstance(value, timedelta):
+        return str(value) if value is not None else "n/a"
+    total = int(value.total_seconds())
+    days, rem = divmod(total, 86400)
+    hours, rem = divmod(rem, 3600)
+    minutes, _ = divmod(rem, 60)
+    if days:
+        return f"{days}d {hours}h"
+    if hours:
+        return f"{hours}h {minutes}m"
+    return f"{minutes}m"
 
 
 def main() -> None:

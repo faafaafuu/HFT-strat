@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; background: #f6f4ef; }
+    a { color: #2f6fed; text-decoration: none; }
+    a:hover { color: #1f4fb8; text-decoration: underline; }
+  </style>
+</helmet>
+
+<div style="min-height:100vh;font-family:'Manrope',sans-serif;color:#23211c;background:#f6f4ef;padding-bottom:80px;">
+
+  <div style="max-width:1180px;margin:0 auto;padding:36px 24px 0;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:28px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:38px;height:38px;border-radius:9px;background:#23211c;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:16px;">M</div>
+        <div>
+          <div style="font-weight:800;font-size:17px;letter-spacing:-0.01em;">Market Heat Radar</div>
+          <div style="font-size:12px;color:#8a8478;">Дизайн бота и веб-дашборда</div>
+        </div>
+      </div>
+
+      <div style="display:flex;background:#ece8e0;border-radius:10px;padding:4px;gap:2px;">
+        <div style="{{ telegramModeStyle }}" onClick="{{ setModeTelegram }}">Telegram-бот</div>
+        <div style="{{ webModeStyle }}" onClick="{{ setModeWeb }}">Веб-дашборд</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:32px;">
+      <div style="{{ tabDashboardStyle }}" onClick="{{ setScreenDashboard }}">Dashboard</div>
+      <div style="{{ tabSignalsStyle }}" onClick="{{ setScreenSignals }}">Signals</div>
+      <div style="{{ tabAlertStyle }}" onClick="{{ setScreenAlert }}">Alert</div>
+      <div style="{{ tabPaperStyle }}" onClick="{{ setScreenPaper }}">Paper Trading</div>
+      <div style="{{ tabLabStyle }}" onClick="{{ setScreenLab }}">Strategy Lab</div>
+      <div style="{{ tabSettingsStyle }}" onClick="{{ setScreenSettings }}">Settings</div>
+    </div>
+  </div>
+
+  <div style="max-width:1180px;margin:0 auto;padding:0 24px;">
+
+    <!-- ============= TELEGRAM MODE ============= -->
+    <sc-if value="{{ isTelegram }}" hint-placeholder-val="{{ true }}">
+      <div style="max-width:460px;margin:0 auto;">
+
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="width:34px;height:34px;border-radius:8px;background:#2f6fed;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;">M</div>
+          <div>
+            <div style="font-weight:700;font-size:13.5px;">Market Heat Radar</div>
+            <div style="font-size:11.5px;color:#8a8478;">бот</div>
+          </div>
+        </div>
+
+        <!-- DASHBOARD -->
+        <sc-if value="{{ isScreenDashboard }}">
+          <div style="background:#fff;border:1px solid #e7e2d9;border-radius:16px;border-top-left-radius:4px;padding:20px 22px;box-shadow:0 1px 2px rgba(30,25,10,0.05);">
+            <div style="font-weight:700;font-size:15px;margin-bottom:14px;">📊 Market Heat Radar</div>
+            <div style="display:grid;grid-template-columns:150px 1fr;row-gap:7px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;">
+              <div style="color:#8a8478;">Status</div><div style="font-weight:600;color:#1f9254;">● Online</div>
+              <div style="color:#8a8478;">Pairs</div><div style="font-weight:600;">30</div>
+              <div style="color:#8a8478;">Signals today</div><div style="font-weight:600;">6</div>
+              <div style="color:#8a8478;">Signals week</div><div style="font-weight:600;">41</div>
+              <div style="color:#8a8478;">WS connections</div><div style="font-weight:600;">3</div>
+              <div style="color:#8a8478;">RAM</div><div style="font-weight:600;">128.4 MB</div>
+              <div style="color:#8a8478;">Tasks</div><div style="font-weight:600;">24</div>
+              <div style="color:#8a8478;">DB size</div><div style="font-weight:600;">42.10 MB</div>
+              <div style="color:#8a8478;">Open paper trades</div><div style="font-weight:600;">2</div>
+              <div style="color:#8a8478;">Last heartbeat</div><div style="font-weight:600;">14:32 UTC</div>
+              <div style="color:#8a8478;">Last signal</div><div style="font-weight:600;">14:20 UTC</div>
+            </div>
+            <div style="height:1px;background:#eee9e0;margin:14px 0;"></div>
+            <div style="font-size:12.5px;font-weight:700;margin-bottom:4px;">Best pattern</div>
+            <div style="font-size:12.5px;color:#4b473e;margin-bottom:10px;">oi_pump_price_move (61.0%)</div>
+            <div style="font-size:12.5px;font-weight:700;margin-bottom:4px;">Best pair</div>
+            <div style="font-size:12.5px;color:#4b473e;margin-bottom:10px;">BTCUSDT (58.0%)</div>
+            <div style="font-size:12.5px;font-weight:700;margin-bottom:4px;">Uptime</div>
+            <div style="font-size:12.5px;color:#4b473e;margin-bottom:10px;">2d 4h</div>
+            <div style="font-size:12.5px;font-weight:700;margin-bottom:4px;">Selected symbols</div>
+            <div style="font-size:12.5px;color:#4b473e;">BTCUSDT, ETHUSDT, SOLUSDT, XRPUSDT, DOGEUSDT +25</div>
+          </div>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;gap:6px;">
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">← Back</div>
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">🏠 Home</div>
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">🔄 Refresh</div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- SIGNALS -->
+        <sc-if value="{{ isScreenSignals }}">
+          <div style="background:#fff;border:1px solid #e7e2d9;border-radius:16px;border-top-left-radius:4px;padding:20px 22px;box-shadow:0 1px 2px rgba(30,25,10,0.05);">
+            <div style="font-weight:700;font-size:15px;margin-bottom:14px;">📈 Recent Signals</div>
+            <div style="display:flex;flex-direction:column;gap:14px;">
+              <div>
+                <div style="font-weight:700;font-size:13.5px;">BTCUSDT</div>
+                <div style="font-size:12.5px;color:#4b473e;">LONG • Score 8/10</div>
+                <div style="font-size:11.5px;color:#8a8478;">14:20 UTC</div>
+              </div>
+              <div>
+                <div style="font-weight:700;font-size:13.5px;">ETHUSDT</div>
+                <div style="font-size:12.5px;color:#4b473e;">SHORT • Score 7/10</div>
+                <div style="font-size:11.5px;color:#8a8478;">13:58 UTC</div>
+              </div>
+              <div>
+                <div style="font-weight:700;font-size:13.5px;">SOLUSDT</div>
+                <div style="font-size:12.5px;color:#4b473e;">LONG • Score 9/10</div>
+                <div style="font-size:11.5px;color:#8a8478;">13:41 UTC</div>
+              </div>
+            </div>
+            <div style="margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8a8478;">Page 1</div>
+          </div>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px;">
+            <div style="background:#f1efe9;border-radius:9px;padding:11px 14px;font-size:13px;font-weight:600;">BTCUSDT • LONG • 8/10</div>
+            <div style="background:#f1efe9;border-radius:9px;padding:11px 14px;font-size:13px;font-weight:600;">ETHUSDT • SHORT • 7/10</div>
+            <div style="background:#f1efe9;border-radius:9px;padding:11px 14px;font-size:13px;font-weight:600;">SOLUSDT • LONG • 9/10</div>
+            <div style="display:flex;gap:6px;">
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">Next →</div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">← Back</div>
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">🏠 Home</div>
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">🔄 Refresh</div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- SIGNAL ALERT -->
+        <sc-if value="{{ isScreenAlert }}">
+          <div style="background:#fff;border:1px solid #f0d9ad;border-radius:16px;border-top-left-radius:4px;padding:20px 22px;box-shadow:0 1px 2px rgba(30,25,10,0.05);">
+            <div style="font-weight:700;font-size:15px;margin-bottom:14px;color:#b7791f;">⚠️ Potential Setup</div>
+            <div style="display:grid;grid-template-columns:120px 1fr;row-gap:8px;font-size:13px;margin-bottom:12px;">
+              <div style="color:#8a8478;">Pair</div><div style="font-weight:700;">BTCUSDT</div>
+              <div style="color:#8a8478;">Direction</div><div style="font-weight:700;">LONG</div>
+              <div style="color:#8a8478;">Score</div><div style="font-weight:700;">9/10</div>
+            </div>
+            <div style="font-size:12.5px;font-weight:700;margin-bottom:5px;">Reasons</div>
+            <div style="font-size:12.5px;color:#4b473e;line-height:1.7;margin-bottom:12px;">• Sweep Low<br/>• OI Growth<br/>• Volume Spike</div>
+            <div style="display:grid;grid-template-columns:120px 1fr;row-gap:8px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;">
+              <div style="color:#8a8478;">Entry ref</div><div style="font-weight:600;">64,210</div>
+              <div style="color:#8a8478;">Invalidation</div><div style="font-weight:600;">63,940</div>
+            </div>
+          </div>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;gap:6px;">
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">Bybit</div>
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">TradingView</div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <div style="flex:1;background:#e6f4ec;color:#1f9254;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:700;">Entered</div>
+              <div style="flex:1;background:#faece9;color:#d1453b;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:700;">Ignore</div>
+            </div>
+            <div style="background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">Details</div>
+          </div>
+        </sc-if>
+
+        <!-- PAPER -->
+        <sc-if value="{{ isScreenPaper }}">
+          <div style="background:#fff;border:1px solid #e7e2d9;border-radius:16px;border-top-left-radius:4px;padding:20px 22px;box-shadow:0 1px 2px rgba(30,25,10,0.05);">
+            <div style="font-weight:700;font-size:15px;margin-bottom:14px;">🧪 Paper Bots</div>
+            <div style="display:flex;flex-direction:column;gap:14px;">
+              <div>
+                <div style="font-weight:700;font-size:13.5px;">Conservative</div>
+                <div style="font-size:12.5px;color:#4b473e;">Balance: $2,047.20 &nbsp;·&nbsp; PnL: <span style="color:#1f9254;font-weight:700;">+2.4%</span></div>
+                <div style="font-size:12.5px;color:#4b473e;">Open: 1 &nbsp;·&nbsp; Trades: 18 &nbsp;·&nbsp; Status: ON</div>
+              </div>
+              <div>
+                <div style="font-weight:700;font-size:13.5px;">Aggressive</div>
+                <div style="font-size:12.5px;color:#4b473e;">Balance: $1,881.40 &nbsp;·&nbsp; PnL: <span style="color:#d1453b;font-weight:700;">-5.9%</span></div>
+                <div style="font-size:12.5px;color:#4b473e;">Open: 2 &nbsp;·&nbsp; Trades: 33 &nbsp;·&nbsp; Status: ON</div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px;">
+            <div style="background:#f1efe9;border-radius:9px;padding:11px 14px;font-size:13px;font-weight:600;">Conservative</div>
+            <div style="background:#f1efe9;border-radius:9px;padding:11px 14px;font-size:13px;font-weight:600;">Aggressive</div>
+            <div style="display:flex;gap:6px;">
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">Compare</div>
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">Create Profile</div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">← Back</div>
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">🏠 Home</div>
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">🔄 Refresh</div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- STRATEGY LAB -->
+        <sc-if value="{{ isScreenLab }}">
+          <div style="background:#fff;border:1px solid #e7e2d9;border-radius:16px;border-top-left-radius:4px;padding:20px 22px;box-shadow:0 1px 2px rgba(30,25,10,0.05);">
+            <div style="font-weight:700;font-size:15px;margin-bottom:14px;">🧪 Strategy Lab</div>
+            <div style="font-size:12.5px;font-weight:700;margin-bottom:6px;">Strategies</div>
+            <div style="font-size:12.5px;color:#4b473e;line-height:1.8;margin-bottom:12px;">
+              • density_strategy • ON<br/>
+              • oi_pump_price_move • ON<br/>
+              • stop_hunt_sweep • ON<br/>
+              • trend_pullback_scalper • OFF
+            </div>
+            <div style="font-size:12.5px;font-weight:700;margin-bottom:6px;">Recent Jobs</div>
+            <div style="font-size:12.5px;color:#4b473e;line-height:1.8;margin-bottom:12px;">
+              • #214 run_backtest • done<br/>
+              • #213 run_hyperopt • running
+            </div>
+            <div style="font-size:11.5px;color:#8a8478;">Run history/backtest/hyperopt from Web or Makefile.</div>
+          </div>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;gap:6px;">
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">Active Strategies</div>
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">Density Strategy</div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">Backtests</div>
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">Hyperopt</div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">ML Status</div>
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">Trend Status</div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">Results</div>
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">Density Events</div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">← Back</div>
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">🏠 Home</div>
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">🔄 Refresh</div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- SETTINGS -->
+        <sc-if value="{{ isScreenSettings }}">
+          <div style="background:#fff;border:1px solid #e7e2d9;border-radius:16px;border-top-left-radius:4px;padding:20px 22px;box-shadow:0 1px 2px rgba(30,25,10,0.05);">
+            <div style="font-weight:700;font-size:15px;margin-bottom:14px;">⚙️ Settings</div>
+            <div style="display:grid;grid-template-columns:150px 1fr;row-gap:8px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;">
+              <div style="color:#8a8478;">Bot State</div><div style="font-weight:600;color:#1f9254;">Active</div>
+              <div style="color:#8a8478;">Min Score</div><div style="font-weight:600;">7</div>
+              <div style="color:#8a8478;">Cooldown</div><div style="font-weight:600;">15m</div>
+              <div style="color:#8a8478;">Auto Select</div><div style="font-weight:600;">On</div>
+              <div style="color:#8a8478;">Max Symbols</div><div style="font-weight:600;">30</div>
+              <div style="color:#8a8478;">Notifications</div><div style="font-weight:600;">On</div>
+            </div>
+          </div>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;gap:6px;">
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">Min Score −</div>
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">Min Score +</div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">Cooldown −5m</div>
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">Cooldown +5m</div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">Auto Select On/Off</div>
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">Notifications On/Off</div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">Max Symbols −5</div>
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">Max Symbols +5</div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">← Back</div>
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">🏠 Home</div>
+              <div style="flex:1;background:#f1efe9;border-radius:9px;padding:11px 0;text-align:center;font-size:13px;font-weight:600;">🔄 Refresh</div>
+            </div>
+          </div>
+        </sc-if>
+
+      </div>
+    </sc-if>
+
+    <!-- ============= WEB MODE ============= -->
+    <sc-if value="{{ isWeb }}">
+      <div style="display:flex;gap:0;background:#fff;border:1px solid #e7e2d9;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(30,25,10,0.05);min-height:640px;">
+
+        <div style="width:210px;flex-shrink:0;background:#faf8f4;border-right:1px solid #e7e2d9;padding:20px 14px;">
+          <div style="display:flex;align-items:center;gap:9px;padding:0 8px 20px;">
+            <div style="width:26px;height:26px;border-radius:6px;background:#23211c;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:12px;">M</div>
+            <div style="font-weight:800;font-size:13.5px;">Heat Radar</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:2px;">
+            <div style="{{ navDashboardStyle }}" onClick="{{ setScreenDashboard }}">📊 Dashboard</div>
+            <div style="{{ navSignalsStyle }}" onClick="{{ setScreenSignals }}">📈 Signals</div>
+            <div style="{{ navPaperStyle }}" onClick="{{ setScreenPaper }}">🧪 Paper</div>
+            <div style="{{ navLabStyle }}" onClick="{{ setScreenLab }}">🧪 Strategy Lab</div>
+            <div style="{{ navSettingsStyle }}" onClick="{{ setScreenSettings }}">⚙️ Settings</div>
+          </div>
+          <div style="margin-top:24px;padding:10px 12px;background:#e6f4ec;border-radius:8px;font-size:11.5px;color:#1f9254;font-weight:700;">● Online</div>
+        </div>
+
+        <div style="flex:1;padding:28px 32px;min-width:0;">
+
+          <!-- WEB DASHBOARD -->
+          <sc-if value="{{ isScreenDashboard }}">
+            <div style="font-weight:800;font-size:19px;margin-bottom:20px;">Dashboard</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;">
+              <div style="border:1px solid #e7e2d9;border-radius:10px;padding:16px;">
+                <div style="font-size:11.5px;color:#8a8478;margin-bottom:6px;">Pairs Tracked</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;">30</div>
+              </div>
+              <div style="border:1px solid #e7e2d9;border-radius:10px;padding:16px;">
+                <div style="font-size:11.5px;color:#8a8478;margin-bottom:6px;">Signals Today</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;">6</div>
+              </div>
+              <div style="border:1px solid #e7e2d9;border-radius:10px;padding:16px;">
+                <div style="font-size:11.5px;color:#8a8478;margin-bottom:6px;">Signals (7d)</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;">41</div>
+              </div>
+              <div style="border:1px solid #e7e2d9;border-radius:10px;padding:16px;">
+                <div style="font-size:11.5px;color:#8a8478;margin-bottom:6px;">Open Paper Trades</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;">2</div>
+              </div>
+              <div style="border:1px solid #e7e2d9;border-radius:10px;padding:16px;">
+                <div style="font-size:11.5px;color:#8a8478;margin-bottom:6px;">RAM / DB</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;">128.4 MB / 42.1 MB</div>
+              </div>
+              <div style="border:1px solid #e7e2d9;border-radius:10px;padding:16px;">
+                <div style="font-size:11.5px;color:#8a8478;margin-bottom:6px;">Uptime</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;">2d 4h</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px;">
+              <div style="border:1px solid #e7e2d9;border-radius:10px;padding:16px;">
+                <div style="font-size:11.5px;color:#8a8478;margin-bottom:6px;">Best Pattern</div>
+                <div style="font-size:14px;font-weight:700;">oi_pump_price_move <span style="color:#1f9254;font-family:'IBM Plex Mono',monospace;font-weight:600;">61.0%</span></div>
+              </div>
+              <div style="border:1px solid #e7e2d9;border-radius:10px;padding:16px;">
+                <div style="font-size:11.5px;color:#8a8478;margin-bottom:6px;">Best Pair</div>
+                <div style="font-size:14px;font-weight:700;">BTCUSDT <span style="color:#1f9254;font-family:'IBM Plex Mono',monospace;font-weight:600;">58.0%</span></div>
+              </div>
+            </div>
+            <div style="font-size:11.5px;color:#8a8478;margin-bottom:8px;">Selected symbols</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+              <div style="background:#f1efe9;border-radius:6px;padding:5px 10px;font-size:12px;font-family:'IBM Plex Mono',monospace;">BTCUSDT</div>
+              <div style="background:#f1efe9;border-radius:6px;padding:5px 10px;font-size:12px;font-family:'IBM Plex Mono',monospace;">ETHUSDT</div>
+              <div style="background:#f1efe9;border-radius:6px;padding:5px 10px;font-size:12px;font-family:'IBM Plex Mono',monospace;">SOLUSDT</div>
+              <div style="background:#f1efe9;border-radius:6px;padding:5px 10px;font-size:12px;font-family:'IBM Plex Mono',monospace;">XRPUSDT</div>
+              <div style="background:#f1efe9;border-radius:6px;padding:5px 10px;font-size:12px;font-family:'IBM Plex Mono',monospace;">DOGEUSDT</div>
+              <div style="background:#f1efe9;border-radius:6px;padding:5px 10px;font-size:12px;font-family:'IBM Plex Mono',monospace;color:#8a8478;">+25</div>
+            </div>
+          </sc-if>
+
+          <!-- WEB ALERT (no web equivalent) -->
+          <sc-if value="{{ isScreenAlert }}">
+            <div style="font-weight:800;font-size:19px;margin-bottom:20px;">Alert</div>
+            <div style="border:1px dashed #e7e2d9;border-radius:10px;padding:40px 24px;text-align:center;">
+              <div style="font-size:28px;margin-bottom:10px;">💬</div>
+              <div style="font-size:14px;font-weight:700;margin-bottom:6px;">Алерты приходят только в Telegram</div>
+              <div style="font-size:13px;color:#8a8478;max-width:340px;margin:0 auto;">В веб-дашборде нет отдельной страницы для алертов сигналов — переключитесь на вкладку «Telegram-бот», чтобы посмотреть карточку алерта с кнопками Entered / Ignore.</div>
+            </div>
+          </sc-if>
+
+          <!-- WEB SIGNALS -->
+          <sc-if value="{{ isScreenSignals }}">
+            <div style="font-weight:800;font-size:19px;margin-bottom:20px;">Signals</div>
+            <div style="border:1px solid #e7e2d9;border-radius:10px;overflow:hidden;">
+              <div style="display:grid;grid-template-columns:1.2fr 0.8fr 0.6fr 1fr;background:#faf8f4;padding:10px 16px;font-size:11.5px;color:#8a8478;font-weight:700;">
+                <div>SYMBOL</div><div>DIRECTION</div><div>SCORE</div><div>TIME</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1.2fr 0.8fr 0.6fr 1fr;padding:12px 16px;border-top:1px solid #eee9e0;font-size:13px;align-items:center;">
+                <div style="font-weight:700;">BTCUSDT</div><div style="color:#1f9254;font-weight:600;">LONG</div><div style="font-family:'IBM Plex Mono',monospace;">8/10</div><div style="color:#8a8478;font-family:'IBM Plex Mono',monospace;font-size:12px;">14:20 UTC</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1.2fr 0.8fr 0.6fr 1fr;padding:12px 16px;border-top:1px solid #eee9e0;font-size:13px;align-items:center;">
+                <div style="font-weight:700;">ETHUSDT</div><div style="color:#d1453b;font-weight:600;">SHORT</div><div style="font-family:'IBM Plex Mono',monospace;">7/10</div><div style="color:#8a8478;font-family:'IBM Plex Mono',monospace;font-size:12px;">13:58 UTC</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1.2fr 0.8fr 0.6fr 1fr;padding:12px 16px;border-top:1px solid #eee9e0;font-size:13px;align-items:center;">
+                <div style="font-weight:700;">SOLUSDT</div><div style="color:#1f9254;font-weight:600;">LONG</div><div style="font-family:'IBM Plex Mono',monospace;">9/10</div><div style="color:#8a8478;font-family:'IBM Plex Mono',monospace;font-size:12px;">13:41 UTC</div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- WEB PAPER -->
+          <sc-if value="{{ isScreenPaper }}">
+            <div style="font-weight:800;font-size:19px;margin-bottom:20px;">Paper Trading</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+              <div style="border:1px solid #e7e2d9;border-radius:10px;padding:18px;">
+                <div style="font-weight:700;font-size:14.5px;margin-bottom:12px;">Conservative</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;row-gap:8px;font-size:12.5px;">
+                  <div style="color:#8a8478;">Balance</div><div style="font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:right;">$2,047.20</div>
+                  <div style="color:#8a8478;">PnL</div><div style="font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:right;color:#1f9254;">+2.4%</div>
+                  <div style="color:#8a8478;">Winrate</div><div style="font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:right;">61.0%</div>
+                  <div style="color:#8a8478;">Open / Trades</div><div style="font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:right;">1 / 18</div>
+                </div>
+              </div>
+              <div style="border:1px solid #e7e2d9;border-radius:10px;padding:18px;">
+                <div style="font-weight:700;font-size:14.5px;margin-bottom:12px;">Aggressive</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;row-gap:8px;font-size:12.5px;">
+                  <div style="color:#8a8478;">Balance</div><div style="font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:right;">$1,881.40</div>
+                  <div style="color:#8a8478;">PnL</div><div style="font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:right;color:#d1453b;">-5.9%</div>
+                  <div style="color:#8a8478;">Winrate</div><div style="font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:right;">47.2%</div>
+                  <div style="color:#8a8478;">Open / Trades</div><div style="font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:right;">2 / 33</div>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- WEB STRATEGY LAB -->
+          <sc-if value="{{ isScreenLab }}">
+            <div style="font-weight:800;font-size:19px;margin-bottom:20px;">Strategy Lab</div>
+            <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:20px;">
+              <div>
+                <div style="font-size:11.5px;color:#8a8478;font-weight:700;margin-bottom:10px;">STRATEGIES</div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;border:1px solid #e7e2d9;border-radius:8px;padding:10px 14px;font-size:13px;"><span>density_strategy</span><span style="background:#e6f4ec;color:#1f9254;border-radius:5px;padding:2px 8px;font-size:11px;font-weight:700;">ON</span></div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;border:1px solid #e7e2d9;border-radius:8px;padding:10px 14px;font-size:13px;"><span>oi_pump_price_move</span><span style="background:#e6f4ec;color:#1f9254;border-radius:5px;padding:2px 8px;font-size:11px;font-weight:700;">ON</span></div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;border:1px solid #e7e2d9;border-radius:8px;padding:10px 14px;font-size:13px;"><span>stop_hunt_sweep</span><span style="background:#e6f4ec;color:#1f9254;border-radius:5px;padding:2px 8px;font-size:11px;font-weight:700;">ON</span></div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;border:1px solid #e7e2d9;border-radius:8px;padding:10px 14px;font-size:13px;"><span>trend_pullback_scalper</span><span style="background:#f1efe9;color:#8a8478;border-radius:5px;padding:2px 8px;font-size:11px;font-weight:700;">OFF</span></div>
+                </div>
+              </div>
+              <div>
+                <div style="font-size:11.5px;color:#8a8478;font-weight:700;margin-bottom:10px;">RECENT JOBS</div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  <div style="display:flex;justify-content:space-between;border:1px solid #e7e2d9;border-radius:8px;padding:10px 14px;font-size:13px;"><span>#214 run_backtest</span><span style="color:#8a8478;font-family:'IBM Plex Mono',monospace;font-size:12px;">done</span></div>
+                  <div style="display:flex;justify-content:space-between;border:1px solid #e7e2d9;border-radius:8px;padding:10px 14px;font-size:13px;"><span>#213 run_hyperopt</span><span style="color:#b7791f;font-family:'IBM Plex Mono',monospace;font-size:12px;">running</span></div>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- WEB SETTINGS -->
+          <sc-if value="{{ isScreenSettings }}">
+            <div style="font-weight:800;font-size:19px;margin-bottom:20px;">Settings</div>
+            <div style="display:flex;flex-direction:column;gap:0;border:1px solid #e7e2d9;border-radius:10px;overflow:hidden;">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #eee9e0;">
+                <div style="font-size:13.5px;">Bot state</div>
+                <div style="font-size:12px;font-weight:700;color:#1f9254;background:#e6f4ec;padding:4px 10px;border-radius:6px;">Active</div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #eee9e0;">
+                <div style="font-size:13.5px;">Minimum score</div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="width:26px;height:26px;border-radius:6px;background:#f1efe9;text-align:center;line-height:26px;font-weight:700;">−</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-weight:600;width:20px;text-align:center;">7</div>
+                  <div style="width:26px;height:26px;border-radius:6px;background:#f1efe9;text-align:center;line-height:26px;font-weight:700;">+</div>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #eee9e0;">
+                <div style="font-size:13.5px;">Cooldown per symbol</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;">15 min</div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #eee9e0;">
+                <div style="font-size:13.5px;">Auto-select symbols</div>
+                <div style="width:38px;height:22px;border-radius:11px;background:#1f9254;position:relative;"><div style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:2px;right:2px;"></div></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #eee9e0;">
+                <div style="font-size:13.5px;">Max symbols</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;">30</div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;">
+                <div style="font-size:13.5px;">Notifications</div>
+                <div style="width:38px;height:22px;border-radius:11px;background:#1f9254;position:relative;"><div style="width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:2px;right:2px;"></div></div>
+              </div>
+            </div>
+          </sc-if>
+
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { mode: 'telegram', screen: 'dashboard' };
+
+  tabStyle(active) {
+    const base = 'padding:9px 16px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;';
+    return active
+      ? base + 'background:#23211c;color:#fff;'
+      : base + 'background:transparent;color:#4b473e;';
+  }
+
+  modeStyle(active) {
+    const base = 'padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;';
+    return active
+      ? base + 'background:#fff;color:#23211c;box-shadow:0 1px 2px rgba(0,0,0,0.06);'
+      : base + 'background:transparent;color:#8a8478;';
+  }
+
+  navStyle(active) {
+    const base = 'padding:9px 12px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;';
+    return active
+      ? base + 'background:#23211c;color:#fff;'
+      : base + 'background:transparent;color:#4b473e;';
+  }
+
+  renderVals() {
+    const s = this.state.screen;
+    const m = this.state.mode;
+    return {
+      isTelegram: m === 'telegram',
+      isWeb: m === 'web',
+      telegramModeStyle: this.modeStyle(m === 'telegram'),
+      webModeStyle: this.modeStyle(m === 'web'),
+      setModeTelegram: () => this.setState({ mode: 'telegram' }),
+      setModeWeb: () => this.setState({ mode: 'web' }),
+
+      isScreenDashboard: s === 'dashboard',
+      isScreenSignals: s === 'signals',
+      isScreenAlert: s === 'alert',
+      isScreenPaper: s === 'paper',
+      isScreenLab: s === 'lab',
+      isScreenSettings: s === 'settings',
+
+      tabDashboardStyle: this.tabStyle(s === 'dashboard'),
+      tabSignalsStyle: this.tabStyle(s === 'signals'),
+      tabAlertStyle: this.tabStyle(s === 'alert'),
+      tabPaperStyle: this.tabStyle(s === 'paper'),
+      tabLabStyle: this.tabStyle(s === 'lab'),
+      tabSettingsStyle: this.tabStyle(s === 'settings'),
+
+      navDashboardStyle: this.navStyle(s === 'dashboard'),
+      navSignalsStyle: this.navStyle(s === 'signals'),
+      navPaperStyle: this.navStyle(s === 'paper'),
+      navLabStyle: this.navStyle(s === 'lab'),
+      navSettingsStyle: this.navStyle(s === 'settings'),
+
+      setScreenDashboard: () => this.setState({ screen: 'dashboard' }),
+      setScreenSignals: () => this.setState({ screen: 'signals' }),
+      setScreenAlert: () => this.setState({ screen: 'alert' }),
+      setScreenPaper: () => this.setState({ screen: 'paper' }),
+      setScreenLab: () => this.setState({ screen: 'lab' }),
+      setScreenSettings: () => this.setState({ screen: 'settings' }),
+    };
+  }
+}
+
+</script>
+</body>
+</html>
