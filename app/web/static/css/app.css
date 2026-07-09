@@ -335,13 +335,13 @@ td.time {
   background: var(--surface);
 }
 
-.row-item .status {
+.status {
   color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: 12px;
 }
 
-.row-item .status.running {
+.status.running {
   color: var(--warning);
 }
 

@@ -139,19 +139,8 @@ class BacktestEngine:
             candles = await repo.candles("bybit", symbol, timeframe, since=since)
             density_events = []
             if strategy_key == "density_strategy":
-                density_events = list(
-                    (
-                        await session.scalars(
-                            select(DensityEventModel)
-                            .where(
-                                DensityEventModel.symbol == symbol,
-                                DensityEventModel.timestamp >= since,
-                            )
-                            .order_by(DensityEventModel.timestamp.asc())
-                        )
-                    ).all()
-                )
-            snapshots = await _load_snapshot_series(session, symbol, since)
+                density_events = await load_density_events(session, symbol, since)
+            snapshots = await load_snapshot_series(session, symbol, since)
         if strategy_key == "density_strategy" and not density_events:
             return _empty_result(
                 strategy_key,
@@ -238,7 +227,7 @@ class BacktestEngine:
         trades: list[SimulatedTrade] = []
         equity_curve: list[dict[str, Any]] = []
         peak = initial_balance
-        step = timedelta(minutes=int(timeframe.rstrip("m")) if timeframe.endswith("m") else 1)
+        step = timedelta(minutes=_timeframe_minutes(timeframe))
         warmup = min(max(60, _holding_candles(timeframe, 60)), max(1, len(candles) // 3))
         for index in range(warmup, len(candles) - 1):
             candle = candles[index]
@@ -298,7 +287,22 @@ class BacktestEngine:
         }
 
 
-async def _load_snapshot_series(session, symbol: str, since: datetime) -> MarketSnapshotSeries:
+async def load_density_events(session, symbol: str, since: datetime) -> list[DensityEventModel]:
+    return list(
+        (
+            await session.scalars(
+                select(DensityEventModel)
+                .where(
+                    DensityEventModel.symbol == symbol,
+                    DensityEventModel.timestamp >= since,
+                )
+                .order_by(DensityEventModel.timestamp.asc())
+            )
+        ).all()
+    )
+
+
+async def load_snapshot_series(session, symbol: str, since: datetime) -> MarketSnapshotSeries:
     rows = (
         await session.execute(
             select(
@@ -421,9 +425,12 @@ def _trade_row(strategy_key: str, trade: SimulatedTrade, exchange: str, symbol: 
     }
 
 
+def _timeframe_minutes(timeframe: str) -> int:
+    return int(timeframe.rstrip("m")) if timeframe.endswith("m") else 1
+
+
 def _holding_candles(timeframe: str, minutes: int) -> int:
-    step = int(timeframe.rstrip("m")) if timeframe.endswith("m") else 1
-    return max(1, minutes // max(1, step))
+    return max(1, minutes // max(1, _timeframe_minutes(timeframe)))
 
 
 def _pct(old: float, new: float) -> float:
