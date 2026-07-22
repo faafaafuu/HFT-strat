@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from datetime import timedelta
+import hashlib
+import json
+from datetime import datetime, timedelta
 from typing import Any
 
 from app.backtesting.engine import (
@@ -13,8 +15,12 @@ from app.backtesting.engine import (
 from app.backtesting.metrics import objective_score
 from app.config import Settings
 from app.data.database import Database
-from app.data.repositories import HistoricalDataRepository
+from app.data.repositories import HistoricalDataRepository, HyperoptCacheRepository
 from app.optimization.search_space import grid, search_space_for
+
+# Bump when a change to the engine, the simulator or the strategies would make a stored
+# evaluation wrong. Cached rows from older versions are then ignored.
+EVALUATION_VERSION = 1
 
 
 class HyperOptimizer:
@@ -63,6 +69,8 @@ class HyperOptimizer:
             "results": pooled[:10],
             "by_timeframe": by_timeframe,
             "timeframes": timeframes,
+            "from_cache": sum(int(item.get("from_cache", 0) or 0) for item in by_timeframe.values()),
+            "computed": sum(int(item.get("computed", 0) or 0) for item in by_timeframe.values()),
             "train_candles": sum(
                 int(item.get("train_candles", 0) or 0) for item in by_timeframe.values()
             ),
@@ -102,10 +110,32 @@ class HyperOptimizer:
         split_at = max(1, int(len(candles) * 0.7))
         train = candles[:split_at]
         test = candles[split_at:]
+        period_start = candles[0].open_time
+        period_end = candles[-1].open_time
+
+        combinations = [{**base_params, **params} for params in grid(space=space_for(strategy_key), limit=limit)]
+        keys = [
+            _cache_key(
+                strategy_key=strategy_key,
+                symbol=symbol,
+                timeframe=timeframe,
+                params=params,
+                period_start=period_start,
+                period_end=period_end,
+                split_at=split_at,
+            )
+            for params in combinations
+        ]
+        async with self.database.session() as session:
+            cached = await HyperoptCacheRepository(session).get_many(keys)
+
         results = []
-        space = search_space_for(strategy_key)
-        for params in grid(space=space, limit=limit):
-            params = {**base_params, **params}
+        fresh: list[tuple[str, dict[str, Any], float, dict[str, Any], dict[str, Any]]] = []
+        for params, key in zip(combinations, keys, strict=True):
+            hit = cached.get(key)
+            if hit is not None:
+                results.append({**hit, "params": params, "timeframe": timeframe})
+                continue
             train_result = self.engine.run_on_candles(
                 strategy_key=strategy_key,
                 candles=train,
@@ -130,19 +160,78 @@ class HyperOptimizer:
                     "objective": score,
                     "train": train_result["metrics"],
                     "test": test_result["metrics"],
+                    "cached": False,
                 }
             )
+            fresh.append((key, params, score, train_result["metrics"], test_result["metrics"]))
+
+        if fresh:
+            async with self.database.session() as session:
+                repo = HyperoptCacheRepository(session)
+                for key, params, score, train_metrics, test_metrics in fresh:
+                    await repo.store(
+                        cache_key=key,
+                        strategy_key=strategy_key,
+                        symbol=symbol,
+                        timeframe=timeframe,
+                        params=params,
+                        period_start=period_start,
+                        period_end=period_end,
+                        objective=score,
+                        train=train_metrics,
+                        test=test_metrics,
+                    )
+
         results.sort(key=lambda row: row["objective"], reverse=True)
         return {
             "results": results,
             "summary": {
                 "timeframe": timeframe,
                 "combinations": len(results),
+                "from_cache": len(results) - len(fresh),
+                "computed": len(fresh),
                 "train_candles": len(train),
                 "test_candles": len(test),
                 "best": results[0] if results else None,
             },
         }
+
+
+def space_for(strategy_key: str) -> dict[str, list[Any]]:
+    return search_space_for(strategy_key)
+
+
+def _cache_key(
+    *,
+    strategy_key: str,
+    symbol: str,
+    timeframe: str,
+    params: dict[str, Any],
+    period_start: datetime,
+    period_end: datetime,
+    split_at: int,
+) -> str:
+    """Everything that changes the outcome, and nothing that doesn't.
+
+    The candle window is identified by its own first and last timestamps rather than by
+    the requested `days`, so asking for 90 days today and tomorrow reuses the same rows
+    as long as no new candles arrived.
+    """
+    payload = json.dumps(
+        {
+            "version": EVALUATION_VERSION,
+            "strategy": strategy_key,
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "start": period_start.isoformat(),
+            "end": period_end.isoformat(),
+            "split_at": split_at,
+            "params": {key: params[key] for key in sorted(params)},
+        },
+        ensure_ascii=False,
+        default=str,
+    )
+    return hashlib.sha256(payload.encode()).hexdigest()
 
 
 def _timeframe_list(timeframe: str | list[str]) -> list[str]:

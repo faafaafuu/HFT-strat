@@ -16,6 +16,7 @@ from app.data.models import (
     DensityEventModel,
     DensityLevelModel,
     HistoricalCandleModel,
+    HyperoptEvaluationModel,
     JobModel,
     MarketSnapshotModel,
     MLModelRunModel,
@@ -650,6 +651,124 @@ class JobRepository:
     async def list_recent(self, limit: int = 20) -> list[JobModel]:
         stmt = select(JobModel).order_by(JobModel.created_at.desc()).limit(limit)
         return list((await self.session.scalars(stmt)).all())
+
+
+class HyperoptCacheRepository:
+    """Stores evaluated parameter combinations so repeat sweeps skip the work."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def get_many(self, cache_keys: list[str]) -> dict[str, dict[str, Any]]:
+        if not cache_keys:
+            return {}
+        rows = list(
+            (
+                await self.session.scalars(
+                    select(HyperoptEvaluationModel).where(
+                        HyperoptEvaluationModel.cache_key.in_(cache_keys)
+                    )
+                )
+            ).all()
+        )
+        found = {}
+        for row in rows:
+            row.hits += 1
+            row.last_used_at = utc_now()
+            found[row.cache_key] = {
+                "params": json.loads(row.params_json),
+                "timeframe": row.timeframe,
+                "objective": row.objective,
+                "train": json.loads(row.train_json or "{}"),
+                "test": json.loads(row.test_json or "{}"),
+                "cached": True,
+            }
+        return found
+
+    async def store(
+        self,
+        *,
+        cache_key: str,
+        strategy_key: str,
+        symbol: str,
+        timeframe: str,
+        params: dict[str, Any],
+        period_start: datetime,
+        period_end: datetime,
+        objective: float,
+        train: dict[str, Any],
+        test: dict[str, Any],
+    ) -> None:
+        values = {
+            "cache_key": cache_key,
+            "strategy_key": strategy_key,
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "params_json": json.dumps(params, ensure_ascii=False, sort_keys=True, default=str),
+            "period_start": period_start,
+            "period_end": period_end,
+            "objective": objective,
+            "train_json": json.dumps(train, ensure_ascii=False, default=str),
+            "test_json": json.dumps(test, ensure_ascii=False, default=str),
+            "created_at": utc_now(),
+            "last_used_at": utc_now(),
+        }
+        stmt = sqlite_insert(HyperoptEvaluationModel).values(**values)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["cache_key"],
+            set_={
+                "objective": values["objective"],
+                "train_json": values["train_json"],
+                "test_json": values["test_json"],
+                "last_used_at": values["last_used_at"],
+            },
+        )
+        await self.session.execute(stmt)
+
+    async def stats(self) -> dict[str, Any]:
+        rows = (
+            await self.session.execute(
+                select(
+                    HyperoptEvaluationModel.strategy_key,
+                    HyperoptEvaluationModel.symbol,
+                    HyperoptEvaluationModel.timeframe,
+                    func.count(HyperoptEvaluationModel.id),
+                    func.sum(HyperoptEvaluationModel.hits),
+                    func.max(HyperoptEvaluationModel.last_used_at),
+                )
+                .group_by(
+                    HyperoptEvaluationModel.strategy_key,
+                    HyperoptEvaluationModel.symbol,
+                    HyperoptEvaluationModel.timeframe,
+                )
+                .order_by(func.count(HyperoptEvaluationModel.id).desc())
+                .limit(30)
+            )
+        ).all()
+        total = await self.session.scalar(select(func.count(HyperoptEvaluationModel.id)))
+        saved = await self.session.scalar(select(func.sum(HyperoptEvaluationModel.hits)))
+        return {
+            "total": int(total or 0),
+            "reused": int(saved or 0),
+            "rows": [
+                {
+                    "strategy_key": strategy_key,
+                    "symbol": symbol,
+                    "timeframe": timeframe,
+                    "combinations": int(count or 0),
+                    "reused": int(hits or 0),
+                    "last_used_at": last_used,
+                }
+                for strategy_key, symbol, timeframe, count, hits, last_used in rows
+            ],
+        }
+
+    async def clear(self, strategy_key: str | None = None) -> int:
+        stmt = delete(HyperoptEvaluationModel)
+        if strategy_key:
+            stmt = stmt.where(HyperoptEvaluationModel.strategy_key == strategy_key)
+        result = await self.session.execute(stmt)
+        return int(result.rowcount or 0)
 
 
 class DensityRepository:

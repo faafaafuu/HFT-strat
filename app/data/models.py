@@ -376,6 +376,31 @@ class JobModel(Base):
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
+class HyperoptEvaluationModel(Base):
+    """One evaluated parameter combination, cached so re-running a sweep is cheap.
+
+    A row is only reusable when the strategy, instrument, candle window and parameters
+    all match, hence the single hashed key over exactly those inputs.
+    """
+
+    __tablename__ = "hyperopt_evaluations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    cache_key: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    strategy_key: Mapped[str] = mapped_column(String(64), index=True)
+    symbol: Mapped[str] = mapped_column(String(64), index=True)
+    timeframe: Mapped[str] = mapped_column(String(16), index=True)
+    params_json: Mapped[str] = mapped_column(Text)
+    period_start: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    objective: Mapped[float] = mapped_column(Float, default=0.0)
+    train_json: Mapped[str] = mapped_column(Text, default="{}")
+    test_json: Mapped[str] = mapped_column(Text, default="{}")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    last_used_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+    hits: Mapped[int] = mapped_column(Integer, default=0)
+
+
 class DensityEventModel(Base):
     __tablename__ = "density_events"
 

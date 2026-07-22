@@ -39,7 +39,14 @@ class Database:
                 await conn.execute(text("PRAGMA foreign_keys=ON"))
                 await conn.execute(text("PRAGMA busy_timeout=5000"))
                 await conn.execute(text("PRAGMA journal_mode=WAL"))
-            await conn.run_sync(Base.metadata.create_all)
+            try:
+                await conn.run_sync(Base.metadata.create_all)
+            except OperationalError as exc:
+                # bot, worker and web all start together; create_all checks for a table
+                # and then creates it, so a new table makes them race. Losing the race is
+                # harmless - the winner created exactly what this process wanted.
+                if "already exists" not in str(exc):
+                    raise
             if self.is_sqlite:
                 await self._migrate_sqlite(conn)
 

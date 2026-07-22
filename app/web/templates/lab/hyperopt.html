@@ -85,6 +85,59 @@
 </section>
 
 <section class="card">
+  <h2>Сохранённые комбинации</h2>
+  <p class="muted">
+    Каждая просчитанная комбинация сохраняется вместе с окном свечей, по которому её считали.
+    Повторный запуск с теми же параметрами берёт результат отсюда и не тратит время заново —
+    поэтому расширять сетку или добавлять таймфрейм дёшево: пересчитается только новое.
+    Комбинация считается заново, если изменились параметры, инструмент, таймфрейм
+    или появились новые свечи.
+  </p>
+  <div class="cache-summary">
+    <div><span class="metric">Сохранено комбинаций</span><span class="value">{{ lab.cache.total }}</span></div>
+    <div><span class="metric">Переиспользовано</span><span class="value">{{ lab.cache.reused }}</span></div>
+  </div>
+  {% if lab.cache.rows %}
+  <table>
+    <thead>
+      <tr><th>Стратегия</th><th>Символ</th><th>ТФ</th><th>Комбинаций</th><th>Переиспользовано</th><th>Последний раз</th></tr>
+    </thead>
+    <tbody>
+      {% for row in lab.cache.rows %}
+      <tr>
+        <td class="mono">{{ row.strategy_key }}</td>
+        <td><b>{{ row.symbol }}</b></td>
+        <td>{{ row.timeframe }}</td>
+        <td class="num">{{ row.combinations }}</td>
+        <td class="num">{{ row.reused }}</td>
+        <td class="time">{{ row.last_used_at|ago }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">Пока ничего не сохранено — запустите подбор.</p>
+  {% endif %}
+  <form class="inline-form"
+        hx-post="/actions/hyperopt/cache/clear"
+        hx-target="#job-result"
+        hx-swap="innerHTML"
+        hx-confirm="Очистить кеш? Следующий перебор посчитает все комбинации заново.">
+    <select name="strategy_key">
+      <option value="">все стратегии</option>
+      {% for item in lab.strategies %}
+      <option value="{{ item.key }}">{{ item.name }}</option>
+      {% endfor %}
+    </select>
+    <button class="button danger" type="submit">Очистить кеш</button>
+  </form>
+  <p class="muted small">
+    Очищать нужно только после изменения логики стратегии или движка бэктеста —
+    сами по себе сохранённые результаты не устаревают.
+  </p>
+</section>
+
+<section class="card">
   <h2>Результаты последнего перебора</h2>
   {% if lab.hyperopt and lab.hyperopt.job_id %}
   <p class="muted">
@@ -96,13 +149,14 @@
   <h3>По таймфреймам</h3>
   <table>
     <thead>
-      <tr><th>Таймфрейм</th><th>Комбинаций</th><th>Лучший ПФ на проверке</th><th>Сделок</th><th>Чистый PnL</th></tr>
+      <tr><th>Таймфрейм</th><th>Комбинаций</th><th>Из них из кеша</th><th>Лучший ПФ на проверке</th><th>Сделок</th><th>Чистый PnL</th></tr>
     </thead>
     <tbody>
       {% for row in lab.hyperopt.by_timeframe %}
       <tr>
         <td><strong>{{ row.timeframe }}</strong></td>
         <td class="num">{{ row.combinations }}</td>
+        <td class="num">{{ row.from_cache }} <span class="muted small">пересчитано {{ row.computed }}</span></td>
         <td class="num">
           {% if row.reason %}<span class="muted">{{ row.reason }}</span>
           {% else %}{{ row.best.profit_factor|num }}{% endif %}

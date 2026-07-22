@@ -8,7 +8,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy import select
 
 from app.data.models import PaperProfileModel
-from app.data.repositories import RuntimeSettingsRepository
+from app.data.repositories import HyperoptCacheRepository, RuntimeSettingsRepository
 from app.jobs.models import (
     DOWNLOAD_HISTORY,
     RUN_BACKTEST,
@@ -149,6 +149,17 @@ async def toggle_paper_trading(request: Request):
     settings.paper.enabled = not settings.paper.enabled
     await _persist(request, "paper.enabled", settings.paper.enabled)
     return await _render_paper(request)
+
+
+@router.post("/hyperopt/cache/clear", response_class=HTMLResponse)
+async def clear_hyperopt_cache(request: Request):
+    params = await _form_params(request)
+    strategy_key = str(params.get("strategy_key") or "") or None
+    async with request.app.state.database.session() as session:
+        removed = await HyperoptCacheRepository(session).clear(strategy_key)
+    request.app.state.strategy_lab_service.invalidate_cache()
+    scope = f" для {strategy_key}" if strategy_key else ""
+    return _toast(request, f"Кеш очищен{scope}: удалено комбинаций — {removed}")
 
 
 @router.post("/hyperopt/apply", response_class=HTMLResponse)

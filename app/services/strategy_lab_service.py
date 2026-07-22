@@ -19,6 +19,7 @@ from app.data.models import (
 from app.data.repositories import (
     DensityRepository,
     HistoricalDataRepository,
+    HyperoptCacheRepository,
     JobRepository,
     MLModelRepository,
 )
@@ -84,6 +85,8 @@ class StrategyLabService:
                 "timeframe": key,
                 "reason": value.get("reason"),
                 "combinations": value.get("combinations", 0),
+                "from_cache": value.get("from_cache", 0),
+                "computed": value.get("computed", 0),
                 "best": _sweep_metrics((value.get("best") or {}).get("test")),
             }
             for key, value in (result.get("by_timeframe") or {}).items()
@@ -125,6 +128,7 @@ class StrategyLabService:
                 "ml_status": await self.ml_status(),
                 "coverage": await self.data_coverage(),
                 "hyperopt": await self.hyperopt_results(),
+                "cache": await self.hyperopt_cache(),
             }
         if name == "compare":
             return {"compare": await self.compare(), "diagnostics": await self.diagnostics()}
@@ -140,6 +144,10 @@ class StrategyLabService:
             "compare": await self.compare(),
             "coverage": await self.data_coverage(),
         }
+
+    async def hyperopt_cache(self) -> dict[str, Any]:
+        async with self.database.session() as session:
+            return await HyperoptCacheRepository(session).stats()
 
     async def strategy_profiles(self) -> list[dict[str, Any]]:
         return [

@@ -911,3 +911,20 @@ h3 {
 .status.pending {
   color: var(--warning);
 }
+
+/* --- Сводка кеша перебора --- */
+.cache-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  padding: 12px 0 16px;
+}
+
+.cache-summary > div {
+  display: grid;
+  gap: 2px;
+}
+
+.cache-summary .value {
+  font-size: 22px;
+}
