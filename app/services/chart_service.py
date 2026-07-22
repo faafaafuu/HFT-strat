@@ -183,6 +183,7 @@ class ChartService:
                     _naive(trade.entry_time),
                     trade.entry_price,
                     trade_id=trade.id,
+                    won=won,
                 )
             )
             markers.append(
@@ -192,6 +193,7 @@ class ChartService:
                     _naive(trade.exit_time),
                     trade.exit_price,
                     trade_id=trade.id,
+                    won=won,
                 )
             )
             context = _load_json(trade.context_json)
@@ -406,10 +408,11 @@ def _marker(
     moment: datetime | None,
     value: float | None,
     trade_id: int | None = None,
+    won: bool | None = None,
 ) -> dict[str, Any] | None:
     if not value:
         return None
-    marker = {
+    marker: dict[str, Any] = {
         "kind": kind,
         "label": label,
         "t": _iso(moment) if moment else None,
@@ -417,6 +420,8 @@ def _marker(
     }
     if trade_id is not None:
         marker["trade_id"] = trade_id
+    if won is not None:
+        marker["won"] = won
     return marker
 
 
@@ -465,11 +470,57 @@ def _channel_shape(
         "upper_end": upper + slope_abs * bars_forward,
         "lower_start": lower - slope_abs * bars_back,
         "lower_end": lower + slope_abs * bars_forward,
+        "points": _channel_points(trade, channel, step_minutes, upper, lower, slope_abs),
+        "entry_price": trade.entry_price,
+        "stop_price": trade.stop_price,
+        "take_price": trade.take_price,
+        "exit_price": trade.exit_price,
+        "exit": _iso(exit_time),
         "width_pct": channel.get("width_pct"),
         "touch_gap_pct": channel.get("touch_gap_pct"),
         "touch_pierced": channel.get("touch_pierced"),
         "rr": channel.get("rr"),
     }
+
+
+def _channel_points(
+    trade: BacktestTradeModel,
+    channel: dict[str, Any],
+    step_minutes: int,
+    upper: float,
+    lower: float,
+    slope_abs: float,
+) -> list[dict[str, Any]]:
+    """The four touches that define the setup, numbered as the strategy sees them.
+
+    Points 1 and 3 sit on the anchor line, point 2 on the parallel one, and point 4 is
+    the entry itself - the touch of the boundary opposite point 3.
+    """
+    entry_time = _naive(trade.entry_time)
+    bars_ago = [int(value) for value in (channel.get("point_bars_ago") or [])]
+    if entry_time is None or len(bars_ago) < 3:
+        return []
+    anchor_at_entry = upper if channel.get("anchor_side") == "upper" else lower
+    parallel_at_entry = lower if channel.get("anchor_side") == "upper" else upper
+
+    points = []
+    for number, (bars, base) in enumerate(
+        zip(
+            bars_ago[:3],
+            [anchor_at_entry, parallel_at_entry, anchor_at_entry],
+            strict=False,
+        ),
+        start=1,
+    ):
+        points.append(
+            {
+                "number": number,
+                "t": _iso(entry_time - timedelta(minutes=step_minutes * bars)),
+                "value": base - slope_abs * bars,
+            }
+        )
+    points.append({"number": 4, "t": _iso(entry_time), "value": trade.entry_price})
+    return points
 
 
 def _exit_label(status: str) -> str:

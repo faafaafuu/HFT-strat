@@ -967,3 +967,27 @@ h3 {
 datalist {
   display: none;
 }
+
+/* --- Переключатель фильтра сделок --- */
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.segmented .button {
+  border-radius: 0;
+  border: none;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.segmented .button:last-child {
+  border-right: none;
+}
+
+.segmented .button.active {
+  background: var(--accent);
+  color: #fff;
+}

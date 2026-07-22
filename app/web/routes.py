@@ -157,6 +157,7 @@ async def trades(
     profile: str = "",
     strategy: str = "",
     status: str = "",
+    outcome: str = "",
     _: str = Depends(require_web_auth),
 ):
     service = request.app.state.paper_service
@@ -164,11 +165,17 @@ async def trades(
     closed_trades = await service.trades(status="CLOSED", limit=300)
 
     def keep(row):
+        pnl = row.pnl_usd or 0
         return (
             (not symbol or row.symbol == symbol)
             and (not profile or row.profile_key == profile)
             and (not strategy or (row.strategy_key or "") == strategy)
             and (not status or row.status == status)
+            and (
+                not outcome
+                or (outcome == "winners" and pnl > 0)
+                or (outcome == "losers" and pnl < 0)
+            )
         )
 
     everything = open_trades + closed_trades
@@ -188,6 +195,7 @@ async def trades(
             "profile": profile,
             "strategy": strategy,
             "status": status,
+            "outcome": outcome,
         },
     }
     context["stats"] = _trade_stats(context["closed_trades"])

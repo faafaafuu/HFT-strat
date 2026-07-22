@@ -9,6 +9,9 @@
     exit: "#b7791f",
     invalidation: "#8a8478",
     grid: "rgba(35, 33, 28, 0.08)",
+    candleUp: "#1f9254",
+    candleDown: "#d1453b",
+    pointBadge: "#5a544a",
   };
 
   // Prices run from 0.00001 (memecoins) to 100000 (BTC); a fixed precision would
@@ -102,6 +105,53 @@
     },
   };
 
+  // Chart.js has no candlestick type without the financial plugin and a date adapter,
+  // and the series already carries OHLC, so the bodies and wicks are drawn here.
+  const candlesticks = {
+    id: "candlesticks",
+    beforeDatasetsDraw(chart, args, options) {
+      const series = (options && options.series) || [];
+      if (!series.length || !options.enabled) return;
+      const { ctx, chartArea, scales } = chart;
+      if (!chartArea) return;
+
+      const first = Math.max(0, Math.floor(scales.x.min));
+      const last = Math.min(series.length - 1, Math.ceil(scales.x.max));
+      const slotWidth = (chartArea.right - chartArea.left) / Math.max(1, last - first);
+      const bodyWidth = Math.max(1, Math.min(14, slotWidth * 0.62));
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);
+      ctx.clip();
+
+      for (let index = first; index <= last; index += 1) {
+        const point = series[index];
+        if (!point || point.o === undefined || point.o === null) continue;
+        const x = scales.x.getPixelForValue(index);
+        const up = point.c >= point.o;
+        const color = up ? COLORS.candleUp : COLORS.candleDown;
+        const high = scales.y.getPixelForValue(point.h);
+        const low = scales.y.getPixelForValue(point.l);
+        const open = scales.y.getPixelForValue(point.o);
+        const close = scales.y.getPixelForValue(point.c);
+
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, high);
+        ctx.lineTo(x, low);
+        ctx.stroke();
+
+        const top = Math.min(open, close);
+        const height = Math.max(1, Math.abs(close - open));
+        ctx.fillRect(x - bodyWidth / 2, top, bodyWidth, height);
+      }
+      ctx.restore();
+    },
+  };
+
   // Channel boundaries are two sloped lines per trade, so they cannot be datasets
   // without swamping the legend and the tooltip - they are drawn straight onto the canvas.
   const channelBands = {
@@ -114,7 +164,8 @@
       const indexOf = options.indexOf;
 
       channels.forEach(function (channel) {
-        if (options.losersOnly && channel.won) return;
+        if (options.outcome === "losers" && channel.won) return;
+        if (options.outcome === "winners" && !channel.won) return;
         const x1 = scales.x.getPixelForValue(indexOf(channel.start));
         const x2 = scales.x.getPixelForValue(indexOf(channel.end));
         const color = channel.won ? COLORS.take : COLORS.stop;
@@ -139,16 +190,57 @@
         ctx.closePath();
         ctx.fill();
 
-        ctx.globalAlpha = 0.85;
+        ctx.globalAlpha = 0.9;
         ctx.strokeStyle = color;
-        ctx.lineWidth = 1.3;
-        ctx.setLineDash([6, 4]);
+        ctx.lineWidth = 1.4;
+        ctx.setLineDash([]);
         [[upper1, upper2], [lower1, lower2]].forEach(function (pair) {
           ctx.beginPath();
           ctx.moveTo(x1, pair[0]);
           ctx.lineTo(x2, pair[1]);
           ctx.stroke();
         });
+
+        // Risk and reward boxes from the entry, the way a chart tool draws a position.
+        const entryX = scales.x.getPixelForValue(indexOf(channel.entry));
+        const exitX = scales.x.getPixelForValue(indexOf(channel.exit || channel.end));
+        const boxWidth = Math.max(6, exitX - entryX);
+        if (channel.entry_price && channel.take_price) {
+          const entryY = scales.y.getPixelForValue(channel.entry_price);
+          const takeY = scales.y.getPixelForValue(channel.take_price);
+          ctx.globalAlpha = 0.16;
+          ctx.fillStyle = COLORS.take;
+          ctx.fillRect(entryX, Math.min(entryY, takeY), boxWidth, Math.abs(takeY - entryY));
+        }
+        if (channel.entry_price && channel.stop_price) {
+          const entryY = scales.y.getPixelForValue(channel.entry_price);
+          const stopY = scales.y.getPixelForValue(channel.stop_price);
+          ctx.globalAlpha = 0.16;
+          ctx.fillStyle = COLORS.stop;
+          ctx.fillRect(entryX, Math.min(entryY, stopY), boxWidth, Math.abs(stopY - entryY));
+        }
+
+        // The four touches, numbered as the strategy counts them.
+        ctx.globalAlpha = 1;
+        ctx.font = "700 11px system-ui, sans-serif";
+        ctx.textAlign = "center";
+        (channel.points || []).forEach(function (point) {
+          const px = scales.x.getPixelForValue(indexOf(point.t));
+          const py = scales.y.getPixelForValue(point.value);
+          if (px < chartArea.left || px > chartArea.right) return;
+          const isEntry = point.number === 4;
+          const size = isEntry ? 9 : 8;
+          ctx.fillStyle = isEntry ? color : COLORS.pointBadge;
+          ctx.strokeStyle = "#fff";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.rect(px - size, py - size / 2 - 8, size * 2, size + 6);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#fff";
+          ctx.fillText(String(point.number), px, py - 3);
+        });
+        ctx.textAlign = "left";
         ctx.restore();
       });
     },
@@ -198,6 +290,9 @@
         };
       });
 
+    // Candles need OHLC; a snapshot series only has closes, so it stays a line.
+    const hasOhlc = series.length > 0 && series[0].o !== undefined && series[0].o !== null;
+
     return new Chart(canvas.getContext("2d"), {
       type: "line",
       data: {
@@ -206,12 +301,12 @@
           {
             label: "Цена",
             data: prices,
-            borderColor: COLORS.price,
-            backgroundColor: "rgba(47, 111, 237, 0.08)",
-            borderWidth: 1.8,
+            borderColor: hasOhlc ? "rgba(0,0,0,0)" : COLORS.price,
+            backgroundColor: hasOhlc ? "rgba(0,0,0,0)" : "rgba(47, 111, 237, 0.08)",
+            borderWidth: hasOhlc ? 0 : 1.8,
             pointRadius: 0,
             tension: 0.15,
-            fill: true,
+            fill: !hasOhlc,
           },
           {
             label: "События",
@@ -271,12 +366,13 @@
         },
         plugins: {
           legend: { display: false },
+          candlesticks: { series: series, enabled: hasOhlc },
           levelLines: { levels: payload.levels || [] },
           channelBands: {
             channels: payload.channels || [],
             indexOf: indexOfTime,
             hidden: false,
-            losersOnly: false,
+            outcome: "all",
           },
           zoom: {
             limits: { x: { min: "original", max: "original" } },
@@ -309,7 +405,7 @@
           },
         },
       },
-      plugins: [levelLines],
+      plugins: [candlesticks, levelLines],
     });
   }
 
@@ -332,6 +428,17 @@
 
   function initChartControls(chart, payload) {
     const bands = chart.options.plugins.channelBands;
+    const markerDataset = chart.data.datasets[1];
+    const allMarkers = markerDataset ? markerDataset.data.slice() : [];
+    const wonById = {};
+    (payload.channels || []).forEach(function (channel) {
+      wonById[channel.trade_id] = channel.won;
+    });
+    (payload.markers || []).forEach(function (marker) {
+      if (marker.trade_id !== undefined && marker.won !== undefined) {
+        wonById[marker.trade_id] = marker.won;
+      }
+    });
 
     const channelToggle = document.getElementById("toggle-channels");
     if (channelToggle) {
@@ -341,13 +448,34 @@
       });
     }
 
-    const losersToggle = document.getElementById("toggle-losers-only");
-    if (losersToggle) {
-      losersToggle.addEventListener("change", function () {
-        bands.losersOnly = losersToggle.checked;
-        chart.update("none");
+    // One filter drives the markers, the channels and the trade table together.
+    function applyOutcome(outcome) {
+      bands.outcome = outcome;
+      if (markerDataset) {
+        markerDataset.data = allMarkers.filter(function (point) {
+          if (outcome === "all") return true;
+          const won = wonById[point.tradeId];
+          if (won === undefined) return true;
+          return outcome === "winners" ? won : !won;
+        });
+      }
+      chart.update("none");
+      document.querySelectorAll("[data-trade-row]").forEach(function (row) {
+        const won = row.dataset.won === "true";
+        const show = outcome === "all" || (outcome === "winners") === won;
+        row.style.display = show ? "" : "none";
       });
     }
+
+    document.querySelectorAll("[data-outcome-filter]").forEach(function (control) {
+      control.addEventListener("click", function () {
+        document.querySelectorAll("[data-outcome-filter]").forEach(function (other) {
+          other.classList.remove("active");
+        });
+        control.classList.add("active");
+        applyOutcome(control.dataset.outcomeFilter);
+      });
+    });
 
     const resetButton = document.getElementById("reset-zoom");
     if (resetButton && chart.resetZoom) {

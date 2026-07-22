@@ -44,6 +44,13 @@
       {% endfor %}
     </select>
   </label>
+  <label>Результат
+    <select name="outcome">
+      <option value="">все</option>
+      <option value="winners" {% if filters.outcome == "winners" %}selected{% endif %}>прибыльные</option>
+      <option value="losers" {% if filters.outcome == "losers" %}selected{% endif %}>убыточные</option>
+    </select>
+  </label>
   <a class="button" href="/trades">Сбросить</a>
 </form>
 
