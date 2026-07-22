@@ -117,7 +117,7 @@ def walk_forward(
         trades=sorted(forward_trades, key=lambda trade: trade.exit_time),
         equity=sorted(curve, key=lambda point: point[0]),
         initial_equity=risk.initial_equity,
-        signals_seen=sum(len(window.test_summary.get("trades", []) or []) for window in reported),
+        signals_seen=sum(int(window.test_summary.get("trades", 0) or 0) for window in reported),
     )
     return WalkForwardResult(windows=reported, forward=forward)
 

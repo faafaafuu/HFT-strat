@@ -18,3 +18,4 @@ market_heat.db
 graphify-out/
 
 .claude/worktrees/
+data/research*.sqlite3*
