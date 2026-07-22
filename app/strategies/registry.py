@@ -6,6 +6,7 @@ from dataclasses import dataclass, replace
 from app.config import Settings
 from app.market.features import FeatureSnapshot
 from app.strategies.base import Strategy, StrategySignal
+from app.strategies.channel_touch import ChannelTouchStrategy
 from app.strategies.density_strategy import DensityStrategy
 from app.strategies.liquidity_reclaim import (
     FailedBreakoutFadeStrategy,
@@ -37,6 +38,7 @@ class StrategyRegistry:
                 OIPumpPriceMoveStrategy(settings.thresholds),
                 StopHuntSweepStrategy(settings.thresholds),
                 DensityStrategy(settings.density_strategy),
+                ChannelTouchStrategy(settings.channel_strategy),
                 MicroStopHuntReclaimStrategy(),
                 OIMomentumScalperStrategy(),
                 FailedBreakoutFadeStrategy(),

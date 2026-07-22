@@ -13,6 +13,18 @@ from app.utils.time import utc_now
 
 
 @dataclass(frozen=True)
+class CandleBar:
+    """One OHLC bar, for strategies that read price structure instead of aggregates."""
+
+    open_time: datetime
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: float
+
+
+@dataclass(frozen=True)
 class FeatureSnapshot:
     exchange: str
     symbol: str
@@ -37,6 +49,9 @@ class FeatureSnapshot:
     density_event: dict | None = None
     trend_context: dict | None = None
     ml_signal_quality_score: float | None = None
+    # Oldest-first OHLC window ending at this snapshot. Only the backtest engine fills
+    # it today: the live feature store keeps ticks, not candles.
+    candles: tuple[CandleBar, ...] = ()
 
 
 class MarketFeatureStore:

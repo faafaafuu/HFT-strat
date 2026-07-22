@@ -11,6 +11,7 @@ Async signal radar for Bybit linear futures. The bot does not place orders and d
   - `oi_pump_price_move`
   - `stop_hunt_sweep`
   - `density_strategy`
+  - `channel_4_touch`
 - Scores every candidate from 0 to 10.
 - Sends only signals above `signals.min_score`.
 - Applies per-symbol cooldown to avoid duplicates.
@@ -271,6 +272,46 @@ Current strategy registry includes:
 - `failed_breakout_fade`
 - `trend_pullback_scalper`
 - `density_strategy`
+- `channel_4_touch`
+
+## 4-Touch Channel Strategy
+
+`channel_4_touch` trades consolidation channels drawn from three pivots. Two
+pivots land on one boundary (points 1 and 3), one on the opposite boundary
+(point 2). The second touch of the anchor line is what proves the line is real
+rather than accidental, so the first touch of the *opposite* boundary after
+point 3 - the fourth touch overall - is the entry.
+
+- Long when the fourth touch is on the lower boundary, short when it is on the
+  upper one.
+- A touch only counts as a wick. A candle that *closes* past a boundary by more
+  than `breakout_buffer_pct` breaks the channel, and a broken channel never
+  produces another signal.
+- Once built the channel is a constant: the boundaries never widen or narrow.
+- The stop clears the touch wick and the boundary, floored at `stop_pct` and
+  rejected above `max_stop_pct`. The target is `take_pct` or the opposite
+  boundary, whichever is closer. Setups below `min_rr` are skipped.
+
+Unlike the other strategies this one reads OHLC structure rather than aggregate
+features, so it needs `FeatureSnapshot.candles`. Only the backtest engine fills
+that today - the live feature store keeps ticks, not candles - so the strategy
+is registered but disabled for live signals, per the backtest-first plan.
+
+### Timeframe Matters More Than Any Other Parameter
+
+The default 1-1.5% stop and 3-5% target only fit channels several percent wide.
+On BTCUSDT 1m the median channel is about 0.2% wide, so every fourth touch is
+correctly rejected on risk/reward and the backtest reports zero trades. Run this
+strategy on H1 and above, or sweep `stop_pct`/`take_pct` down along with the
+timeframe:
+
+```bash
+python tools/download_history.py --symbol BTCUSDT --timeframe 1h --days 720
+python tools/run_backtest.py --strategy channel_4_touch --symbol BTCUSDT --timeframe 1h --days 720
+```
+
+Timeframe is not part of the hyperopt grid because it changes which candles get
+loaded; sweep it by running the optimizer once per timeframe.
 
 ## Density Strategy
 
