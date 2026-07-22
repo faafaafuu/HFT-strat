@@ -311,7 +311,29 @@ python tools/run_backtest.py --strategy channel_4_touch --symbol BTCUSDT --timef
 ```
 
 Timeframe is not part of the hyperopt grid because it changes which candles get
-loaded; sweep it by running the optimizer once per timeframe.
+loaded. Pass several and the optimizer sweeps each in turn, pooling the results:
+`timeframe=15m,1h,4h` in the Strategy Lab form or in the job params.
+
+### Position Management
+
+`simulate_exit` supports a trailing stop, a move to breakeven, and a partial take
+profit, with the same semantics paper trading uses. All three are **off by
+default** so a plain run reproduces the plain stop/take result. Turn them on per
+run:
+
+```bash
+python tools/run_backtest.py --strategy channel_4_touch --symbol BTCUSDT \
+  --timeframe 4h --days 720 \
+  -p trailing_enabled=true -p trailing_activation_rr=1 -p trailing_distance_pct=2
+```
+
+`-p KEY=VALUE` passes any strategy or exit-rule parameter and repeats.
+
+For this strategy management *hurts*: on 4h over 720 days BTC drops from +20.6%
+to +8.7% with breakeven and +10.9% with trailing. The share of trades reaching
+target falls from 30% to 16-18% - at a ~30% winrate the result rides on the few
+trades that reach target, and trailing cuts exactly those while leaving the
+losers full size. Measure before enabling it anywhere.
 
 ## Density Strategy
 
