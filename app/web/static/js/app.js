@@ -405,7 +405,7 @@
           },
         },
       },
-      plugins: [candlesticks, levelLines],
+      plugins: [candlesticks, channelBands, levelLines],
     });
   }
 
