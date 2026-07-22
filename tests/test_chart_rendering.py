@@ -53,3 +53,13 @@ def test_channel_boundaries_are_stroked() -> None:
 
     # Two boundary lines and a wick per candle.
     assert int(output["STROKES"]) > 200
+
+
+def test_drag_to_pan_is_wired_up() -> None:
+    """The zoom plugin is a UMD global: without an explicit register it never runs."""
+    output = _run_harness()
+
+    assert "zoom" in output["GLOBAL_PLUGINS"].split(",")
+    assert output["PAN_ENABLED"] == "true"
+    assert output["WHEEL_ZOOM"] == "true"
+    assert output["CANVAS_CURSOR"] == "grab"

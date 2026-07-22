@@ -344,7 +344,8 @@
           const clickable = elements.some(function (item) {
             return item.datasetIndex === 1 && markerPoints[item.index].tradeId;
           });
-          event.native.target.style.cursor = clickable ? "pointer" : "default";
+          // "grab" rather than "default": the canvas is draggable everywhere else.
+          event.native.target.style.cursor = clickable ? "pointer" : "grab";
         },
         scales: {
           x: {
@@ -376,7 +377,18 @@
           },
           zoom: {
             limits: { x: { min: "original", max: "original" } },
-            pan: { enabled: true, mode: "x", modifierKey: null },
+            pan: {
+              enabled: true,
+              mode: "x",
+              modifierKey: null,
+              threshold: 2,
+              onPanStart: function (context) {
+                context.chart.canvas.style.cursor = "grabbing";
+              },
+              onPanComplete: function (context) {
+                context.chart.canvas.style.cursor = "grab";
+              },
+            },
             zoom: {
               wheel: { enabled: true, speed: 0.08 },
               pinch: { enabled: true },
@@ -421,7 +433,12 @@
       return;
     }
     if (!payload || !payload.series || !payload.series.length) return;
+    // The zoom plugin ships as a UMD global and does not self-register.
+    if (typeof ChartZoom !== "undefined" && !Chart.registry.plugins.get("zoom")) {
+      Chart.register(ChartZoom);
+    }
     canvas.dataset.rendered = "true";
+    canvas.style.cursor = "grab";
     const chart = buildChart(canvas, payload);
     initChartControls(chart, payload);
   }

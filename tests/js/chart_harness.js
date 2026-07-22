@@ -34,10 +34,15 @@ global.document = {
 
 const canvasStub = {
   dataset: {},
+  style: {},
   getContext: () => ctxStub(),
   addEventListener: () => {},
   scrollIntoView: () => {},
 };
+
+// Stands in for the UMD global the zoom plugin exposes.
+global.ChartZoom = { id: "zoom" };
+const globallyRegistered = [];
 
 global.Chart = class {
   constructor(ctx, config) {
@@ -57,6 +62,8 @@ global.Chart = class {
   resetZoom() {}
   zoomScale() {}
 };
+global.Chart.register = (plugin) => globallyRegistered.push(plugin.id);
+global.Chart.registry = { plugins: { get: (id) => globallyRegistered.includes(id) } };
 
 // 200 candles, one channel over bars 40..80 with four touches.
 const series = [];
@@ -112,3 +119,8 @@ console.log("FILLED_RECTS=" + rects);
 console.log("POINT_LABELS=" + [...new Set(labels)].sort().join(","));
 // Candle bodies are one fillRect each; the channel adds the two risk/reward boxes.
 console.log("CANDLE_BODIES=" + drawn.filter((c) => c.name === "fillRect").length);
+console.log("GLOBAL_PLUGINS=" + globallyRegistered.join(","));
+const zoomOptions = (capturedConfig.options.plugins || {}).zoom || {};
+console.log("PAN_ENABLED=" + Boolean(zoomOptions.pan && zoomOptions.pan.enabled));
+console.log("WHEEL_ZOOM=" + Boolean(zoomOptions.zoom && zoomOptions.zoom.wheel.enabled));
+console.log("CANVAS_CURSOR=" + (canvasStub.style ? canvasStub.style.cursor : ""));
