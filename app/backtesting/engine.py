@@ -9,7 +9,7 @@ from typing import Any
 from sqlalchemy import func, select
 
 from app.backtesting.metrics import compute_backtest_metrics
-from app.backtesting.simulator import SimulatedTrade, simulate_exit
+from app.backtesting.simulator import ExitRules, SimulatedTrade, simulate_exit
 from app.config import Settings
 from app.data.database import Database
 from app.data.models import DensityEventModel, HistoricalCandleModel, MarketSnapshotModel
@@ -248,6 +248,7 @@ class BacktestEngine:
             max(1, len(candles) // 3),
         )
         accepts_config = _accepts_config(strategy)
+        exit_rules = _exit_rules(params)
         # Built once: rebuilding the OHLC window per candle dominates the run otherwise.
         bars = _candle_bars(candles) if window_size > SNAPSHOT_WINDOW_CANDLES else None
         for index in range(warmup, len(candles) - 1):
@@ -291,6 +292,7 @@ class BacktestEngine:
                 position_size_usd=position_size,
                 taker_fee_pct=self.settings.paper.taker_fee_pct,
                 slippage_pct=self.settings.paper.slippage_pct,
+                rules=exit_rules,
             )
             if trade is None:
                 continue
@@ -374,6 +376,20 @@ async def load_snapshot_series(session, symbol: str, since: datetime) -> MarketS
 def strategy_history(strategy: Any) -> int:
     """Candles a strategy needs in its window; 0 for aggregate-only strategies."""
     return int(getattr(strategy, "required_history", 0) or 0)
+
+
+def _exit_rules(params: dict[str, Any]) -> ExitRules:
+    """Position management is opt-in: without these params a run stays plain SL/TP."""
+    return ExitRules(
+        breakeven_enabled=bool(params.get("breakeven_enabled", False)),
+        breakeven_activation_rr=float(params.get("breakeven_activation_rr", 1.0)),
+        trailing_enabled=bool(params.get("trailing_enabled", False)),
+        trailing_activation_rr=float(params.get("trailing_activation_rr", 1.0)),
+        trailing_distance_pct=float(params.get("trailing_distance_pct", 0.4)),
+        partial_tp_enabled=bool(params.get("partial_tp_enabled", False)),
+        partial_tp_pct=float(params.get("partial_tp_pct", 50.0)),
+        partial_target_rr=float(params.get("partial_target_rr", 1.0)),
+    )
 
 
 def strategy_holding(strategy: Any) -> int:
