@@ -97,6 +97,14 @@ class ChannelTouchStrategy:
         )
         return max(self.defaults.history_candles, minimum)
 
+    def default_config(self) -> dict[str, Any]:
+        """The flat parameter names this strategy honours, with their current values.
+
+        Comes from the same merge the signal path uses, so an editor built from it
+        cannot drift away from what actually takes effect.
+        """
+        return _merged_config(self.defaults, {})
+
     @property
     def default_holding_candles(self) -> int:
         """A minutes-based holding cap would be 3 candles on H1 - far too short."""

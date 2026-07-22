@@ -45,6 +45,70 @@
 
 <section class="grid">
   <div class="card">
+    <h2>Hyperopt Results</h2>
+    {% if lab.hyperopt and lab.hyperopt.job_id %}
+    <p class="muted">
+      Job #{{ lab.hyperopt.job_id }} &middot; {{ lab.hyperopt.strategy_key }} &middot;
+      {{ lab.hyperopt.symbol }} &middot; {{ lab.hyperopt.finished_at }}
+    </p>
+    {% if lab.hyperopt.by_timeframe %}
+    <table>
+      <thead><tr><th>Timeframe</th><th>Combos</th><th>Best test PF</th><th>Trades</th><th>Net</th></tr></thead>
+      <tbody>
+        {% for row in lab.hyperopt.by_timeframe %}
+        <tr>
+          <td><strong>{{ row.timeframe }}</strong></td>
+          <td class="num">{{ row.combinations }}</td>
+          <td class="num">{{ "%.2f"|format(row.best.profit_factor) if not row.reason else row.reason }}</td>
+          <td class="num">{{ row.best.trades }}</td>
+          <td class="num">{{ "%+.1f"|format(row.best.net_pnl) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+    <table>
+      <thead>
+        <tr>
+          <th>TF</th><th>Train</th><th>Test</th><th>Params</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in lab.hyperopt.rows %}
+        <tr>
+          <td>{{ row.timeframe }}</td>
+          <td class="num">n={{ row.train.trades }} pf={{ "%.2f"|format(row.train.profit_factor) }}</td>
+          <td class="num">
+            n={{ row.test.trades }} pf={{ "%.2f"|format(row.test.profit_factor) }}
+            wr={{ "%.0f"|format(row.test.winrate) }}%
+          </td>
+          <td class="muted mono">
+            {% for key, value in row.params.items() %}{{ key }}={{ value }} {% endfor %}
+          </td>
+          <td>
+            <form hx-post="/api/strategy-lab/hyperopt/apply" hx-target="#job-result">
+              <input type="hidden" name="job_id" value="{{ lab.hyperopt.job_id }}">
+              <input type="hidden" name="row" value="{{ loop.index0 }}">
+              <select name="instance_id">
+                {% for item in lab.instances %}
+                <option value="{{ item.id }}">{{ item.id }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit">Apply</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="muted">No rows in the last sweep.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted">No finished hyperopt run yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
     <h2>Strategies</h2>
     <table>
       <thead><tr><th>Strategy</th><th>Status</th><th>Instances</th><th>Description</th></tr></thead>
@@ -91,23 +155,22 @@
     {% for item in lab.instances %}
     <form class="stack compact-form" hx-post="/api/strategy-lab/instances/{{ item.id }}/settings" hx-target="#job-result">
       <strong>{{ item.id }}</strong>
+      <span class="muted">{{ item.strategy_key }}</span>
       <label>Min Score <input name="min_score" value="{{ item.min_score }}"></label>
       <label>Paper Profile <input name="paper_profile" value="{{ item.paper_profile }}"></label>
-      <label>Min Density USD <input name="config.min_density_usd" value="{{ item.config.min_density_usd or '' }}"></label>
-      <label>Max Distance % <input name="config.max_distance_pct" value="{{ item.config.max_distance_pct or '' }}"></label>
-      <label>Min Lifetime Sec <input name="config.min_lifetime_sec" value="{{ item.config.min_lifetime_sec or '' }}"></label>
-      <label>Require Absorption
-        <select name="config.require_absorption">
-          <option value="true" {% if item.config.require_absorption %}selected{% endif %}>true</option>
-          <option value="false" {% if not item.config.require_absorption %}selected{% endif %}>false</option>
+      {# Fields come from the strategy itself, so they always match what it honours. #}
+      {% for name, value in item.config_fields.items() %}
+      {% if value is boolean %}
+      <label>{{ name }}
+        <select name="config.{{ name }}">
+          <option value="true" {% if value %}selected{% endif %}>true</option>
+          <option value="false" {% if not value %}selected{% endif %}>false</option>
         </select>
       </label>
-      <label>Require Trend
-        <select name="config.require_trend_alignment">
-          <option value="true" {% if item.config.require_trend_alignment %}selected{% endif %}>true</option>
-          <option value="false" {% if not item.config.require_trend_alignment %}selected{% endif %}>false</option>
-        </select>
-      </label>
+      {% else %}
+      <label>{{ name }} <input name="config.{{ name }}" value="{{ value }}"></label>
+      {% endif %}
+      {% endfor %}
       <button type="submit">Save {{ item.id }}</button>
     </form>
     {% else %}
@@ -134,6 +197,28 @@
       <input name="symbol" value="BTCUSDT">
       <input name="timeframe" value="1m">
       <input name="days" value="30">
+      <label class="muted">Min Score <input name="min_score" value=""></label>
+      <label class="muted">Stop % <input name="stop_pct" value=""></label>
+      <label class="muted">Take % <input name="take_pct" value=""></label>
+      <label class="muted">Trailing
+        <select name="trailing_enabled">
+          <option value="">off</option>
+          <option value="true">on</option>
+        </select>
+      </label>
+      <label class="muted">Trailing Distance % <input name="trailing_distance_pct" value=""></label>
+      <label class="muted">Breakeven
+        <select name="breakeven_enabled">
+          <option value="">off</option>
+          <option value="true">on</option>
+        </select>
+      </label>
+      <label class="muted">Partial TP
+        <select name="partial_tp_enabled">
+          <option value="">off</option>
+          <option value="true">on</option>
+        </select>
+      </label>
       <button type="submit">Run Backtest</button>
     </form>
     <form class="stack" hx-post="/api/strategy-lab/hyperopt/run" hx-target="#job-result">
@@ -143,10 +228,13 @@
         <option value="{{ item.id }}">{{ item.id }}</option>
         {% endfor %}
       </select>
-      <input name="strategy_key" value="density_strategy">
+      <input name="strategy_key" value="channel_4_touch">
       <input name="symbol" value="BTCUSDT">
-      <input name="timeframe" value="1m">
-      <input name="days" value="30">
+      <label class="muted">Timeframes (comma separated)
+        <input name="timeframe" value="15m,1h,4h">
+      </label>
+      <input name="days" value="720">
+      <label class="muted">Combinations <input name="limit" value="50"></label>
       <button type="submit">Run Hyperopt</button>
     </form>
     <form class="stack" hx-post="/api/strategy-lab/ml/train" hx-target="#job-result">

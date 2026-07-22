@@ -78,6 +78,7 @@ class JobWorker:
                 symbol=str(params["symbol"]),
                 timeframe=str(params.get("timeframe", "1m")),
                 days=int(params.get("days", 30)),
+                limit=int(params.get("limit", 50)),
                 base_params=dict(params.get("params") or {}),
             )
         if job_type == TRAIN_ML_MODEL:

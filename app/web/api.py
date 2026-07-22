@@ -195,13 +195,51 @@ async def api_run_hyperopt(request: Request):
             {
                 "strategy_key": strategy_key,
                 "symbol": symbol,
+                # May list several ("15m,1h,4h") - the optimizer sweeps each in turn.
                 "timeframe": timeframe,
                 "days": days,
+                "limit": int(params.get("limit", 50)),
                 "params": instance_params,
                 "strategy_instance_id": params.get("strategy_instance_id"),
             },
         )
     )
+
+
+@router.post("/strategy-lab/hyperopt/apply")
+async def api_apply_hyperopt_row(request: Request):
+    """Write one sweep row's parameters into a strategy instance."""
+    params = await _request_params(request)
+    instance_id = str(params.get("instance_id") or "")
+    instance = request.app.state.settings.strategy_instances.instances.get(instance_id)
+    if instance is None:
+        return {"ok": False, "error": "instance_not_found"}
+    sweep = await request.app.state.strategy_lab_service.hyperopt_results()
+    rows = sweep.get("rows") or []
+    try:
+        row = rows[int(params.get("row", 0))]
+    except (ValueError, IndexError):
+        return {"ok": False, "error": "row_not_found"}
+    if sweep.get("strategy_key") and sweep["strategy_key"] != instance.strategy_key:
+        # Applying a channel sweep to a density instance would write dead keys.
+        return {
+            "ok": False,
+            "error": "strategy_mismatch",
+            "sweep_strategy": sweep.get("strategy_key"),
+            "instance_strategy": instance.strategy_key,
+        }
+    applied = dict(row.get("params") or {})
+    async with request.app.state.database.session() as session:
+        repo = RuntimeSettingsRepository(session)
+        for key, value in applied.items():
+            instance.config[key] = value
+            await repo.set(f"strategy_instances.instances.{instance_id}.config.{key}", value)
+    return {
+        "ok": True,
+        "instance_id": instance_id,
+        "timeframe": row.get("timeframe"),
+        "applied": applied,
+    }
 
 
 @router.post("/strategy-lab/ml/train")
@@ -233,38 +271,38 @@ async def _request_params(request: Request) -> dict[str, object]:
     return {key: values[0] for key, values in parse_qs(raw).items()}
 
 
+# Form fields that steer the run itself rather than the strategy being tested.
+_RUN_CONTROL_KEYS = {
+    "strategy_key",
+    "strategy_instance_id",
+    "symbol",
+    "timeframe",
+    "days",
+    "limit",
+}
+
+
 def _strategy_params(request: Request, params: dict[str, object]) -> tuple[str, dict]:
+    """Strategy key plus every parameter the form wants to override for this run."""
+    overrides = {
+        key.removeprefix("config."): _coerce_value(value)
+        for key, value in params.items()
+        if key not in _RUN_CONTROL_KEYS and str(value).strip() != ""
+    }
     instance_id = str(params.get("strategy_instance_id") or "")
     if instance_id:
         instance = request.app.state.settings.strategy_instances.instances.get(instance_id)
         if instance is not None:
-            merged = dict(instance.config)
-            for key in ("min_score", "stop_loss_pct", "take_profit_pct", "max_holding_minutes"):
-                if key in params:
-                    merged[key] = _coerce_value(params[key])
-            return instance.strategy_key, merged
-    return str(params.get("strategy_key", "micro_stop_hunt_reclaim")), {}
+            return instance.strategy_key, {**instance.config, **overrides}
+    return str(params.get("strategy_key", "micro_stop_hunt_reclaim")), overrides
 
 
 def _strategy_instance_updates(params: dict[str, object]) -> dict[str, object]:
-    supported = {
-        "min_score",
-        "paper_profile",
-        "symbols",
-        "enabled",
-        "config.min_density_usd",
-        "config.max_distance_pct",
-        "config.min_lifetime_sec",
-        "config.require_absorption",
-        "config.require_trend_alignment",
-        "config.volume_spike_multiplier",
-        "config.stop_behind_density_pct",
-        "config.take_profit_rr",
-        "config.max_holding_minutes",
-    }
+    """Accept any `config.<field>` the strategy declares, not a hardcoded density list."""
+    top_level = {"min_score", "paper_profile", "symbols", "enabled"}
     updates = {}
     for key, value in params.items():
-        if key in supported:
+        if key in top_level or (key.startswith("config.") and key.removeprefix("config.")):
             updates[key] = _coerce_value(value)
     return updates
 

@@ -25,6 +25,8 @@ class StrategyDescriptor:
     enabled: bool
     profiles: list[str]
     instances: list[str]
+    # Editable parameters with their current values; empty for strategies that take none.
+    config_fields: dict[str, object]
 
 
 class StrategyRegistry:
@@ -70,9 +72,18 @@ class StrategyRegistry:
                 enabled=bool(profile_map.get(key) or instance_map.get(key)),
                 profiles=profile_map.get(key, []),
                 instances=instance_map.get(key, []),
+                config_fields=self.config_fields(key),
             )
             for key, strategy in sorted(self._strategies.items())
         ]
+
+    def config_fields(self, key: str) -> dict[str, object]:
+        """Parameters the strategy honours, straight from the strategy itself."""
+        strategy = self._strategies.get(key)
+        loader = getattr(strategy, "default_config", None)
+        if loader is None:
+            return {}
+        return dict(loader())
 
     def generate_signals(
         self,
