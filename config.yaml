@@ -103,6 +103,19 @@ strategy_instances:
         min_lifetime_sec: 8
         require_absorption: false
         require_trend_alignment: false
+    # Backtest-only for now: the live feature store keeps ticks, not candles, so this
+    # strategy has no channel to build outside the backtest engine.
+    channel_4_touch_backtest:
+      strategy_key: channel_4_touch
+      enabled: false
+      min_score: 6
+      paper_profile: conservative
+      symbols: auto
+      config:
+        stop_pct: 1.0
+        max_stop_pct: 1.5
+        take_pct: 4.0
+        min_rr: 2.0
 
 density_strategy:
   enabled: true
@@ -129,6 +142,21 @@ density_strategy:
     stop_behind_density_pct: 0.15
     take_profit_rr: 2.0
     max_holding_minutes: 60
+
+channel_strategy:
+  enabled: true
+  pivot_lookback: 3
+  min_bars_between_points: 5
+  min_bars_before_touch: 5
+  max_bars_wait_touch: 60
+  touch_tolerance_pct: 0.1
+  breakout_buffer_pct: 0.1
+  stop_pct: 1.0
+  max_stop_pct: 1.5
+  stop_buffer_pct: 0.05
+  take_pct: 4.0
+  min_rr: 2.0
+  history_candles: 240
 
 backtest:
   min_trades: 50

@@ -6,7 +6,34 @@ from typing import Any
 from app.data.database import Database
 from app.data.repositories import HistoricalDataRepository
 from app.exchanges.bybit_client import BybitClient
-from app.utils.time import utc_now
+from app.utils.time import timeframe_minutes, utc_now
+
+# Bybit kline only serves these intervals; anything else has to be resampled locally.
+BYBIT_INTERVALS: dict[int, str] = {
+    1: "1",
+    3: "3",
+    5: "5",
+    15: "15",
+    30: "30",
+    60: "60",
+    120: "120",
+    240: "240",
+    360: "360",
+    720: "720",
+    1440: "D",
+    10080: "W",
+}
+
+
+def bybit_interval(timeframe: str) -> str:
+    minutes = timeframe_minutes(timeframe)
+    interval = BYBIT_INTERVALS.get(minutes)
+    if interval is None:
+        supported = ", ".join(str(value) for value in sorted(BYBIT_INTERVALS))
+        raise ValueError(
+            f"Bybit has no {timeframe} kline interval. Supported minutes: {supported}."
+        )
+    return interval
 
 
 async def download_bybit_history(
@@ -17,8 +44,8 @@ async def download_bybit_history(
     days: int,
 ) -> int:
     rows: list[dict[str, Any]] = []
-    interval = timeframe.rstrip("m")
-    interval_minutes = int(interval)
+    interval = bybit_interval(timeframe)
+    interval_minutes = timeframe_minutes(timeframe)
     end = utc_now()
     start = end - timedelta(days=days)
     async with BybitClient(testnet=False) as client:

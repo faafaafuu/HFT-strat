@@ -9,13 +9,20 @@ from sqlalchemy import func, select
 
 from app.config import Settings
 from app.data.database import Database
-from app.data.models import BacktestRunModel, DensityEventModel, PaperProfileModel, PaperTradeModel
+from app.data.models import (
+    BacktestRunModel,
+    DensityEventModel,
+    JobModel,
+    PaperProfileModel,
+    PaperTradeModel,
+)
 from app.data.repositories import (
     DensityRepository,
     HistoricalDataRepository,
     JobRepository,
     MLModelRepository,
 )
+from app.jobs.models import RUN_HYPEROPT
 from app.services.cache import AsyncTTLCache
 from app.strategies.registry import default_registry
 
@@ -42,6 +49,52 @@ class StrategyLabService:
             "density_summary": await self.density_summary(),
             "compare": await self.compare(),
             "ml_status": await self.ml_status(),
+            "hyperopt": await self.hyperopt_results(),
+        }
+
+    async def hyperopt_results(self, limit: int = 12) -> dict[str, Any]:
+        """Flattened rows from the most recent finished parameter sweep."""
+        async with self.database.session() as session:
+            job = await session.scalar(
+                select(JobModel)
+                .where(JobModel.job_type == RUN_HYPEROPT, JobModel.status == "DONE")
+                .order_by(JobModel.finished_at.desc())
+                .limit(1)
+            )
+        if job is None or not job.result_json:
+            return {"job_id": None, "rows": [], "by_timeframe": []}
+        result = json.loads(job.result_json)
+        params = json.loads(job.params_json or "{}")
+        rows = [
+            {
+                "timeframe": row.get("timeframe", params.get("timeframe", "")),
+                "objective": float(row.get("objective", 0.0)),
+                "params": {
+                    key: value
+                    for key, value in (row.get("params") or {}).items()
+                    if key != "min_score"
+                },
+                "train": _sweep_metrics(row.get("train")),
+                "test": _sweep_metrics(row.get("test")),
+            }
+            for row in (result.get("results") or [])[:limit]
+        ]
+        by_timeframe = [
+            {
+                "timeframe": key,
+                "reason": value.get("reason"),
+                "combinations": value.get("combinations", 0),
+                "best": _sweep_metrics((value.get("best") or {}).get("test")),
+            }
+            for key, value in (result.get("by_timeframe") or {}).items()
+        ]
+        return {
+            "job_id": job.id,
+            "finished_at": job.finished_at,
+            "strategy_key": params.get("strategy_key"),
+            "symbol": params.get("symbol"),
+            "rows": rows,
+            "by_timeframe": by_timeframe,
         }
 
     def invalidate_cache(self) -> None:
@@ -102,6 +155,7 @@ class StrategyLabService:
                 "profiles": item.profiles,
                 "instances": item.instances,
                 "description": item.description,
+                "config_fields": item.config_fields,
             }
             for item in self.registry.descriptors(self.settings)
         ]
@@ -116,6 +170,12 @@ class StrategyLabService:
                 "paper_profile": instance.paper_profile,
                 "symbols": instance.symbols,
                 "config": instance.config,
+                # Every parameter the strategy accepts, with the instance's overrides
+                # applied on top of the defaults.
+                "config_fields": {
+                    **self.registry.config_fields(instance.strategy_key),
+                    **instance.config,
+                },
             }
             for instance_id, instance in sorted(self.settings.strategy_instances.instances.items())
         ]
@@ -314,6 +374,17 @@ class StrategyLabService:
             "by_hour": _group_trade_pnl(trades, "hour"),
             "by_status": _group_trade_pnl(trades, "status"),
         }
+
+
+def _sweep_metrics(metrics: dict[str, Any] | None) -> dict[str, Any]:
+    metrics = metrics or {}
+    return {
+        "trades": int(metrics.get("total_trades", 0) or 0),
+        "winrate": float(metrics.get("winrate", 0.0) or 0.0),
+        "profit_factor": float(metrics.get("profit_factor", 0.0) or 0.0),
+        "net_pnl": float(metrics.get("net_pnl", 0.0) or 0.0),
+        "max_drawdown_pct": float(metrics.get("max_drawdown", 0.0) or 0.0),
+    }
 
 
 def _bucket_trades(trades: list[PaperTradeModel], field: str) -> dict[str, list[PaperTradeModel]]:

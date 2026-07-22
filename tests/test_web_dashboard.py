@@ -92,6 +92,7 @@ class _StrategyLabService:
             "density_summary": [],
             "compare": {"profiles": [], "backtests": []},
             "ml_status": {"active": False, "reason": "no_active_model"},
+            "hyperopt": {"job_id": None, "rows": [], "by_timeframe": []},
             "diagnostics": {
                 "by_strategy": [],
                 "by_instance": [],
@@ -371,3 +372,42 @@ def test_strategy_instance_update_parser_coerces_supported_values() -> None:
         "config.min_density_usd": 1_000_000,
         "config.require_absorption": True,
     }
+
+
+def test_instance_update_parser_accepts_any_strategy_config_key() -> None:
+    """The editor is built from the strategy's own fields, so no density whitelist."""
+    from app.web.api import _strategy_instance_updates
+
+    updates = _strategy_instance_updates(
+        {"config.min_rr": "1.5", "config.max_bars_wait_touch": "120", "junk": "x"}
+    )
+
+    assert updates == {"config.min_rr": 1.5, "config.max_bars_wait_touch": 120}
+
+
+def test_run_form_params_reach_the_strategy() -> None:
+    """Form fields other than the run controls become strategy/exit parameters."""
+    from types import SimpleNamespace
+
+    from app.web.api import _strategy_params
+
+    request = SimpleNamespace(
+        app=SimpleNamespace(state=SimpleNamespace(settings=SimpleNamespace()))
+    )
+    key, params = _strategy_params(
+        request,
+        {
+            "strategy_key": "channel_4_touch",
+            "symbol": "BTCUSDT",
+            "timeframe": "4h",
+            "days": "720",
+            "limit": "50",
+            "stop_pct": "0.5",
+            "trailing_enabled": "true",
+            "take_pct": "",
+        },
+    )
+
+    assert key == "channel_4_touch"
+    # Run controls are stripped, blanks are dropped, the rest is coerced.
+    assert params == {"stop_pct": 0.5, "trailing_enabled": True}

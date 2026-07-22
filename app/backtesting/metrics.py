@@ -39,7 +39,11 @@ def compute_backtest_metrics(
         "avg_mae": mean([trade.mae_pct for trade in trades]) if trades else 0.0,
         "tp_hit_rate": _status_rate(trades, "TP"),
         "sl_hit_rate": _status_rate(trades, "SL"),
+        "be_hit_rate": _status_rate(trades, "BE"),
         "timeout_rate": _status_rate(trades, "TIMEOUT"),
+        "trailing_rate": (
+            sum(1 for trade in trades if trade.trailing_activated) / total * 100 if total else 0.0
+        ),
     }
 
 

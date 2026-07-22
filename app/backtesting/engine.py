@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 from bisect import bisect_right
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -8,13 +9,14 @@ from typing import Any
 from sqlalchemy import func, select
 
 from app.backtesting.metrics import compute_backtest_metrics
-from app.backtesting.simulator import SimulatedTrade, simulate_exit
+from app.backtesting.simulator import ExitRules, SimulatedTrade, simulate_exit
 from app.config import Settings
 from app.data.database import Database
 from app.data.models import DensityEventModel, HistoricalCandleModel, MarketSnapshotModel
 from app.data.repositories import BacktestRepository, HistoricalDataRepository
-from app.market.features import FeatureSnapshot
+from app.market.features import CandleBar, FeatureSnapshot
 from app.strategies.registry import default_registry
+from app.utils.time import timeframe_minutes
 
 # Strategies that cannot produce a single signal without open interest history.
 OI_REQUIRED_STRATEGIES = {"oi_pump_price_move", "oi_momentum_scalper"}
@@ -151,7 +153,13 @@ class BacktestEngine:
                     "density backtest."
                 ),
             )
-        if len(candles) < MIN_BACKTEST_CANDLES:
+        # A structure strategy sees nothing until its full lookback has printed, so it
+        # needs more history than the generic floor.
+        required = max(
+            MIN_BACKTEST_CANDLES,
+            strategy_history(self.registry.get(strategy_key)) * 2,
+        )
+        if len(candles) < required:
             return _empty_result(
                 strategy_key,
                 timeframe,
@@ -159,7 +167,7 @@ class BacktestEngine:
                 message=(
                     f"Найдено только {len(candles)} свечей {symbol} {timeframe} "
                     f"за последние {days} дн. данных (до {latest}). "
-                    f"Нужно минимум {MIN_BACKTEST_CANDLES}."
+                    f"Стратегии {strategy_key} нужно минимум {required}."
                 ),
             )
         density_series = DensityEventSeries(density_events) if density_events else None
@@ -222,26 +230,52 @@ class BacktestEngine:
         position_size = float(params.get("position_size_usd", balance))
         stop_pct = float(params.get("stop_loss_pct", self.settings.paper.stop_pct))
         take_pct = float(params.get("take_profit_pct", self.settings.paper.take_pct))
-        max_holding = int(params.get("max_holding_candles", _holding_candles(timeframe, 180)))
+        max_holding = int(
+            params.get(
+                "max_holding_candles",
+                strategy_holding(strategy) or _holding_candles(timeframe, 180),
+            )
+        )
         trade_gap_until: datetime | None = None
         trades: list[SimulatedTrade] = []
         equity_curve: list[dict[str, Any]] = []
         peak = initial_balance
-        step = timedelta(minutes=_timeframe_minutes(timeframe))
-        warmup = min(max(60, _holding_candles(timeframe, 60)), max(1, len(candles) // 3))
+        step = timedelta(minutes=timeframe_minutes(timeframe))
+        window_size = max(SNAPSHOT_WINDOW_CANDLES, strategy_history(strategy))
+        # Structure strategies need their whole lookback before the first signal.
+        warmup = min(
+            max(60, _holding_candles(timeframe, 60), window_size),
+            max(1, len(candles) // 3),
+        )
+        accepts_config = _accepts_config(strategy)
+        exit_rules = _exit_rules(params)
+        # Built once: rebuilding the OHLC window per candle dominates the run otherwise.
+        bars = _candle_bars(candles) if window_size > SNAPSHOT_WINDOW_CANDLES else None
         for index in range(warmup, len(candles) - 1):
             candle = candles[index]
             if trade_gap_until is not None and candle.open_time <= trade_gap_until:
                 continue
-            window = candles[max(0, index + 1 - SNAPSHOT_WINDOW_CANDLES) : index + 1]
+            start = max(0, index + 1 - window_size)
+            window = candles[start : index + 1]
             point = snapshots.at(candle.open_time) if snapshots is not None else None
             density_event = (
                 density_events.at(candle.open_time + step, max_age=step)
                 if density_events is not None
                 else None
             )
-            snapshot = _snapshot_from_candles(window, point, density_event)
-            signal = strategy.generate_signal(snapshot)
+            snapshot = _snapshot_from_candles(
+                window,
+                point,
+                density_event,
+                bars=bars[start : index + 1] if bars is not None else (),
+            )
+            # Backtest params double as the strategy config so hyperopt can actually
+            # move the strategy's own thresholds, not just the simulator's.
+            signal = (
+                strategy.generate_signal(snapshot, config=params)
+                if accepts_config
+                else strategy.generate_signal(snapshot)
+            )
             if signal is None:
                 continue
             if signal.score < int(params.get("min_score", self.settings.signals.min_score)):
@@ -258,6 +292,7 @@ class BacktestEngine:
                 position_size_usd=position_size,
                 taker_fee_pct=self.settings.paper.taker_fee_pct,
                 slippage_pct=self.settings.paper.slippage_pct,
+                rules=exit_rules,
             )
             if trade is None:
                 continue
@@ -338,6 +373,38 @@ async def load_snapshot_series(session, symbol: str, since: datetime) -> MarketS
     return MarketSnapshotSeries(points)
 
 
+def strategy_history(strategy: Any) -> int:
+    """Candles a strategy needs in its window; 0 for aggregate-only strategies."""
+    return int(getattr(strategy, "required_history", 0) or 0)
+
+
+def _exit_rules(params: dict[str, Any]) -> ExitRules:
+    """Position management is opt-in: without these params a run stays plain SL/TP."""
+    return ExitRules(
+        breakeven_enabled=bool(params.get("breakeven_enabled", False)),
+        breakeven_activation_rr=float(params.get("breakeven_activation_rr", 1.0)),
+        trailing_enabled=bool(params.get("trailing_enabled", False)),
+        trailing_activation_rr=float(params.get("trailing_activation_rr", 1.0)),
+        trailing_distance_pct=float(params.get("trailing_distance_pct", 0.4)),
+        partial_tp_enabled=bool(params.get("partial_tp_enabled", False)),
+        partial_tp_pct=float(params.get("partial_tp_pct", 50.0)),
+        partial_target_rr=float(params.get("partial_target_rr", 1.0)),
+    )
+
+
+def strategy_holding(strategy: Any) -> int:
+    """Holding cap in candles for strategies whose horizon does not scale with minutes."""
+    return int(getattr(strategy, "default_holding_candles", 0) or 0)
+
+
+def _accepts_config(strategy: Any) -> bool:
+    try:
+        parameters = inspect.signature(strategy.generate_signal).parameters
+    except (TypeError, ValueError):
+        return False
+    return "config" in parameters
+
+
 def _empty_result(
     strategy_key: str,
     timeframe: str,
@@ -361,10 +428,25 @@ def _empty_result(
     return result
 
 
+def _candle_bars(candles: list[HistoricalCandleModel]) -> tuple[CandleBar, ...]:
+    return tuple(
+        CandleBar(
+            open_time=item.open_time,
+            open=item.open,
+            high=item.high,
+            low=item.low,
+            close=item.close,
+            volume=item.volume,
+        )
+        for item in candles
+    )
+
+
 def _snapshot_from_candles(
     candles: list[HistoricalCandleModel],
     point: MarketSnapshotPoint | None = None,
     density_event: dict[str, Any] | None = None,
+    bars: tuple[CandleBar, ...] = (),
 ) -> FeatureSnapshot:
     current = candles[-1]
     price_5m_ago = candles[-6].close if len(candles) >= 6 else candles[0].close
@@ -401,6 +483,7 @@ def _snapshot_from_candles(
         returned_after_low_sweep=returned_low,
         returned_after_high_sweep=returned_high,
         density_event=density_event,
+        candles=bars,
     )
 
 
@@ -425,12 +508,8 @@ def _trade_row(strategy_key: str, trade: SimulatedTrade, exchange: str, symbol: 
     }
 
 
-def _timeframe_minutes(timeframe: str) -> int:
-    return int(timeframe.rstrip("m")) if timeframe.endswith("m") else 1
-
-
 def _holding_candles(timeframe: str, minutes: int) -> int:
-    return max(1, minutes // max(1, _timeframe_minutes(timeframe)))
+    return max(1, minutes // max(1, timeframe_minutes(timeframe)))
 
 
 def _pct(old: float, new: float) -> float:

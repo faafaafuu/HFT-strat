@@ -250,6 +250,31 @@ class DensityStrategyConfig(BaseModel):
     risk: DensityRiskConfig = Field(default_factory=DensityRiskConfig)
 
 
+class ChannelStrategyConfig(BaseModel):
+    enabled: bool = True
+    # How many bars on each side a swing must dominate to count as a pivot.
+    pivot_lookback: int = 3
+    # Guards against drawing a channel across a few noisy bars.
+    min_bars_between_points: int = 5
+    # Same guard for the 4th touch: reaching the far boundary right after point 3 is
+    # one swing, not a bounce off a confirmed channel.
+    min_bars_before_touch: int = 5
+    # After point 3 the channel goes stale if the 4th touch never arrives.
+    max_bars_wait_touch: int = 60
+    # How close a wick must come to a boundary to count as a touch.
+    touch_tolerance_pct: float = 0.10
+    # How far a close must sit past a boundary before the channel is broken.
+    breakout_buffer_pct: float = 0.10
+    stop_pct: float = 1.0
+    max_stop_pct: float = 1.5
+    stop_buffer_pct: float = 0.05
+    take_pct: float = 4.0
+    min_rr: float = 2.0
+    history_candles: int = 240
+    # In candles, not minutes: a channel trade needs room to reach the far boundary.
+    max_holding_candles: int = 48
+
+
 class BacktestConfig(BaseModel):
     min_trades: int = 50
     default_days: int = 30
@@ -478,6 +503,7 @@ class Settings(BaseModel):
     strategy_instances: StrategyInstancesConfig = Field(default_factory=StrategyInstancesConfig)
     strategy_toggles: StrategyTogglesConfig = Field(default_factory=StrategyTogglesConfig)
     density_strategy: DensityStrategyConfig = Field(default_factory=DensityStrategyConfig)
+    channel_strategy: ChannelStrategyConfig = Field(default_factory=ChannelStrategyConfig)
     backtest: BacktestConfig = Field(default_factory=BacktestConfig)
     web: WebConfig = Field(default_factory=WebConfig)
     storage: StorageConfig = Field(default_factory=StorageConfig)

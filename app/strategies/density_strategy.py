@@ -15,6 +15,10 @@ class DensityStrategy:
     def __init__(self, defaults: DensityStrategyConfig) -> None:
         self.defaults = defaults
 
+    def default_config(self) -> dict[str, Any]:
+        """Flat parameter names this strategy honours, with their current values."""
+        return _merged_config(self.defaults, {})
+
     def generate_signal(
         self,
         market_state: FeatureSnapshot,
