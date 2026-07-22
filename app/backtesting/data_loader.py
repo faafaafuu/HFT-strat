@@ -6,6 +6,7 @@ from typing import Any
 from app.data.database import Database
 from app.data.repositories import HistoricalDataRepository
 from app.exchanges.bybit_client import BybitClient
+from app.jobs.cancellation import CancellationToken
 from app.utils.time import timeframe_minutes, utc_now
 
 # Bybit kline only serves these intervals; anything else has to be resampled locally.
@@ -42,6 +43,7 @@ async def download_bybit_history(
     symbol: str,
     timeframe: str,
     days: int,
+    cancellation: CancellationToken | None = None,
 ) -> int:
     rows: list[dict[str, Any]] = []
     interval = bybit_interval(timeframe)
@@ -51,6 +53,9 @@ async def download_bybit_history(
     async with BybitClient(testnet=False) as client:
         cursor = start
         while cursor < end:
+            # Between chunks, so a cancelled download stops without a half-read request.
+            if cancellation is not None:
+                await cancellation.raise_if_cancelled()
             chunk_end = min(end, cursor + timedelta(minutes=interval_minutes * 1000))
             raw = await client.kline(
                 symbol,

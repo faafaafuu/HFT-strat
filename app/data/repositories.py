@@ -652,6 +652,31 @@ class JobRepository:
         stmt = select(JobModel).order_by(JobModel.created_at.desc()).limit(limit)
         return list((await self.session.scalars(stmt)).all())
 
+    async def request_cancel(self, job_id: int) -> str:
+        """Ask a job to stop; returns what actually happened.
+
+        A PENDING job is cancelled here and now — nothing has started, so there is nobody
+        to ask. A RUNNING one only gets flagged: the worker owns the loop and stops at its
+        next checkpoint.
+        """
+        job = await self.session.get(JobModel, job_id)
+        if job is None:
+            return "missing"
+        if job.status == "PENDING":
+            job.status = "CANCELLED"
+            job.finished_at = utc_now()
+            job.error = "Отменена до запуска"
+            return "cancelled"
+        if job.status == "RUNNING":
+            job.status = "CANCELLING"
+            return "cancelling"
+        if job.status == "CANCELLING":
+            return "cancelling"
+        return "finished"
+
+    async def status(self, job_id: int) -> str | None:
+        return await self.session.scalar(select(JobModel.status).where(JobModel.id == job_id))
+
 
 class HyperoptCacheRepository:
     """Stores evaluated parameter combinations so repeat sweeps skip the work."""

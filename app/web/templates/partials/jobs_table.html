@@ -7,9 +7,10 @@
     Задачи выполняет отдельный worker-контейнер. Список обновляется сам каждые 10 секунд —
     перезагружать страницу не нужно.
   </p>
+  {% if message %}{% include "partials/toast.html" %}{% endif %}
   <table>
     <thead>
-      <tr><th>№</th><th>Что делает</th><th>Состояние</th><th>Запущена</th><th>Результат</th></tr>
+      <tr><th>№</th><th>Что делает</th><th>Состояние</th><th>Запущена</th><th>Результат</th><th></th></tr>
     </thead>
     <tbody>
       {% for job in jobs %}
@@ -26,7 +27,7 @@
         </td>
         <td>
           <span class="status {{ job.status|lower }}">
-            {% if job.status|lower in ("running", "pending") %}⏳ {% elif job.status|lower in ("done", "success") %}✓ {% elif job.status|lower in ("failed", "error") %}✕ {% endif %}
+            {% if job.status|lower in ("running", "pending") %}⏳ {% elif job.status|lower == "cancelling" %}⏹ {% elif job.status|lower in ("done", "success") %}✓ {% elif job.status|lower in ("failed", "error", "cancelled") %}✕ {% endif %}
             {{ job.status|ru_status }}
           </span>
         </td>
@@ -51,9 +52,22 @@
           <span class="muted">—</span>
           {% endif %}
         </td>
+        <td>
+          {% if job.status|lower in ("running", "pending") %}
+          <button class="button danger small"
+                  hx-post="/actions/jobs/{{ job.id }}/cancel"
+                  hx-target="closest section"
+                  hx-swap="outerHTML"
+                  hx-confirm="Отменить задачу #{{ job.id }}? Уже посчитанные комбинации останутся в кеше.">
+            Отменить
+          </button>
+          {% elif job.status|lower == "cancelling" %}
+          <span class="muted small">останавливается…</span>
+          {% endif %}
+        </td>
       </tr>
       {% else %}
-      <tr><td colspan="5" class="muted">Задач пока нет.</td></tr>
+      <tr><td colspan="6" class="muted">Задач пока нет.</td></tr>
       {% endfor %}
     </tbody>
   </table>

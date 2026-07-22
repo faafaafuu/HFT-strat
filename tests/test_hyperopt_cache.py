@@ -6,6 +6,7 @@ import pytest
 from app.config import DatabaseConfig, Settings, StorageConfig
 from app.data.database import Database
 from app.data.repositories import HistoricalDataRepository, HyperoptCacheRepository
+from app.jobs.models import JobCancelled
 from app.optimization.optimizer import HyperOptimizer, _cache_key
 
 START = datetime(2026, 1, 1)
@@ -130,3 +131,45 @@ async def test_clearing_the_cache_forces_recomputation(tmp_path: Path) -> None:
 
     assert removed == 3
     assert again["computed"] == 3
+
+
+@pytest.mark.asyncio
+async def test_cancelled_sweep_keeps_what_it_already_computed(tmp_path: Path) -> None:
+    """Cancelling must not throw away minutes of work: the next sweep resumes from cache."""
+    settings = _settings(tmp_path)
+    database = Database(settings.database.url, backups_dir=settings.storage.backups_dir)
+    await database.init()
+    await _seed_candles(database)
+
+    optimizer = HyperOptimizer(database, settings)
+    token = _StopAfter(2)
+
+    with pytest.raises(JobCancelled):
+        await optimizer.run(
+            strategy_key="channel_4_touch",
+            symbol="BTCUSDT",
+            timeframe="1h",
+            days=30,
+            limit=8,
+            cancellation=token,
+        )
+
+    async with database.session() as session:
+        stats = await HyperoptCacheRepository(session).stats()
+    await database.close()
+
+    stored = sum(row["combinations"] for row in stats["rows"])
+    assert stored == 2, "должны сохраниться ровно те комбинации, что успели посчитаться"
+
+
+class _StopAfter:
+    """Cancellation that fires after a fixed number of checkpoints."""
+
+    def __init__(self, allowed: int) -> None:
+        self.allowed = allowed
+        self.seen = 0
+
+    async def raise_if_cancelled(self) -> None:
+        if self.seen >= self.allowed:
+            raise JobCancelled("отменена")
+        self.seen += 1

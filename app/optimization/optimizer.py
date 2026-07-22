@@ -16,6 +16,7 @@ from app.backtesting.metrics import objective_score
 from app.config import Settings
 from app.data.database import Database
 from app.data.repositories import HistoricalDataRepository, HyperoptCacheRepository
+from app.jobs.cancellation import CancellationToken
 from app.optimization.search_space import grid, search_space_for
 
 # Bump when a change to the engine, the simulator or the strategies would make a stored
@@ -38,6 +39,7 @@ class HyperOptimizer:
         days: int = 30,
         limit: int = 50,
         base_params: dict[str, Any] | None = None,
+        cancellation: CancellationToken | None = None,
     ) -> dict[str, Any]:
         """Sweep the parameter grid; `timeframe` may list several ("15m,1h,4h").
 
@@ -55,6 +57,7 @@ class HyperOptimizer:
                 days=days,
                 limit=limit,
                 base_params=base_params or {},
+                cancellation=cancellation,
             )
             by_timeframe[item] = outcome["summary"]
             pooled.extend(outcome["results"])
@@ -88,6 +91,7 @@ class HyperOptimizer:
         days: int,
         limit: int,
         base_params: dict[str, Any],
+        cancellation: CancellationToken | None = None,
     ) -> dict[str, Any]:
         async with self.database.session() as session:
             candles = await HistoricalDataRepository(session).candles(
@@ -131,11 +135,72 @@ class HyperOptimizer:
 
         results = []
         fresh: list[tuple[str, dict[str, Any], float, dict[str, Any], dict[str, Any]]] = []
+        try:
+            await self._evaluate(
+                combinations=combinations,
+                keys=keys,
+                cached=cached,
+                results=results,
+                fresh=fresh,
+                strategy_key=strategy_key,
+                timeframe=timeframe,
+                train=train,
+                test=test,
+                snapshots=snapshots,
+                density_series=density_series,
+                cancellation=cancellation,
+            )
+        finally:
+            # Whatever was computed before the stop stays in the cache: a cancelled sweep
+            # is not wasted, the next one resumes from here.
+            await self._store(
+                fresh,
+                strategy_key=strategy_key,
+                symbol=symbol,
+                timeframe=timeframe,
+                period_start=period_start,
+                period_end=period_end,
+            )
+
+        results.sort(key=lambda row: row["objective"], reverse=True)
+        return {
+            "results": results,
+            "summary": {
+                "timeframe": timeframe,
+                "combinations": len(results),
+                "from_cache": len(results) - len(fresh),
+                "computed": len(fresh),
+                "train_candles": len(train),
+                "test_candles": len(test),
+                "best": results[0] if results else None,
+            },
+        }
+
+    async def _evaluate(
+        self,
+        *,
+        combinations: list[dict[str, Any]],
+        keys: list[str],
+        cached: dict[str, dict[str, Any]],
+        results: list[dict[str, Any]],
+        fresh: list[tuple[str, dict[str, Any], float, dict[str, Any], dict[str, Any]]],
+        strategy_key: str,
+        timeframe: str,
+        train: list[Any],
+        test: list[Any],
+        snapshots: Any,
+        density_series: DensityEventSeries | None,
+        cancellation: CancellationToken | None,
+    ) -> None:
         for params, key in zip(combinations, keys, strict=True):
             hit = cached.get(key)
             if hit is not None:
                 results.append({**hit, "params": params, "timeframe": timeframe})
                 continue
+            # Checked before the work, not after: one combination is the smallest unit
+            # that can be abandoned without leaving a half-evaluated row behind.
+            if cancellation is not None:
+                await cancellation.raise_if_cancelled()
             train_result = self.engine.run_on_candles(
                 strategy_key=strategy_key,
                 candles=train,
@@ -165,36 +230,33 @@ class HyperOptimizer:
             )
             fresh.append((key, params, score, train_result["metrics"], test_result["metrics"]))
 
-        if fresh:
-            async with self.database.session() as session:
-                repo = HyperoptCacheRepository(session)
-                for key, params, score, train_metrics, test_metrics in fresh:
-                    await repo.store(
-                        cache_key=key,
-                        strategy_key=strategy_key,
-                        symbol=symbol,
-                        timeframe=timeframe,
-                        params=params,
-                        period_start=period_start,
-                        period_end=period_end,
-                        objective=score,
-                        train=train_metrics,
-                        test=test_metrics,
-                    )
-
-        results.sort(key=lambda row: row["objective"], reverse=True)
-        return {
-            "results": results,
-            "summary": {
-                "timeframe": timeframe,
-                "combinations": len(results),
-                "from_cache": len(results) - len(fresh),
-                "computed": len(fresh),
-                "train_candles": len(train),
-                "test_candles": len(test),
-                "best": results[0] if results else None,
-            },
-        }
+    async def _store(
+        self,
+        fresh: list[tuple[str, dict[str, Any], float, dict[str, Any], dict[str, Any]]],
+        *,
+        strategy_key: str,
+        symbol: str,
+        timeframe: str,
+        period_start: datetime,
+        period_end: datetime,
+    ) -> None:
+        if not fresh:
+            return
+        async with self.database.session() as session:
+            repo = HyperoptCacheRepository(session)
+            for key, params, score, train_metrics, test_metrics in fresh:
+                await repo.store(
+                    cache_key=key,
+                    strategy_key=strategy_key,
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    params=params,
+                    period_start=period_start,
+                    period_end=period_end,
+                    objective=score,
+                    train=train_metrics,
+                    test=test_metrics,
+                )
 
 
 def space_for(strategy_key: str) -> dict[str, list[Any]]:

@@ -550,6 +550,18 @@ code {
   color: var(--positive);
 }
 
+.status.cancelling,
+.status.cancelled {
+  color: var(--text-muted);
+}
+
+/* Отмена стоит в узкой колонке таблицы задач, рядом с обычной строкой. */
+.button.small,
+button.small {
+  padding: 4px 10px;
+  font-size: 11.5px;
+}
+
 /* --- Кнопки действий --- */
 .button.primary,
 button.primary {

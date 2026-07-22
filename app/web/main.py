@@ -206,7 +206,8 @@ _RU_STATUS = {
     "success": "Готово",
     "failed": "Ошибка",
     "error": "Ошибка",
-    "cancelled": "Отменено",
+    "cancelling": "Останавливается",
+    "cancelled": "Отменена",
 }
 
 _RU_JOB = {

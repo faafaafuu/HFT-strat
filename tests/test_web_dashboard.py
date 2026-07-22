@@ -528,3 +528,76 @@ def test_run_form_params_reach_the_strategy() -> None:
     assert key == "channel_4_touch"
     # Run controls are stripped, blanks are dropped, the rest is coerced.
     assert params == {"stop_pct": 0.5, "trailing_enabled": True}
+
+
+@pytest.mark.asyncio
+async def test_cancel_button_stops_a_queued_job(tmp_path: Path, monkeypatch) -> None:
+    """A wrong symbol or period costs minutes of compute — cancelling must be one click."""
+    from app.data.database import Database
+    from app.jobs.models import RUN_HYPEROPT
+    from app.jobs.queue import JobQueue
+
+    app = _app(tmp_path, monkeypatch)
+    database = Database(f"sqlite+aiosqlite:///{tmp_path / 'jobs.sqlite3'}")
+    await database.init()
+    app.state.database = database
+    job = await JobQueue(database).enqueue(RUN_HYPEROPT, {"symbol": "BTCUSDT"})
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://test", follow_redirects=False
+    ) as client:
+        await client.post(
+            "/login",
+            content="username=admin&password=secret&next=/",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        response = await client.post(
+            f"/actions/jobs/{job['id']}/cancel", headers={"HX-Request": "true"}
+        )
+
+    remaining = await JobQueue(database).recent()
+    await database.close()
+
+    assert response.status_code == 200
+    assert f"Задача #{job['id']} отменена" in response.text
+    assert remaining[0]["status"] == "CANCELLED"
+
+
+@pytest.mark.asyncio
+async def test_cancel_button_is_offered_only_for_unfinished_jobs(
+    tmp_path: Path, monkeypatch
+) -> None:
+    app = _app(tmp_path, monkeypatch)
+
+    class _Jobs(_StrategyLabService):
+        async def jobs(self):
+            return [
+                {
+                    "id": 1,
+                    "job_type": "run_hyperopt",
+                    "status": "RUNNING",
+                    "created_at": None,
+                    "finished_at": None,
+                    "error": None,
+                    "params": {},
+                    "result": {},
+                },
+                {
+                    "id": 2,
+                    "job_type": "run_backtest",
+                    "status": "DONE",
+                    "created_at": None,
+                    "finished_at": None,
+                    "error": None,
+                    "params": {},
+                    "result": {},
+                },
+            ]
+
+    app.state.strategy_lab_service = _Jobs()
+    response = await _authed_get(app, "/fragments/jobs")
+
+    assert response.status_code == 200
+    assert "/actions/jobs/1/cancel" in response.text
+    assert "/actions/jobs/2/cancel" not in response.text

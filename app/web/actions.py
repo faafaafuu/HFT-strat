@@ -8,7 +8,11 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy import select
 
 from app.data.models import PaperProfileModel
-from app.data.repositories import HyperoptCacheRepository, RuntimeSettingsRepository
+from app.data.repositories import (
+    HyperoptCacheRepository,
+    JobRepository,
+    RuntimeSettingsRepository,
+)
 from app.jobs.models import (
     DOWNLOAD_HISTORY,
     RUN_BACKTEST,
@@ -192,6 +196,29 @@ async def apply_hyperopt_row(request: Request):
     request.app.state.strategy_lab_service.invalidate_cache()
     listing = ", ".join(f"{key}={value}" for key, value in applied.items())
     return _toast(request, f"Пресет {instance_id} обновлён: {listing}")
+
+
+@router.post("/jobs/{job_id}/cancel", response_class=HTMLResponse)
+async def cancel_job(request: Request, job_id: int):
+    """Stop a queued or running job — a wrong symbol or period is worth minutes of compute."""
+    async with request.app.state.database.session() as session:
+        outcome = await JobRepository(session).request_cancel(job_id)
+    messages = {
+        "cancelled": f"Задача #{job_id} отменена",
+        "cancelling": (
+            f"Задача #{job_id}: запрошена отмена, worker остановится на ближайшей "
+            "контрольной точке. Уже посчитанные комбинации сохранятся в кеше."
+        ),
+        "finished": f"Задача #{job_id} уже завершена — отменять нечего",
+        "missing": f"Задача #{job_id} не найдена",
+    }
+    tone = "ok" if outcome in {"cancelled", "cancelling"} else "warn"
+    jobs = await request.app.state.strategy_lab_service.jobs()
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "partials/jobs_table.html",
+        {"jobs": jobs, "message": messages.get(outcome, ""), "tone": tone},
+    )
 
 
 @router.post("/jobs/{job_type}", response_class=HTMLResponse)

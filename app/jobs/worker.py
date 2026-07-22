@@ -10,12 +10,14 @@ from app.config import Settings
 from app.data.database import Database
 from app.data.models import JobModel
 from app.data.repositories import DensityRepository
+from app.jobs.cancellation import POLL_INTERVAL_SECONDS, CancellationToken
 from app.jobs.models import (
     DOWNLOAD_HISTORY,
     RUN_BACKTEST,
     RUN_DENSITY_ANALYSIS,
     RUN_HYPEROPT,
     TRAIN_ML_MODEL,
+    JobCancelled,
 )
 from app.ml.trainer import MLTrainer
 from app.optimization.optimizer import HyperOptimizer
@@ -26,6 +28,8 @@ class JobWorker:
     def __init__(self, database: Database, settings: Settings) -> None:
         self.database = database
         self.settings = settings
+        # How often a running job looks at the jobs table to see if it was cancelled.
+        self.cancellation_poll_seconds = POLL_INTERVAL_SECONDS
 
     async def run_once(self) -> dict[str, int]:
         # Claiming and finishing are separate transactions on purpose: a hyperopt sweep runs
@@ -46,8 +50,14 @@ class JobWorker:
         status = "DONE"
         error: str | None = None
         result: dict = {}
+        cancellation = CancellationToken(
+            self.database, job_id, poll_interval_seconds=self.cancellation_poll_seconds
+        )
         try:
-            result = await self._run_job(job_type, params)
+            result = await self._run_job(job_type, params, cancellation)
+        except JobCancelled as exc:
+            status = "CANCELLED"
+            error = str(exc)
         except Exception as exc:  # noqa: BLE001 - store job failure instead of killing worker.
             status = "FAILED"
             error = str(exc)
@@ -62,13 +72,19 @@ class JobWorker:
                 job.finished_at = utc_now()
         return {"processed": 1}
 
-    async def _run_job(self, job_type: str, params: dict) -> dict:
+    async def _run_job(
+        self,
+        job_type: str,
+        params: dict,
+        cancellation: CancellationToken | None = None,
+    ) -> dict:
         if job_type == DOWNLOAD_HISTORY:
             count = await download_bybit_history(
                 self.database,
                 symbol=str(params["symbol"]),
                 timeframe=str(params.get("timeframe", "1m")),
                 days=int(params.get("days", 30)),
+                cancellation=cancellation,
             )
             return {"candles": count}
         if job_type == RUN_BACKTEST:
@@ -93,6 +109,7 @@ class JobWorker:
                 days=int(params.get("days", 30)),
                 limit=int(params.get("limit", 50)),
                 base_params=dict(params.get("params") or {}),
+                cancellation=cancellation,
             )
         if job_type == TRAIN_ML_MODEL:
             return await MLTrainer(self.database).train(
