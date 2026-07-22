@@ -28,7 +28,9 @@ class JobWorker:
         self.settings = settings
 
     async def run_once(self) -> dict[str, int]:
-        processed = 0
+        # Claiming and finishing are separate transactions on purpose: a hyperopt sweep runs
+        # for minutes, and holding one open would hide the RUNNING status from the dashboard
+        # and keep SQLite locked against the bot the whole time.
         async with self.database.session() as session:
             job = await session.scalar(
                 select(JobModel).where(JobModel.status == "PENDING").order_by(JobModel.created_at).limit(1)
@@ -37,17 +39,28 @@ class JobWorker:
                 return {"processed": 0}
             job.status = "RUNNING"
             job.started_at = utc_now()
+            job_id = job.id
+            job_type = job.job_type
             params = json.loads(job.params_json)
-            try:
-                result = await self._run_job(job.job_type, params)
-                job.status = "DONE"
-                job.result_json = json.dumps(result, ensure_ascii=False, default=str)
-            except Exception as exc:  # noqa: BLE001 - store job failure instead of killing worker.
-                job.status = "FAILED"
-                job.error = str(exc)
-            job.finished_at = utc_now()
-            processed += 1
-        return {"processed": processed}
+
+        status = "DONE"
+        error: str | None = None
+        result: dict = {}
+        try:
+            result = await self._run_job(job_type, params)
+        except Exception as exc:  # noqa: BLE001 - store job failure instead of killing worker.
+            status = "FAILED"
+            error = str(exc)
+
+        async with self.database.session() as session:
+            job = await session.get(JobModel, job_id)
+            if job is not None:
+                job.status = status
+                job.error = error
+                if status == "DONE":
+                    job.result_json = json.dumps(result, ensure_ascii=False, default=str)
+                job.finished_at = utc_now()
+        return {"processed": 1}
 
     async def _run_job(self, job_type: str, params: dict) -> dict:
         if job_type == DOWNLOAD_HISTORY:
