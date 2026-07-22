@@ -928,3 +928,42 @@ h3 {
 .cache-summary .value {
   font-size: 22px;
 }
+
+/* --- Пресеты внутри карточки стратегии --- */
+.preset-block {
+  border-top: 1px solid var(--divider);
+  padding-top: 10px;
+  margin-bottom: 14px;
+}
+
+.preset-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--divider);
+}
+
+.preset-row:last-child {
+  border-bottom: none;
+}
+
+.preset-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* --- Панель управления графиком --- */
+.chart-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+datalist {
+  display: none;
+}

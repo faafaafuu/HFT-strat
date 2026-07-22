@@ -1,11 +1,16 @@
 {% if message %}{% include "partials/toast.html" %}{% endif %}
 <p class="hint">
-  Стратегия работает, если её мастер-переключатель включён <em>и</em> она входит хотя бы в один
-  активный профиль или пресет. Изменения применяются работающим ботом в течение 15 секунд.
+  <b>Стратегия</b> — сам алгоритм входа. <b>Пресет</b> — та же стратегия с другими
+  параметрами и своим порогом скора: так один алгоритм можно гонять в двух режимах
+  (осторожном и агрессивном) одновременно. <b>Профиль</b> — группа стратегий, торгующих
+  в один paper-счёт с общим порогом.
+  Сделка появится, только если включены и стратегия, и то, через что она подключена.
+  Изменения доходят до работающего бота за 15 секунд.
 </p>
 
 <section class="strategy-cards">
   {% for item in lab.strategies %}
+  {% set presets = lab.instances|selectattr("strategy_key", "equalto", item.key)|list %}
   <div class="card strategy-card">
     <div class="card-head">
       <div>
@@ -18,21 +23,44 @@
     <p class="strategy-description">{{ item.description or "Описание не задано." }}</p>
 
     <dl class="kv">
-      <dt>Профили</dt>
+      <dt>Подключена через</dt>
       <dd>
-        {% if item.profiles %}{% for profile in item.profiles %}<span class="chip">{{ profile }}</span>{% endfor %}
-        {% else %}<span class="muted">не подключена</span>{% endif %}
-      </dd>
-      <dt>Пресеты</dt>
-      <dd>
-        {% if item.instances %}{% for instance in item.instances %}<span class="chip">{{ instance }}</span>{% endfor %}
-        {% else %}<span class="muted">нет</span>{% endif %}
+        {% for profile in item.profiles %}<span class="chip">профиль {{ profile }}</span>{% endfor %}
+        {% for instance in item.instances %}<span class="chip">пресет {{ instance }}</span>{% endfor %}
+        {% if not item.profiles and not item.instances %}
+        <span class="muted">никуда — сигналы не идут в торговлю</span>
+        {% endif %}
       </dd>
     </dl>
 
+    {% if presets %}
+    <div class="preset-block">
+      <div class="section-label">Пресеты этой стратегии</div>
+      {% for preset in presets %}
+      <div class="preset-row">
+        <div>
+          <strong>{{ preset.id }}</strong>
+          <span class="muted small">
+            скор от {{ preset.min_score }} · счёт {{ preset.paper_profile }}
+          </span>
+        </div>
+        <div class="preset-actions">
+          <span class="pill {{ 'on' if preset.enabled else 'off' }}">{{ "Вкл" if preset.enabled else "Выкл" }}</span>
+          <button class="button {{ 'danger' if preset.enabled else 'primary' }}"
+                  hx-post="/actions/instances/{{ preset.id }}/toggle"
+                  hx-target="#lab-body"
+                  hx-swap="innerHTML">
+            {{ "Выключить" if preset.enabled else "Включить" }}
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
     {% if item.config_fields %}
     <details class="params">
-      <summary>Настройки ({{ item.config_fields|length }})</summary>
+      <summary>Настройки по умолчанию ({{ item.config_fields|length }})</summary>
       <dl class="kv compact">
         {% for key, value in item.config_fields.items() %}
         <dt>{{ key|param_label }}</dt><dd>{{ value|param_value(key) }}</dd>
@@ -45,7 +73,7 @@
             hx-post="/actions/strategies/{{ item.key }}/toggle"
             hx-target="#lab-body"
             hx-swap="innerHTML">
-      {{ "Выключить" if item.enabled else "Включить" }}
+      {{ "Выключить стратегию" if item.enabled else "Включить стратегию" }}
     </button>
   </div>
   {% else %}
@@ -54,11 +82,11 @@
 </section>
 
 <section class="card">
-  <h2>Профили стратегий</h2>
-  <p class="muted">Профиль объединяет несколько стратегий и направляет их сделки в один paper-профиль.</p>
+  <h2>Профили</h2>
+  <p class="muted">Группа стратегий с общим порогом скора, торгующая в один paper-счёт.</p>
   <table>
     <thead>
-      <tr><th>Профиль</th><th>Состояние</th><th>Стратегии</th><th>Мин. скор</th><th>Paper-профиль</th><th></th></tr>
+      <tr><th>Профиль</th><th>Состояние</th><th>Стратегии</th><th>Мин. скор</th><th>Счёт</th><th></th></tr>
     </thead>
     <tbody>
       {% for profile in lab.profiles %}
@@ -83,3 +111,8 @@
     </tbody>
   </table>
 </section>
+
+<p class="muted">
+  Тонкая настройка параметров каждого пресета — на вкладке
+  <a class="link" href="/strategy-lab/instances" hx-get="/strategy-lab/instances" hx-target="#lab-body" hx-push-url="/strategy-lab/instances">«Пресеты»</a>.
+</p>

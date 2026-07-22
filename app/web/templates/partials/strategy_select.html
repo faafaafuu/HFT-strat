@@ -1,7 +1,11 @@
 <label>Стратегия
   <select name="strategy_key">
-    {% for item in strategies %}
-    <option value="{{ item.key }}" {% if item.key == selected_strategy %}selected{% endif %}>{{ item.name }}</option>
+    {% for item in lab.strategies %}
+    <option value="{{ item.key }}" {% if item.key == selected_strategy %}selected{% endif %}>
+      {{ item.name }}{% if not item.enabled %} (выключена){% endif %}
+    </option>
+    {% else %}
+    <option value="">стратегии не загружены</option>
     {% endfor %}
   </select>
 </label>

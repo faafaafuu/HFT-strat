@@ -102,6 +102,58 @@
     },
   };
 
+  // Channel boundaries are two sloped lines per trade, so they cannot be datasets
+  // without swamping the legend and the tooltip - they are drawn straight onto the canvas.
+  const channelBands = {
+    id: "channelBands",
+    beforeDatasetsDraw(chart, args, options) {
+      const channels = (options && options.channels) || [];
+      if (!channels.length || options.hidden) return;
+      const { ctx, chartArea, scales } = chart;
+      if (!chartArea) return;
+      const indexOf = options.indexOf;
+
+      channels.forEach(function (channel) {
+        if (options.losersOnly && channel.won) return;
+        const x1 = scales.x.getPixelForValue(indexOf(channel.start));
+        const x2 = scales.x.getPixelForValue(indexOf(channel.end));
+        const color = channel.won ? COLORS.take : COLORS.stop;
+
+        const upper1 = scales.y.getPixelForValue(channel.upper_start);
+        const upper2 = scales.y.getPixelForValue(channel.upper_end);
+        const lower1 = scales.y.getPixelForValue(channel.lower_start);
+        const lower2 = scales.y.getPixelForValue(channel.lower_end);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);
+        ctx.clip();
+
+        ctx.globalAlpha = 0.1;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(x1, upper1);
+        ctx.lineTo(x2, upper2);
+        ctx.lineTo(x2, lower2);
+        ctx.lineTo(x1, lower1);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.globalAlpha = 0.85;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.3;
+        ctx.setLineDash([6, 4]);
+        [[upper1, upper2], [lower1, lower2]].forEach(function (pair) {
+          ctx.beginPath();
+          ctx.moveTo(x1, pair[0]);
+          ctx.lineTo(x2, pair[1]);
+          ctx.stroke();
+        });
+        ctx.restore();
+      });
+    },
+  };
+
   function buildChart(canvas, payload) {
     const series = payload.series || [];
     const labels = series.map(function (point) {
@@ -110,24 +162,35 @@
     const prices = series.map(function (point) {
       return point.c;
     });
+    const times = series.map(function (point) {
+      return new Date(point.t).getTime();
+    });
+
+    // A run can hold hundreds of markers and channel edges over thousands of candles,
+    // so each lookup is a binary search rather than a scan.
+    function indexOfTime(iso) {
+      if (!iso || !times.length) return 0;
+      const target = new Date(iso).getTime();
+      let low = 0;
+      let high = times.length - 1;
+      while (low < high) {
+        const mid = (low + high) >> 1;
+        if (times[mid] < target) low = mid + 1;
+        else high = mid;
+      }
+      if (low > 0 && Math.abs(times[low - 1] - target) < Math.abs(times[low] - target)) {
+        return low - 1;
+      }
+      return low;
+    }
 
     const markerPoints = (payload.markers || [])
       .filter(function (marker) {
         return marker.t;
       })
       .map(function (marker) {
-        let index = 0;
-        let best = Infinity;
-        const target = new Date(marker.t).getTime();
-        series.forEach(function (point, i) {
-          const delta = Math.abs(new Date(point.t).getTime() - target);
-          if (delta < best) {
-            best = delta;
-            index = i;
-          }
-        });
         return {
-          x: index,
+          x: indexOfTime(marker.t),
           y: marker.value,
           label: marker.label,
           kind: marker.kind,
@@ -209,6 +272,22 @@
         plugins: {
           legend: { display: false },
           levelLines: { levels: payload.levels || [] },
+          channelBands: {
+            channels: payload.channels || [],
+            indexOf: indexOfTime,
+            hidden: false,
+            losersOnly: false,
+          },
+          zoom: {
+            limits: { x: { min: "original", max: "original" } },
+            pan: { enabled: true, mode: "x", modifierKey: null },
+            zoom: {
+              wheel: { enabled: true, speed: 0.08 },
+              pinch: { enabled: true },
+              drag: { enabled: false },
+              mode: "x",
+            },
+          },
           tooltip: {
             displayColors: false,
             callbacks: {
@@ -247,7 +326,61 @@
     }
     if (!payload || !payload.series || !payload.series.length) return;
     canvas.dataset.rendered = "true";
-    buildChart(canvas, payload);
+    const chart = buildChart(canvas, payload);
+    initChartControls(chart, payload);
+  }
+
+  function initChartControls(chart, payload) {
+    const bands = chart.options.plugins.channelBands;
+
+    const channelToggle = document.getElementById("toggle-channels");
+    if (channelToggle) {
+      channelToggle.addEventListener("change", function () {
+        bands.hidden = !channelToggle.checked;
+        chart.update("none");
+      });
+    }
+
+    const losersToggle = document.getElementById("toggle-losers-only");
+    if (losersToggle) {
+      losersToggle.addEventListener("change", function () {
+        bands.losersOnly = losersToggle.checked;
+        chart.update("none");
+      });
+    }
+
+    const resetButton = document.getElementById("reset-zoom");
+    if (resetButton && chart.resetZoom) {
+      resetButton.addEventListener("click", function () {
+        chart.resetZoom();
+      });
+    }
+    canvasDoubleClickResets(chart);
+
+    // Clicking a row in the trade table zooms the chart onto that trade.
+    window.chartFocusTrade = function (tradeId) {
+      const channel = (payload.channels || []).find(function (item) {
+        return item.trade_id === tradeId;
+      });
+      const markers = (payload.markers || []).filter(function (item) {
+        return item.trade_id === tradeId;
+      });
+      const first = channel ? channel.start : markers.length ? markers[0].t : null;
+      const last = channel ? channel.end : markers.length ? markers[markers.length - 1].t : null;
+      if (!first || !last || !chart.zoomScale) return;
+      const from = bands.indexOf(first);
+      const to = bands.indexOf(last);
+      const pad = Math.max(5, Math.round((to - from) * 0.6));
+      chart.zoomScale("x", { min: Math.max(0, from - pad), max: to + pad }, "default");
+      chart.canvas.scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+  }
+
+  function canvasDoubleClickResets(chart) {
+    if (!chart.resetZoom) return;
+    chart.canvas.addEventListener("dblclick", function () {
+      chart.resetZoom();
+    });
   }
 
   function initIndicator() {

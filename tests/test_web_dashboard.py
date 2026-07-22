@@ -129,6 +129,33 @@ class _StrategyLabService:
         return None
 
 
+class _StrategyLabServiceWithStrategies(_StrategyLabService):
+    """Same stub, but with a strategy present so the pickers have something to render."""
+
+    async def strategies(self):
+        return [
+            {
+                "key": "channel_4_touch",
+                "name": "Канал: вход на 4-м касании",
+                "enabled": True,
+                "profiles": [],
+                "instances": [],
+                "description": "Вход на четвёртом касании границы канала.",
+                "config_fields": {"stop_pct": 1.0},
+            }
+        ]
+
+    spaces: dict = {}
+
+    async def section(self, name: str):
+        data = await super().section(name)
+        data["strategies"] = await self.strategies()
+        data["symbols"] = [{"symbol": "BTCUSDT", "has_candles": True}]
+        data["cache"] = {"total": 0, "reused": 0, "rows": []}
+        data["search_spaces"] = self.spaces
+        return data
+
+
 class _RecordingSession:
     def __init__(self, saved: dict) -> None:
         self.saved = saved
@@ -281,9 +308,59 @@ async def test_strategy_lab_sections_render_distinct_content(tmp_path: Path, mon
 
     assert strategies.status_code == 200
     assert density.status_code == 200
-    assert "Профили стратегий" in strategies.text
-    assert "Профили стратегий" not in density.text
+    assert "Профили" in strategies.text
+    assert "Профили" not in density.text
     assert "Последние события" in density.text
+
+
+@pytest.mark.asyncio
+async def test_every_lab_section_renders(tmp_path: Path, monkeypatch) -> None:
+    """Template errors only surface on render, so each tab is exercised."""
+    from app.web.routes import LAB_SECTIONS
+
+    app = _app(tmp_path, monkeypatch)
+    app.state.strategy_lab_service = _StrategyLabServiceWithStrategies()
+
+    for section, _label in LAB_SECTIONS:
+        response = await _authed_get(app, f"/strategy-lab/{section}")
+        assert response.status_code == 200, f"секция {section} не отрисовалась"
+
+
+@pytest.mark.asyncio
+async def test_search_space_renders_its_options(tmp_path: Path, monkeypatch) -> None:
+    """`field.values` would resolve to the dict method instead of the grid values."""
+    app = _app(tmp_path, monkeypatch)
+    service = _StrategyLabServiceWithStrategies()
+    service.spaces = {
+        "channel_4_touch": {
+            "name": "Канал",
+            "fields": [{"key": "stop_pct", "options": [0.3, 1.0], "count": 2}],
+            "combinations": 2,
+        }
+    }
+    app.state.strategy_lab_service = service
+
+    response = await _authed_get(app, "/strategy-lab/hyperopt")
+
+    assert response.status_code == 200
+    assert "0.3 %" in response.text
+    assert "1 %" in response.text
+
+
+@pytest.mark.asyncio
+async def test_backtest_and_hyperopt_forms_list_strategies(tmp_path: Path, monkeypatch) -> None:
+    """The picker reads lab.strategies; reading a bare `strategies` renders it empty."""
+    app = _app(tmp_path, monkeypatch)
+    app.state.strategy_lab_service = _StrategyLabServiceWithStrategies()
+
+    backtests = await _authed_get(app, "/strategy-lab/backtests")
+    hyperopt = await _authed_get(app, "/strategy-lab/hyperopt")
+
+    for response in (backtests, hyperopt):
+        assert response.status_code == 200
+        assert 'name="strategy_key"' in response.text
+        assert "Канал: вход на 4-м касании" in response.text
+        assert "стратегии не загружены" not in response.text
 
 
 @pytest.mark.asyncio

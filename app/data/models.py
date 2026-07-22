@@ -349,6 +349,10 @@ class BacktestTradeModel(Base):
     mfe_pct: Mapped[float] = mapped_column(Float, default=0.0)
     mae_pct: Mapped[float] = mapped_column(Float, default=0.0)
     status: Mapped[str] = mapped_column(String(32), index=True)
+    score: Mapped[int] = mapped_column(Integer, default=0)
+    # Signal context at entry: for the channel strategy this carries the channel
+    # geometry, which is what makes a losing trade explainable on the chart.
+    context_json: Mapped[str] = mapped_column(Text, default="{}")
 
 
 class BacktestEquityCurveModel(Base):

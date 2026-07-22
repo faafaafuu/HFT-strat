@@ -221,6 +221,22 @@ async def symbol_chart(
     )
 
 
+@router.get("/backtests/{run_id}", response_class=HTMLResponse)
+async def backtest_detail(request: Request, run_id: int, _: str = Depends(require_web_auth)):
+    chart = await request.app.state.chart_service.backtest_chart(run_id)
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "backtest_detail.html",
+        {
+            "page": "strategy_lab",
+            "chart": chart,
+            "run": (chart or {}).get("run"),
+            "trades": (chart or {}).get("trades", []),
+            "chart_json": _chart_payload(chart),
+        },
+    )
+
+
 @router.get("/trades/{trade_id}", response_class=HTMLResponse)
 async def trade_detail(request: Request, trade_id: int, _: str = Depends(require_web_auth)):
     chart = await request.app.state.chart_service.trade_chart(trade_id)
@@ -239,11 +255,12 @@ async def trade_detail(request: Request, trade_id: int, _: str = Depends(require
 def _chart_payload(chart: dict | None) -> dict:
     """Only the plot-facing keys — the trade block holds datetimes tojson cannot encode."""
     if not chart:
-        return {"series": [], "levels": [], "markers": []}
+        return {"series": [], "levels": [], "markers": [], "channels": []}
     return {
         "series": chart.get("series", []),
         "levels": chart.get("levels", []),
         "markers": chart.get("markers", []),
+        "channels": chart.get("channels", []),
         "source": chart.get("source"),
         "timeframe": chart.get("timeframe"),
     }

@@ -28,15 +28,7 @@
           {% endfor %}
         </select>
       </label>
-      <label>Символ
-        <select name="symbol">
-          {% for row in lab.coverage|map(attribute="symbol")|unique|sort %}
-          <option value="{{ row }}">{{ row }}</option>
-          {% else %}
-          <option value="BTCUSDT">BTCUSDT</option>
-          {% endfor %}
-        </select>
-      </label>
+      {% include "partials/symbol_select.html" %}
       <div class="checks">
         <span class="checks-label">Таймфреймы</span>
         {% for value in ["1m", "5m", "15m", "1h", "4h"] %}
@@ -82,6 +74,37 @@
       <button class="button" type="submit">Обучить модель</button>
     </form>
   </div>
+</section>
+
+<section class="card">
+  <h2>Что именно перебирается</h2>
+  <p class="muted">
+    Полная сетка значений по каждой стратегии. Подбор берёт из неё до указанного числа
+    комбинаций: если полный перебор больше лимита, набор выбирается детерминированной
+    выборкой — один и тот же лимит всегда даёт одни и те же комбинации.
+  </p>
+  {% for key, space in lab.search_spaces.items() %}
+  <details class="params" {% if key == "channel_4_touch" %}open{% endif %}>
+    <summary>
+      {{ space.name }} — {{ space.fields|length }} параметров,
+      полный перебор {{ space.combinations }} комбинаций
+    </summary>
+    <table>
+      <thead><tr><th>Параметр</th><th>Значения</th><th>Вариантов</th></tr></thead>
+      <tbody>
+        {% for field in space.fields %}
+        <tr>
+          <td>{{ field.key|param_label }}<br><span class="muted mono small">{{ field.key }}</span></td>
+          <td class="mono small">
+            {% for value in field.options %}<span class="chip">{{ value|param_value(field.key) }}</span>{% endfor %}
+          </td>
+          <td class="num">{{ field.count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </details>
+  {% endfor %}
 </section>
 
 <section class="card">

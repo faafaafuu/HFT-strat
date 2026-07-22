@@ -1,0 +1,12 @@
+<label>Инструмент
+  <input name="symbol" list="symbol-options" value="{{ selected_symbol or 'BTCUSDT' }}"
+         placeholder="BTCUSDT" autocomplete="off">
+  <datalist id="symbol-options">
+    {% for item in lab.symbols %}
+    <option value="{{ item.symbol }}">{{ "есть свечи" if item.has_candles else "историю нужно загрузить" }}</option>
+    {% endfor %}
+  </datalist>
+  <span class="field-hint">
+    Выберите из списка или впишите любой тикер Bybit — историю по нему можно загрузить рядом.
+  </span>
+</label>

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import json
 from bisect import bisect_right
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -238,6 +239,7 @@ class BacktestEngine:
         )
         trade_gap_until: datetime | None = None
         trades: list[SimulatedTrade] = []
+        trade_context: list[dict[str, Any]] = []
         equity_curve: list[dict[str, Any]] = []
         peak = initial_balance
         step = timedelta(minutes=timeframe_minutes(timeframe))
@@ -305,6 +307,10 @@ class BacktestEngine:
             if trade is None:
                 continue
             trades.append(trade)
+            # Kept alongside the trade so the chart can redraw the setup that produced it.
+            trade_context.append(
+                {"score": int(signal.score), "context": dict(signal.market_context or {})}
+            )
             balance += trade.pnl_usd
             trade_gap_until = trade.exit_time
             peak = max(peak, balance)
@@ -332,7 +338,14 @@ class BacktestEngine:
                 trades=len(trades),
             ),
             "trades": trades,
-            "trade_rows": [_trade_row(strategy_key, trade, candles[0].exchange, candles[0].symbol) for trade in trades] if candles else [],
+            "trade_rows": (
+                [
+                    _trade_row(strategy_key, trade, candles[0].exchange, candles[0].symbol, extra)
+                    for trade, extra in zip(trades, trade_context, strict=True)
+                ]
+                if candles
+                else []
+            ),
             "equity_curve": equity_curve,
         }
 
@@ -538,11 +551,20 @@ def _snapshot_from_candles(
     )
 
 
-def _trade_row(strategy_key: str, trade: SimulatedTrade, exchange: str, symbol: str) -> dict[str, Any]:
+def _trade_row(
+    strategy_key: str,
+    trade: SimulatedTrade,
+    exchange: str,
+    symbol: str,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    extra = extra or {}
     return {
         "exchange": exchange,
         "symbol": symbol,
         "strategy_key": strategy_key,
+        "score": int(extra.get("score", 0) or 0),
+        "context_json": json.dumps(extra.get("context") or {}, ensure_ascii=False, default=str),
         "direction": trade.direction,
         "entry_time": trade.entry_time,
         "exit_time": trade.exit_time,

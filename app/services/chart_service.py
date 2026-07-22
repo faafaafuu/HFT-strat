@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -7,11 +8,14 @@ from sqlalchemy import func, select
 
 from app.data.database import Database
 from app.data.models import (
+    BacktestRunModel,
+    BacktestTradeModel,
     HistoricalCandleModel,
     MarketSnapshotModel,
     PaperTradeModel,
     SignalModel,
 )
+from app.utils.time import timeframe_minutes
 
 # Candles are only downloaded for a few majors; snapshots exist for every traded symbol.
 _CANDLE_TIMEFRAMES = ("1m", "15m", "1h", "4h")
@@ -123,6 +127,113 @@ class ChartService:
             "levels": [],
             "markers": [item for item in markers if item is not None],
             "trades": [_trade_payload(trade) for trade in trades],
+        }
+
+    async def backtest_chart(self, run_id: int, limit: int = 200) -> dict[str, Any] | None:
+        """Backtest trades over the exact candles they were simulated on."""
+        async with self.database.session() as session:
+            run = await session.get(BacktestRunModel, run_id)
+            if run is None:
+                return None
+            trades = list(
+                (
+                    await session.scalars(
+                        select(BacktestTradeModel)
+                        .where(BacktestTradeModel.run_id == run_id)
+                        .order_by(BacktestTradeModel.entry_time)
+                        .limit(limit)
+                    )
+                ).all()
+            )
+            candles = list(
+                (
+                    await session.scalars(
+                        select(HistoricalCandleModel)
+                        .where(
+                            HistoricalCandleModel.symbol == run.symbol,
+                            HistoricalCandleModel.timeframe == run.timeframe,
+                            HistoricalCandleModel.open_time >= run.period_start,
+                            HistoricalCandleModel.open_time <= run.period_end,
+                        )
+                        .order_by(HistoricalCandleModel.open_time)
+                    )
+                ).all()
+            )
+
+        series = [
+            {
+                "t": _iso(row.open_time),
+                "o": row.open,
+                "h": row.high,
+                "l": row.low,
+                "c": row.close,
+            }
+            for row in candles
+        ]
+        step = timeframe_minutes(run.timeframe)
+        markers: list[dict[str, Any]] = []
+        channels: list[dict[str, Any]] = []
+        rows: list[dict[str, Any]] = []
+        for trade in trades:
+            won = (trade.pnl_usd or 0) > 0
+            markers.append(
+                _marker(
+                    "entry",
+                    f"#{trade.id} вход {_ru_direction(trade.direction)}",
+                    _naive(trade.entry_time),
+                    trade.entry_price,
+                    trade_id=trade.id,
+                )
+            )
+            markers.append(
+                _marker(
+                    "take" if won else "stop",
+                    f"#{trade.id} выход {trade.pnl_pct:+.2f}%",
+                    _naive(trade.exit_time),
+                    trade.exit_price,
+                    trade_id=trade.id,
+                )
+            )
+            context = _load_json(trade.context_json)
+            channel = (context or {}).get("channel")
+            if channel:
+                channels.append(_channel_shape(trade, channel, step))
+            rows.append(
+                {
+                    "id": trade.id,
+                    "direction": trade.direction,
+                    "status": trade.status,
+                    "score": trade.score,
+                    "entry_time": trade.entry_time,
+                    "exit_time": trade.exit_time,
+                    "entry_price": trade.entry_price,
+                    "exit_price": trade.exit_price,
+                    "stop_price": trade.stop_price,
+                    "take_price": trade.take_price,
+                    "pnl_usd": trade.pnl_usd,
+                    "pnl_pct": trade.pnl_pct,
+                    "mfe_pct": trade.mfe_pct,
+                    "mae_pct": trade.mae_pct,
+                    "channel": channel,
+                }
+            )
+        return {
+            "run": {
+                "id": run.id,
+                "strategy_key": run.strategy_key,
+                "symbol": run.symbol,
+                "timeframe": run.timeframe,
+                "period_start": run.period_start,
+                "period_end": run.period_end,
+                "metrics": _load_json(run.metrics_json) or {},
+            },
+            "series": series,
+            "source": "candles",
+            "timeframe": run.timeframe,
+            "levels": [],
+            "markers": [item for item in markers if item is not None],
+            "channels": channels,
+            "trades": rows,
         }
 
     async def traded_symbols(self, days: int = 30) -> list[dict[str, Any]]:
@@ -311,6 +422,54 @@ def _marker(
 
 def _ru_direction(direction: str) -> str:
     return {"LONG": "лонг", "SHORT": "шорт"}.get(direction, direction)
+
+
+def _load_json(raw: str | None) -> dict[str, Any] | None:
+    if not raw:
+        return None
+    try:
+        value = json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def _channel_shape(
+    trade: BacktestTradeModel, channel: dict[str, Any], step_minutes: int
+) -> dict[str, Any]:
+    """Rebuild the two boundary lines from the geometry stored at entry.
+
+    The strategy records the boundaries at the entry bar plus a slope per candle, which is
+    enough to extend both lines back to the pivots that defined them and forward to the exit.
+    """
+    entry_time = _naive(trade.entry_time) or datetime.now(UTC).replace(tzinfo=None)
+    exit_time = _naive(trade.exit_time) or entry_time
+    upper = float(channel.get("upper") or 0.0)
+    lower = float(channel.get("lower") or 0.0)
+    slope_abs = float(channel.get("slope_pct_per_candle") or 0.0) / 100 * (trade.entry_price or 0.0)
+
+    bars_back = max([int(value) for value in (channel.get("point_bars_ago") or [0])] or [0])
+    bars_forward = max(1, int((exit_time - entry_time).total_seconds() // 60 // max(1, step_minutes)))
+    start_time = entry_time - timedelta(minutes=step_minutes * bars_back)
+    end_time = entry_time + timedelta(minutes=step_minutes * bars_forward)
+
+    return {
+        "trade_id": trade.id,
+        "direction": trade.direction,
+        "touch_side": channel.get("touch_side"),
+        "won": (trade.pnl_usd or 0) > 0,
+        "start": _iso(start_time),
+        "entry": _iso(entry_time),
+        "end": _iso(end_time),
+        "upper_start": upper - slope_abs * bars_back,
+        "upper_end": upper + slope_abs * bars_forward,
+        "lower_start": lower - slope_abs * bars_back,
+        "lower_end": lower + slope_abs * bars_forward,
+        "width_pct": channel.get("width_pct"),
+        "touch_gap_pct": channel.get("touch_gap_pct"),
+        "touch_pierced": channel.get("touch_pierced"),
+        "rr": channel.get("rr"),
+    }
 
 
 def _exit_label(status: str) -> str:

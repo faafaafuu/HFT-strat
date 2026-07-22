@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Бэктест #{{ run.id if run else "?" }}{% endblock %}
+{% block content %}
+{% if not run %}
+<div class="top"><h1>Прогон не найден</h1></div>
+<p><a class="button" href="/strategy-lab/backtests">К списку бэктестов</a></p>
+{% else %}
+<div class="top">
+  <h1>Бэктест #{{ run.id }} · {{ run.symbol }} {{ run.timeframe }}</h1>
+  <span class="muted mono">{{ run.strategy_key }}</span>
+</div>
+
+<section class="grid">
+  <div class="card"><div class="metric">Сделок</div><div class="value">{{ run.metrics.total_trades or 0 }}</div></div>
+  <div class="card"><div class="metric">Винрейт</div><div class="value">{{ run.metrics.winrate|pct }}</div></div>
+  <div class="card"><div class="metric">Профит-фактор</div><div class="value">{{ run.metrics.profit_factor|num }}</div></div>
+  <div class="card">
+    <div class="metric">Чистый PnL</div>
+    <div class="value {{ 'positive' if (run.metrics.net_pnl or 0) > 0 else 'negative' if (run.metrics.net_pnl or 0) < 0 else '' }}">{{ run.metrics.net_pnl|money }}</div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>График сделок</h2>
+  <p class="muted">
+    Период: {{ run.period_start|time }} — {{ run.period_end|time }}, свечей: {{ chart.series|length }}.
+    Колесо мыши — масштаб, перетаскивание — прокрутка по времени, двойной клик — сброс.
+  </p>
+  {% if chart.channels %}
+  <p class="muted">
+    Пунктирные линии — границы канала, по которому был вход. Зелёный канал — сделка в плюс,
+    красный — в минус. Видно, был ли канал реальным и куда цена ушла после касания.
+  </p>
+  {% endif %}
+  {% if chart.series %}
+  <div class="chart-toolbar">
+    <label class="check">
+      <input type="checkbox" id="toggle-channels" checked>
+      Показывать каналы
+    </label>
+    <label class="check">
+      <input type="checkbox" id="toggle-losers-only">
+      Только убыточные
+    </label>
+    <button class="button" id="reset-zoom" type="button">Сбросить масштаб</button>
+  </div>
+  <div class="chart-wrap tall"><canvas id="trade-chart"></canvas></div>
+  <div class="legend">
+    <span class="legend-item"><i class="swatch entry"></i>Вход</span>
+    <span class="legend-item"><i class="swatch take"></i>Прибыльный выход</span>
+    <span class="legend-item"><i class="swatch stop"></i>Убыточный выход</span>
+  </div>
+  <script id="chart-data" type="application/json">{{ chart_json|tojson }}</script>
+  {% else %}
+  <p class="muted">
+    Свечей за период прогона не найдено — возможно, история была удалена после бэктеста.
+  </p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Сделки прогона ({{ trades|length }})</h2>
+  <table class="clickable">
+    <thead>
+      <tr>
+        <th>№</th><th>Напр.</th><th>Вход</th><th>Выход</th><th>Цена входа</th><th>Цена выхода</th>
+        <th>Итог</th><th>MFE</th><th>MAE</th><th>Канал</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for trade in trades %}
+      <tr onclick="window.chartFocusTrade && window.chartFocusTrade({{ trade.id }})" title="Показать на графике">
+        <td class="num">{{ loop.index }}</td>
+        <td><span class="{{ 'long' if trade.direction == 'LONG' else 'short' }}">{{ trade.direction|ru_direction }}</span></td>
+        <td class="time">{{ trade.entry_time|time }}</td>
+        <td class="time">{{ trade.exit_time|time }}</td>
+        <td class="num">{{ trade.entry_price|num }}</td>
+        <td class="num">{{ trade.exit_price|num }}</td>
+        <td class="num {{ 'positive' if trade.pnl_usd > 0 else 'negative' }}">
+          {{ trade.pnl_usd|money }} <span class="muted">({{ trade.pnl_pct|round(2) }}%)</span>
+        </td>
+        <td class="num positive">+{{ trade.mfe_pct|round(2) }}%</td>
+        <td class="num negative">−{{ trade.mae_pct|abs|round(2) }}%</td>
+        <td class="small muted">
+          {% if trade.channel %}
+          ширина {{ trade.channel.width_pct|round(2) }}% ·
+          касание {{ trade.channel.touch_gap_pct|round(3) }}%
+          {{ "(прокол)" if trade.channel.touch_pierced else "(не дошло)" }} ·
+          R:R {{ trade.channel.rr|round(2) }}
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="10" class="muted">Сделок в этом прогоне нет.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<p><a class="button" href="/strategy-lab/backtests">← К списку бэктестов</a></p>
+{% endif %}
+{% endblock %}

@@ -21,15 +21,7 @@
           {% endfor %}
         </select>
       </label>
-      <label>Символ
-        <select name="symbol">
-          {% for row in lab.coverage|map(attribute="symbol")|unique|sort %}
-          <option value="{{ row }}">{{ row }}</option>
-          {% else %}
-          <option value="BTCUSDT">BTCUSDT</option>
-          {% endfor %}
-        </select>
-      </label>
+      {% include "partials/symbol_select.html" %}
       {% set selected_timeframe = "5m" %}
       {% include "partials/timeframe_select.html" %}
       <label>Дней истории <input name="days" type="number" value="90" min="1" max="720"></label>
@@ -55,7 +47,7 @@
           hx-post="/actions/jobs/history"
           hx-target="#job-result"
           hx-swap="innerHTML">
-      <label>Символ <input name="symbol" value="BTCUSDT"></label>
+      {% include "partials/symbol_select.html" %}
       {% set selected_timeframe = "5m" %}
       {% include "partials/timeframe_select.html" %}
       <label>Дней <input name="days" type="number" value="30" min="1" max="720"></label>
@@ -83,13 +75,14 @@
 
 <section class="card">
   <h2>Последние бэктесты</h2>
-  <table>
+  <p class="muted">Нажмите на строку, чтобы увидеть сделки прогона на графике.</p>
+  <table class="clickable">
     <thead>
       <tr><th>ID</th><th>Стратегия</th><th>Символ</th><th>ТФ</th><th>Сделок</th><th>Винрейт</th><th>Профит-фактор</th><th>Чистый PnL</th></tr>
     </thead>
     <tbody>
       {% for run in lab.backtests %}
-      <tr>
+      <tr onclick="window.location='/backtests/{{ run.id }}'" title="Открыть график прогона">
         <td class="num">{{ run.id }}</td>
         <td class="mono">{{ run.strategy_key }}</td>
         <td><b>{{ run.symbol }}</b></td>

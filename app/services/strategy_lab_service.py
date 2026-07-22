@@ -12,9 +12,11 @@ from app.data.database import Database
 from app.data.models import (
     BacktestRunModel,
     DensityEventModel,
+    HistoricalCandleModel,
     JobModel,
     PaperProfileModel,
     PaperTradeModel,
+    SymbolModel,
 )
 from app.data.repositories import (
     DensityRepository,
@@ -24,6 +26,7 @@ from app.data.repositories import (
     MLModelRepository,
 )
 from app.jobs.models import RUN_HYPEROPT
+from app.optimization.search_space import search_space_for
 from app.services.cache import AsyncTTLCache
 from app.strategies.registry import default_registry
 
@@ -109,6 +112,7 @@ class StrategyLabService:
             return {
                 "strategies": await self.strategies(),
                 "profiles": await self.strategy_profiles(),
+                "instances": await self.instances(),
             }
         if name == "instances":
             return {"instances": await self.instances(), "strategies": await self.strategies()}
@@ -119,6 +123,7 @@ class StrategyLabService:
                 "strategies": await self.strategies(),
                 "instances": await self.instances(),
                 "coverage": await self.data_coverage(),
+                "symbols": await self.available_symbols(),
             }
         if name == "hyperopt":
             return {
@@ -127,8 +132,10 @@ class StrategyLabService:
                 "jobs": await self.jobs(),
                 "ml_status": await self.ml_status(),
                 "coverage": await self.data_coverage(),
+                "symbols": await self.available_symbols(),
                 "hyperopt": await self.hyperopt_results(),
                 "cache": await self.hyperopt_cache(),
+                "search_spaces": self.search_spaces(),
             }
         if name == "compare":
             return {"compare": await self.compare(), "diagnostics": await self.diagnostics()}
@@ -144,6 +151,49 @@ class StrategyLabService:
             "compare": await self.compare(),
             "coverage": await self.data_coverage(),
         }
+
+    async def available_symbols(self) -> list[dict[str, Any]]:
+        """Every symbol worth offering: known instruments plus anything already downloaded."""
+        async with self.database.session() as session:
+            known = list(
+                (
+                    await session.scalars(
+                        select(SymbolModel.symbol)
+                        .where(SymbolModel.is_active.is_(True))
+                        .order_by(SymbolModel.volume_24h_usd.desc())
+                    )
+                ).all()
+            )
+            downloaded = {
+                row[0]
+                for row in (
+                    await session.execute(select(HistoricalCandleModel.symbol).distinct())
+                ).all()
+            }
+        ordered = list(dict.fromkeys([*downloaded, *known]))
+        return [
+            {"symbol": symbol, "has_candles": symbol in downloaded} for symbol in sorted(ordered)
+        ]
+
+    def search_space(self, strategy_key: str) -> list[dict[str, Any]]:
+        """The grid hyperopt will actually walk for this strategy."""
+        space = search_space_for(strategy_key)
+        # Not "values": Jinja resolves `field.values` to the dict method, not the key.
+        return [
+            {"key": key, "options": options, "count": len(options)}
+            for key, options in sorted(space.items())
+        ]
+
+    def search_spaces(self) -> dict[str, dict[str, Any]]:
+        spaces = {}
+        for descriptor in self.registry.descriptors(self.settings):
+            fields = self.search_space(descriptor.key)
+            spaces[descriptor.key] = {
+                "name": descriptor.name,
+                "fields": fields,
+                "combinations": _combination_count(fields),
+            }
+        return spaces
 
     async def hyperopt_cache(self) -> dict[str, Any]:
         async with self.database.session() as session:
@@ -401,6 +451,13 @@ def _sweep_metrics(metrics: dict[str, Any] | None) -> dict[str, Any]:
         "net_pnl": float(metrics.get("net_pnl", 0.0) or 0.0),
         "max_drawdown_pct": float(metrics.get("max_drawdown", 0.0) or 0.0),
     }
+
+
+def _combination_count(fields: list[dict[str, Any]]) -> int:
+    total = 1
+    for field in fields:
+        total *= max(1, int(field["count"]))
+    return total
 
 
 def _bucket_trades(trades: list[PaperTradeModel], field: str) -> dict[str, list[PaperTradeModel]]:

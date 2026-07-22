@@ -111,6 +111,18 @@ class Database:
             if column not in trade_columns:
                 await _add_column_if_missing(conn, "paper_trades", column, ddl)
 
+        backtest_trade_columns = {
+            row[1]
+            for row in (
+                await conn.execute(text("PRAGMA table_info(backtest_trades)"))
+            ).fetchall()
+        }
+        for column, ddl in {
+            "score": "ALTER TABLE backtest_trades ADD COLUMN score INTEGER DEFAULT 0",
+            "context_json": "ALTER TABLE backtest_trades ADD COLUMN context_json TEXT DEFAULT '{}'",
+        }.items():
+            if column not in backtest_trade_columns:
+                await _add_column_if_missing(conn, "backtest_trades", column, ddl)
         equity_columns = {
             row[1]
             for row in (
