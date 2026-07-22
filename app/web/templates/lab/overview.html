@@ -6,7 +6,7 @@
     <div class="value">{{ lab.strategies|selectattr("enabled")|list|length }}<span class="value-suffix">/{{ lab.strategies|length }}</span></div>
   </div>
   <div class="card">
-    <div class="metric">Инстансов включено</div>
+    <div class="metric">Пресетов включено</div>
     <div class="value">{{ lab.instances|selectattr("enabled")|list|length }}<span class="value-suffix">/{{ lab.instances|length }}</span></div>
   </div>
   <div class="card">

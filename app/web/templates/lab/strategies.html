@@ -1,43 +1,56 @@
 {% if message %}{% include "partials/toast.html" %}{% endif %}
 <p class="hint">
   Стратегия работает, если её мастер-переключатель включён <em>и</em> она входит хотя бы в один
-  активный профиль или инстанс. Изменения применяются работающим ботом в течение 15 секунд.
+  активный профиль или пресет. Изменения применяются работающим ботом в течение 15 секунд.
 </p>
 
-<section class="card">
-  <h2>Стратегии</h2>
-  <table>
-    <thead>
-      <tr><th>Стратегия</th><th>Состояние</th><th>Профили</th><th>Инстансы</th><th>Описание</th><th></th></tr>
-    </thead>
-    <tbody>
-      {% for item in lab.strategies %}
-      <tr>
-        <td><strong>{{ item.name }}</strong><br><span class="muted mono">{{ item.key }}</span></td>
-        <td><span class="pill {{ 'on' if item.enabled else 'off' }}">{{ "Работает" if item.enabled else "Выключена" }}</span></td>
-        <td>
-          {% if item.profiles %}{% for profile in item.profiles %}<span class="chip">{{ profile }}</span>{% endfor %}
-          {% else %}<span class="muted">—</span>{% endif %}
-        </td>
-        <td>
-          {% if item.instances %}{% for instance in item.instances %}<span class="chip">{{ instance }}</span>{% endfor %}
-          {% else %}<span class="muted">—</span>{% endif %}
-        </td>
-        <td class="muted">{{ item.description or "—" }}</td>
-        <td>
-          <button class="button {{ 'danger' if item.enabled else 'primary' }}"
-                  hx-post="/actions/strategies/{{ item.key }}/toggle"
-                  hx-target="#lab-body"
-                  hx-swap="innerHTML">
-            {{ "Выключить" if item.enabled else "Включить" }}
-          </button>
-        </td>
-      </tr>
-      {% else %}
-      <tr><td colspan="6" class="muted">Стратегии не зарегистрированы.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<section class="strategy-cards">
+  {% for item in lab.strategies %}
+  <div class="card strategy-card">
+    <div class="card-head">
+      <div>
+        <div class="stat-name">{{ item.name }}</div>
+        <div class="muted mono small">{{ item.key }}</div>
+      </div>
+      <span class="pill {{ 'on' if item.enabled else 'off' }}">{{ "Работает" if item.enabled else "Выключена" }}</span>
+    </div>
+
+    <p class="strategy-description">{{ item.description or "Описание не задано." }}</p>
+
+    <dl class="kv">
+      <dt>Профили</dt>
+      <dd>
+        {% if item.profiles %}{% for profile in item.profiles %}<span class="chip">{{ profile }}</span>{% endfor %}
+        {% else %}<span class="muted">не подключена</span>{% endif %}
+      </dd>
+      <dt>Пресеты</dt>
+      <dd>
+        {% if item.instances %}{% for instance in item.instances %}<span class="chip">{{ instance }}</span>{% endfor %}
+        {% else %}<span class="muted">нет</span>{% endif %}
+      </dd>
+    </dl>
+
+    {% if item.config_fields %}
+    <details class="params">
+      <summary>Настройки ({{ item.config_fields|length }})</summary>
+      <dl class="kv compact">
+        {% for key, value in item.config_fields.items() %}
+        <dt>{{ key|param_label }}</dt><dd>{{ value|param_value(key) }}</dd>
+        {% endfor %}
+      </dl>
+    </details>
+    {% endif %}
+
+    <button class="button {{ 'danger' if item.enabled else 'primary' }}"
+            hx-post="/actions/strategies/{{ item.key }}/toggle"
+            hx-target="#lab-body"
+            hx-swap="innerHTML">
+      {{ "Выключить" if item.enabled else "Включить" }}
+    </button>
+  </div>
+  {% else %}
+  <p class="muted">Стратегии не зарегистрированы.</p>
+  {% endfor %}
 </section>
 
 <section class="card">

@@ -13,7 +13,12 @@ from app.strategies.base import (
 
 class TrendPullbackScalperStrategy:
     key = "trend_pullback_scalper"
-    name = "Trend Pullback Scalper"
+    name = "Откат по тренду"
+    description = (
+        "В устойчивом получасовом тренде ждёт отката на 0.3% против движения и входит "
+        "по тренду, когда объём подтверждает продолжение. Торговля по направлению "
+        "движения, а не против него."
+    )
 
     def __init__(
         self,

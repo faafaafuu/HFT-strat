@@ -77,10 +77,12 @@ class Channel:
 
 class ChannelTouchStrategy:
     key = "channel_4_touch"
-    name = "4-Touch Channel"
+    name = "Канал: вход на 4-м касании"
     description = (
-        "Builds a parallel channel from three pivots and trades the fourth touch of the "
-        "opposite boundary, rejecting the setup if a candle closes through the channel."
+        "Строит параллельный канал по трём точкам: две на одной границе (1 и 3) и одна "
+        "на противоположной (2). Второе касание опорной линии доказывает, что она реальна, "
+        "поэтому вход — на первом касании противоположной границы после точки 3, "
+        "то есть на четвёртом касании. Закрытие свечи за границей канала убивает сетап."
     )
 
     def __init__(self, defaults: ChannelStrategyConfig | None = None) -> None:

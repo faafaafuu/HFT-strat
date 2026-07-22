@@ -9,8 +9,12 @@ from app.strategies.base import StrategySignal, context_from_snapshot, invalidat
 
 class DensityStrategy:
     key = "density_strategy"
-    name = "Orderbook Density Strategy"
-    description = "Trades bounce, eaten density, spoof pull, and absorption around large L2 levels."
+    name = "Плотности в стакане"
+    description = (
+        "Следит за крупными заявками в стакане и торгует их судьбу: отскок от плотности, "
+        "её поглощение рынком, снятие заявки перед подходом цены (спуфинг). "
+        "Единственная стратегия, которой нужен живой стакан — в бэктесте по свечам не работает."
+    )
 
     def __init__(self, defaults: DensityStrategyConfig) -> None:
         self.defaults = defaults

@@ -66,7 +66,7 @@
     <dl class="kv">
       <dt>Паттерн</dt><dd>{{ trade.pattern or "—" }}</dd>
       <dt>Стратегия</dt><dd class="mono">{{ trade.strategy_key or "—" }}</dd>
-      <dt>Инстанс</dt><dd class="mono">{{ trade.strategy_instance_id or "—" }}</dd>
+      <dt>Пресет</dt><dd class="mono">{{ trade.strategy_instance_id or "—" }}</dd>
       <dt>Paper-профиль</dt><dd>{{ trade.profile_key }}</dd>
       <dt>Открыта</dt><dd>{{ trade.opened_at|time }}</dd>
       <dt>Закрыта</dt><dd>{{ trade.closed_at|time if trade.closed_at else "ещё открыта" }}</dd>

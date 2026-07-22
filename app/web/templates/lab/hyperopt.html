@@ -2,34 +2,52 @@
 
 <section class="grid-2">
   <div class="card">
-    <h2>Гипероптимизация</h2>
+    <h2>Подбор параметров</h2>
     <p class="muted">
-      Перебор параметров стратегии на исторических данных. Найденные значения можно
-      перенести в инстанс на вкладке «Инстансы».
+      Перебирает сетку параметров выбранной стратегии на истории. Можно отметить
+      несколько таймфреймов — каждый перебирается отдельно, результаты сводятся вместе.
+      Данные делятся на обучающую и проверочную части, чтобы отсеять подгонку.
     </p>
     <form class="stack compact-form"
           hx-post="/actions/jobs/hyperopt"
           hx-target="#job-result"
           hx-swap="innerHTML">
-      <label>Инстанс
+      {% set selected_strategy = "channel_4_touch" %}
+      {% include "partials/strategy_select.html" %}
+      <label>Пресет (стартовые параметры)
         <select name="strategy_instance_id">
-          <option value="">— задать стратегию вручную —</option>
+          <option value="">— не использовать —</option>
           {% for item in lab.instances %}
-          <option value="{{ item.id }}">{{ item.id }}</option>
+          <option value="{{ item.id }}">{{ item.id }} ({{ item.strategy_key }})</option>
           {% endfor %}
         </select>
       </label>
-      <label>Ключ стратегии <input name="strategy_key" value="density_strategy"></label>
-      <label>Символ <input name="symbol" value="BTCUSDT"></label>
-      <label>Таймфрейм
-        <select name="timeframe">
-          <option value="1m">1m</option>
-          <option value="15m">15m</option>
-          <option value="1h">1h</option>
-          <option value="4h">4h</option>
+      <label>Символ
+        <select name="symbol">
+          {% for row in lab.coverage|map(attribute="symbol")|unique|sort %}
+          <option value="{{ row }}">{{ row }}</option>
+          {% else %}
+          <option value="BTCUSDT">BTCUSDT</option>
+          {% endfor %}
         </select>
       </label>
-      <label>Дней истории <input name="days" type="number" value="30" min="1" max="720"></label>
+      <div class="checks">
+        <span class="checks-label">Таймфреймы</span>
+        {% for value in ["1m", "5m", "15m", "1h", "4h"] %}
+        <label class="check">
+          <input type="checkbox" name="timeframes" value="{{ value }}" {% if value in ["5m", "15m", "1h"] %}checked{% endif %}>
+          {{ value }}
+        </label>
+        {% endfor %}
+      </div>
+      <label>Дней истории <input name="days" type="number" value="90" min="1" max="720"></label>
+      <label>Минимальный скор сигнала
+        <input name="min_score" type="number" value="6" min="1" max="10">
+      </label>
+      <label>Комбинаций максимум
+        <input name="limit" type="number" value="50" min="5" max="500">
+        <span class="field-hint">Больше комбинаций — точнее подбор, но дольше счёт.</span>
+      </label>
       <button class="button primary" type="submit">Запустить подбор</button>
     </form>
     <div id="job-result" class="job-result"></div>
@@ -40,7 +58,7 @@
     {% if lab.ml_status.active %}
     <dl class="kv">
       <dt>Тип</dt><dd>{{ lab.ml_status.model_type }}</dd>
-      <dt>Файл</dt><dd class="mono">{{ lab.ml_status.model_path }}</dd>
+      <dt>Файл</dt><dd class="mono small">{{ lab.ml_status.model_path }}</dd>
       <dt>Обучена</dt><dd>{{ lab.ml_status.created_at|time }}</dd>
     </dl>
     <pre class="code">{{ lab.ml_status.metrics }}</pre>
@@ -61,8 +79,92 @@
 </section>
 
 <section class="card">
+  <h2>Результаты последнего перебора</h2>
+  {% if lab.hyperopt and lab.hyperopt.job_id %}
+  <p class="muted">
+    Задача #{{ lab.hyperopt.job_id }} · {{ lab.hyperopt.strategy_key }} ·
+    {{ lab.hyperopt.symbol }} · {{ lab.hyperopt.finished_at|time }}
+  </p>
+
+  {% if lab.hyperopt.by_timeframe %}
+  <h3>По таймфреймам</h3>
+  <table>
+    <thead>
+      <tr><th>Таймфрейм</th><th>Комбинаций</th><th>Лучший ПФ на проверке</th><th>Сделок</th><th>Чистый PnL</th></tr>
+    </thead>
+    <tbody>
+      {% for row in lab.hyperopt.by_timeframe %}
+      <tr>
+        <td><strong>{{ row.timeframe }}</strong></td>
+        <td class="num">{{ row.combinations }}</td>
+        <td class="num">
+          {% if row.reason %}<span class="muted">{{ row.reason }}</span>
+          {% else %}{{ row.best.profit_factor|num }}{% endif %}
+        </td>
+        <td class="num">{{ row.best.trades }}</td>
+        <td class="num {{ 'positive' if row.best.net_pnl > 0 else 'negative' if row.best.net_pnl < 0 else '' }}">{{ row.best.net_pnl|money }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <h3>Лучшие наборы параметров</h3>
+  <p class="muted">
+    «Обучение» — часть истории, на которой параметры подбирались, «проверка» — отложенная.
+    Хороший набор держит профит-фактор на проверке, а не только на обучении.
+  </p>
+  <table>
+    <thead>
+      <tr><th>ТФ</th><th>Обучение</th><th>Проверка</th><th>Параметры</th><th>Применить</th></tr>
+    </thead>
+    <tbody>
+      {% for row in lab.hyperopt.rows %}
+      <tr>
+        <td><b>{{ row.timeframe }}</b></td>
+        <td class="num small">
+          сделок {{ row.train.trades }} · ПФ {{ row.train.profit_factor|num }}
+        </td>
+        <td class="num small">
+          сделок {{ row.test.trades }} · ПФ {{ row.test.profit_factor|num }} ·
+          винрейт {{ row.test.winrate|pct }}
+        </td>
+        <td class="small">
+          <ul class="param-list">
+            {% for key, value in row.params.items() %}
+            <li><span class="muted">{{ key|param_label }}</span> <b>{{ value|param_value(key) }}</b></li>
+            {% endfor %}
+          </ul>
+        </td>
+        <td>
+          <form class="inline-form"
+                hx-post="/actions/hyperopt/apply"
+                hx-target="#job-result"
+                hx-swap="innerHTML">
+            <input type="hidden" name="job_id" value="{{ lab.hyperopt.job_id }}">
+            <input type="hidden" name="row" value="{{ loop.index0 }}">
+            <select name="instance_id">
+              {% for item in lab.instances %}
+              <option value="{{ item.id }}">{{ item.id }}</option>
+              {% endfor %}
+            </select>
+            <button class="button" type="submit">Применить</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">В последнем переборе нет результатов.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">Завершённых переборов ещё не было. Запустите подбор слева.</p>
+  {% endif %}
+</section>
+
+<section class="card">
   <h2>Доступная история</h2>
-  <p class="muted">Гипероптимизация работает только по загруженным свечам.</p>
+  <p class="muted">Перебор идёт только по загруженным свечам — недостающие таймфреймы пропускаются.</p>
   <table>
     <thead><tr><th>Символ</th><th>ТФ</th><th>Свечей</th><th>Начало</th><th>Конец</th></tr></thead>
     <tbody>

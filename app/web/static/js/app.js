@@ -11,6 +11,26 @@
     grid: "rgba(35, 33, 28, 0.08)",
   };
 
+  // Prices run from 0.00001 (memecoins) to 100000 (BTC); a fixed precision would
+  // either bury small ones in zeros or print unreadable tails on large ones.
+  function decimalsFor(value) {
+    const size = Math.abs(value);
+    if (size >= 1000) return 0;
+    if (size >= 100) return 1;
+    if (size >= 10) return 2;
+    if (size >= 1) return 3;
+    if (size >= 0.01) return 4;
+    return 6;
+  }
+
+  function formatPrice(value, reference) {
+    if (value === null || value === undefined || Number.isNaN(value)) return "";
+    return Number(value).toLocaleString("ru-RU", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: decimalsFor(reference === undefined ? value : reference),
+    });
+  }
+
   function formatTime(iso) {
     const date = new Date(iso);
     if (Number.isNaN(date.getTime())) return iso;
@@ -24,32 +44,59 @@
   }
 
   // Chart.js has no built-in horizontal-line annotation without the plugin, so draw them here.
+  const LABEL_HEIGHT = 15;
+
   const levelLines = {
     id: "levelLines",
     afterDatasetsDraw(chart, args, options) {
       const levels = (options && options.levels) || [];
       const { ctx, chartArea, scales } = chart;
-      if (!chartArea) return;
-      levels.forEach(function (level) {
-        const y = scales.y.getPixelForValue(level.value);
-        if (y < chartArea.top || y > chartArea.bottom) return;
+      if (!chartArea || !levels.length) return;
+
+      const reference = levels[0].value;
+      const placed = [];
+      // Nearby levels would otherwise stack their labels on top of each other.
+      const drawable = levels
+        .map(function (level) {
+          return { level: level, y: scales.y.getPixelForValue(level.value) };
+        })
+        .filter(function (item) {
+          return item.y >= chartArea.top && item.y <= chartArea.bottom;
+        })
+        .sort(function (a, b) {
+          return a.y - b.y;
+        });
+
+      drawable.forEach(function (item) {
+        const level = item.level;
         const color = COLORS[level.kind] || COLORS.invalidation;
+
         ctx.save();
         ctx.beginPath();
         ctx.setLineDash(level.kind === "entry" ? [] : [5, 4]);
         ctx.strokeStyle = color;
         ctx.lineWidth = level.kind === "entry" ? 1.6 : 1.2;
-        ctx.moveTo(chartArea.left, y);
-        ctx.lineTo(chartArea.right, y);
+        ctx.moveTo(chartArea.left, item.y);
+        ctx.lineTo(chartArea.right, item.y);
         ctx.stroke();
 
-        const label = level.label + " " + level.value;
+        let labelY = item.y;
+        placed.forEach(function (taken) {
+          if (Math.abs(labelY - taken) < LABEL_HEIGHT + 3) {
+            labelY = taken + LABEL_HEIGHT + 3;
+          }
+        });
+        labelY = Math.min(labelY, chartArea.bottom - 2);
+        placed.push(labelY);
+
+        const label = level.label + " " + formatPrice(level.value, reference);
         ctx.font = "600 11px system-ui, sans-serif";
-        const width = ctx.measureText(label).width + 10;
+        const width = ctx.measureText(label).width + 12;
+        ctx.setLineDash([]);
         ctx.fillStyle = color;
-        ctx.fillRect(chartArea.right - width, y - 15, width, 14);
+        ctx.fillRect(chartArea.right - width, labelY - LABEL_HEIGHT, width, LABEL_HEIGHT);
         ctx.fillStyle = "#fff";
-        ctx.fillText(label, chartArea.right - width + 5, y - 4);
+        ctx.fillText(label, chartArea.right - width + 6, labelY - 4);
         ctx.restore();
       });
     },
@@ -79,7 +126,13 @@
             index = i;
           }
         });
-        return { x: index, y: marker.value, label: marker.label, kind: marker.kind };
+        return {
+          x: index,
+          y: marker.value,
+          label: marker.label,
+          kind: marker.kind,
+          tradeId: marker.trade_id,
+        };
       });
 
     return new Chart(canvas.getContext("2d"), {
@@ -101,14 +154,16 @@
             label: "События",
             data: markerPoints,
             showLine: false,
-            pointRadius: 7,
-            pointHoverRadius: 9,
-            pointStyle: "triangle",
+            pointRadius: markerPoints.length > 40 ? 5 : 7,
+            pointHoverRadius: 10,
+            pointStyle: markerPoints.map(function (point) {
+              return point.kind === "entry" ? "triangle" : "rectRot";
+            }),
             pointBackgroundColor: markerPoints.map(function (point) {
               return COLORS[point.kind] || COLORS.entry;
             }),
             pointBorderColor: "#fff",
-            pointBorderWidth: 2,
+            pointBorderWidth: 1.5,
             parsing: false,
           },
         ],
@@ -116,30 +171,60 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        interaction: { mode: "index", intersect: false },
+        interaction: { mode: "nearest", intersect: true },
+        onClick: function (event, elements) {
+          const hit = elements.find(function (item) {
+            return item.datasetIndex === 1;
+          });
+          if (!hit) return;
+          const marker = markerPoints[hit.index];
+          if (marker && marker.tradeId) {
+            window.location = "/trades/" + marker.tradeId;
+          }
+        },
+        onHover: function (event, elements) {
+          const clickable = elements.some(function (item) {
+            return item.datasetIndex === 1 && markerPoints[item.index].tradeId;
+          });
+          event.native.target.style.cursor = clickable ? "pointer" : "default";
+        },
         scales: {
           x: {
             type: "category",
             grid: { color: COLORS.grid },
-            ticks: { maxTicksLimit: 10, font: { size: 11 } },
+            ticks: { maxTicksLimit: 10, font: { size: 11 }, autoSkip: true },
           },
           y: {
             position: "right",
             grid: { color: COLORS.grid },
-            ticks: { font: { size: 11 } },
+            ticks: {
+              font: { size: 11 },
+              maxTicksLimit: 8,
+              callback: function (value) {
+                return formatPrice(value, prices[0]);
+              },
+            },
           },
         },
         plugins: {
           legend: { display: false },
           levelLines: { levels: payload.levels || [] },
           tooltip: {
+            displayColors: false,
             callbacks: {
               label: function (context) {
                 if (context.datasetIndex === 1) {
                   const marker = markerPoints[context.dataIndex];
-                  return marker ? marker.label + ": " + marker.y : "";
+                  if (!marker) return "";
+                  return marker.label + ": " + formatPrice(marker.y, prices[0]);
                 }
-                return "Цена: " + context.formattedValue;
+                return "Цена: " + formatPrice(context.parsed.y, prices[0]);
+              },
+              afterBody: function (items) {
+                const marker = items.some(function (item) {
+                  return item.datasetIndex === 1;
+                });
+                return marker ? "Нажмите, чтобы открыть сделку" : "";
               },
             },
           },

@@ -1,0 +1,7 @@
+<label>Таймфрейм
+  <select name="timeframe">
+    {% for value in ["1m", "5m", "15m", "1h", "4h"] %}
+    <option value="{{ value }}" {% if value == (selected_timeframe or "5m") %}selected{% endif %}>{{ value }}</option>
+    {% endfor %}
+  </select>
+</label>

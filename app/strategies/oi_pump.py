@@ -14,7 +14,12 @@ from app.strategies.base import (
 
 class OIPumpPriceMoveStrategy:
     key = "oi_pump_price_move"
-    name = "OI Pump + Price Move"
+    name = "Рост открытого интереса + движение цены"
+    description = (
+        "Открытый интерес растёт за 15 минут вместе с ценой за 5 минут: в рынок "
+        "заходят новые деньги, а не закрываются старые позиции. Вход по направлению "
+        "движения. Требует всплеска объёма и узкого спреда."
+    )
 
     def __init__(self, thresholds: ThresholdsConfig) -> None:
         self.thresholds = thresholds
@@ -73,7 +78,12 @@ class OIPumpPriceMoveStrategy:
 
 class OIMomentumScalperStrategy:
     key = "oi_momentum_scalper"
-    name = "OI Momentum Scalper"
+    name = "Скальпинг по импульсу ОИ"
+    description = (
+        "Быстрая версия предыдущей: цена +0.35% за 3 минуты при росте открытого "
+        "интереса на 1% за 10 минут и объёме выше среднего в 1.5 раза. "
+        "Спред шире 0.05% отменяет вход."
+    )
 
     def __init__(
         self,

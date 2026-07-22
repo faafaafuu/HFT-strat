@@ -87,7 +87,7 @@
       <dt>Биржа</dt><dd>{{ signal.exchange }}</dd>
       <dt>Время</dt><dd>{{ signal.timestamp|time }}</dd>
       <dt>Стратегия</dt><dd class="mono">{{ signal.strategy_key or "—" }}</dd>
-      <dt>Инстанс</dt><dd class="mono">{{ signal.strategy_instance_id or "—" }}</dd>
+      <dt>Пресет</dt><dd class="mono">{{ signal.strategy_instance_id or "—" }}</dd>
       <dt>Paper-профиль</dt><dd>{{ signal.paper_profile_key or "—" }}</dd>
       <dt>Стоп (предложен)</dt><dd>{{ signal.suggested_stop_pct|pct if signal.suggested_stop_pct else "—" }}</dd>
       <dt>Тейк (предложен)</dt><dd>{{ signal.suggested_take_pct|pct if signal.suggested_take_pct else "—" }}</dd>

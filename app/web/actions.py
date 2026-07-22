@@ -75,14 +75,14 @@ async def toggle_instance(request: Request, instance_id: str):
     settings = request.app.state.settings
     instance = settings.strategy_instances.instances.get(instance_id)
     if instance is None:
-        return _toast(request, f"Инстанс {instance_id} не найден", tone="error")
+        return _toast(request, f"Пресет {instance_id} не найден", tone="error")
     instance.enabled = not instance.enabled
     await _persist(
         request, f"strategy_instances.instances.{instance_id}.enabled", instance.enabled
     )
     request.app.state.strategy_lab_service.invalidate_cache()
     state = "включён" if instance.enabled else "выключен"
-    return await _render_after_toggle(request, "instances", f"Инстанс {instance_id} {state}")
+    return await _render_after_toggle(request, "instances", f"Пресет {instance_id} {state}")
 
 
 async def _render_after_toggle(request: Request, lab_section: str, message: str) -> HTMLResponse:
@@ -100,7 +100,7 @@ async def update_instance(request: Request, instance_id: str):
     settings = request.app.state.settings
     instance = settings.strategy_instances.instances.get(instance_id)
     if instance is None:
-        return _toast(request, f"Инстанс {instance_id} не найден", tone="error")
+        return _toast(request, f"Пресет {instance_id} не найден", tone="error")
     params = await _form_params(request)
     applied: list[str] = []
     for key, raw in params.items():
@@ -120,7 +120,7 @@ async def update_instance(request: Request, instance_id: str):
     if not applied:
         return _toast(request, "Нечего сохранять", tone="warn")
     return await _render_instances(
-        request, message=f"Инстанс {instance_id}: сохранено {len(applied)} параметров"
+        request, message=f"Пресет {instance_id}: сохранено {len(applied)} параметров"
     )
 
 
@@ -151,6 +151,38 @@ async def toggle_paper_trading(request: Request):
     return await _render_paper(request)
 
 
+@router.post("/hyperopt/apply", response_class=HTMLResponse)
+async def apply_hyperopt_row(request: Request):
+    """Copy one sweep row's parameters into a strategy instance."""
+    params = await _form_params(request)
+    instance_id = str(params.get("instance_id") or "")
+    instance = request.app.state.settings.strategy_instances.instances.get(instance_id)
+    if instance is None:
+        return _toast(request, f"Пресет {instance_id} не найден", tone="error")
+    sweep = await request.app.state.strategy_lab_service.hyperopt_results()
+    rows = sweep.get("rows") or []
+    try:
+        row = rows[int(str(params.get("row", 0)))]
+    except (ValueError, IndexError):
+        return _toast(request, "Строка перебора не найдена", tone="error")
+    if sweep.get("strategy_key") and sweep["strategy_key"] != instance.strategy_key:
+        return _toast(
+            request,
+            f"Перебор считался для {sweep['strategy_key']}, "
+            f"а пресет работает на {instance.strategy_key} — параметры не подойдут",
+            tone="error",
+        )
+    applied = dict(row.get("params") or {})
+    async with request.app.state.database.session() as session:
+        repo = RuntimeSettingsRepository(session)
+        for key, value in applied.items():
+            instance.config[key] = value
+            await repo.set(f"strategy_instances.instances.{instance_id}.config.{key}", value)
+    request.app.state.strategy_lab_service.invalidate_cache()
+    listing = ", ".join(f"{key}={value}" for key, value in applied.items())
+    return _toast(request, f"Пресет {instance_id} обновлён: {listing}")
+
+
 @router.post("/jobs/{job_type}", response_class=HTMLResponse)
 async def enqueue_job(request: Request, job_type: str):
     known = {
@@ -178,9 +210,13 @@ async def enqueue_job(request: Request, job_type: str):
     )
 
 
-def _job_payload(request: Request, job_type: str, params: dict[str, str]) -> dict[str, Any]:
+def _job_payload(request: Request, job_type: str, params: dict[str, Any]) -> dict[str, Any]:
     symbol = str(params.get("symbol", "BTCUSDT")).upper()
-    timeframe = str(params.get("timeframe", "1m"))
+    # Hyperopt accepts a comma-separated list and sweeps each timeframe separately.
+    checked = params.get("timeframes")
+    timeframe = ",".join(checked) if isinstance(checked, list) else str(
+        checked or params.get("timeframe") or "5m"
+    )
     days = int(str(params.get("days") or 30))
     if job_type == DOWNLOAD_HISTORY:
         return {"symbol": symbol, "timeframe": timeframe, "days": days}
@@ -197,7 +233,12 @@ def _job_payload(request: Request, job_type: str, params: dict[str, str]) -> dic
         if instance is not None:
             strategy_key = instance.strategy_key
             instance_params = dict(instance.config)
-    return {
+            instance_params.setdefault("min_score", instance.min_score)
+    # Without an explicit threshold the engine falls back to the live signals.min_score,
+    # which is tuned to keep Telegram quiet and silently empties every backtest.
+    if params.get("min_score"):
+        instance_params["min_score"] = int(str(params["min_score"]))
+    payload: dict[str, Any] = {
         "strategy_key": strategy_key,
         "symbol": symbol,
         "timeframe": timeframe,
@@ -205,6 +246,9 @@ def _job_payload(request: Request, job_type: str, params: dict[str, str]) -> dic
         "params": instance_params,
         "strategy_instance_id": instance_id or None,
     }
+    if job_type == RUN_HYPEROPT and params.get("limit"):
+        payload["limit"] = int(str(params["limit"]))
+    return payload
 
 
 async def _render_strategies(request: Request, message: str | None = None) -> HTMLResponse:
@@ -249,9 +293,15 @@ async def _render_paper(request: Request, message: str | None = None) -> HTMLRes
     )
 
 
-async def _form_params(request: Request) -> dict[str, str]:
+_MULTI_VALUE_FIELDS = {"timeframes"}
+
+
+async def _form_params(request: Request) -> dict[str, Any]:
     raw = (await request.body()).decode()
-    parsed = {key: values[0] for key, values in parse_qs(raw).items()}
+    parsed: dict[str, Any] = {
+        key: values if key in _MULTI_VALUE_FIELDS else values[0]
+        for key, values in parse_qs(raw).items()
+    }
     parsed.update(dict(request.query_params))
     return parsed
 

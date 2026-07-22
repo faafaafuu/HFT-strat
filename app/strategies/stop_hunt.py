@@ -14,7 +14,12 @@ from app.strategies.base import (
 
 class StopHuntSweepStrategy:
     key = "stop_hunt_sweep"
-    name = "Stop Hunt / Liquidity Sweep"
+    name = "Съём ликвидности (Stop Hunt)"
+    description = (
+        "Цена резко прокалывает недавний экстремум на всплеске объёма, собирает стопы "
+        "и возвращается обратно в диапазон. Вход — против прокола, в сторону возврата. "
+        "Падение открытого интереса отменяет сетап: значит позиции закрывают, а не набирают."
+    )
 
     def __init__(self, thresholds: ThresholdsConfig) -> None:
         self.thresholds = thresholds

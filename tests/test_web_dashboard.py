@@ -306,7 +306,7 @@ async def test_strategy_lab_htmx_request_returns_fragment_only(
 
     assert response.status_code == 200
     assert "<html" not in response.text
-    assert "Инстансы стратегий" in response.text
+    assert "Пресеты стратегий" in response.text
 
 
 @pytest.mark.asyncio
@@ -332,6 +332,46 @@ async def test_strategy_toggle_flips_state_and_persists(tmp_path: Path, monkeypa
     assert response.status_code == 200
     assert not settings.strategy_toggles.is_enabled("density_strategy")
     assert app.state.database.saved["strategy_toggles.disabled"] == ["density_strategy"]
+
+
+def test_backtest_payload_carries_explicit_min_score() -> None:
+    """The live signals.min_score is tuned for Telegram and would empty every backtest."""
+    from types import SimpleNamespace
+
+    from app.jobs.models import RUN_BACKTEST
+    from app.web.actions import _job_payload
+
+    settings = Settings()
+    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(settings=settings)))
+
+    payload = _job_payload(
+        request,
+        RUN_BACKTEST,
+        {"strategy_key": "channel_4_touch", "symbol": "btcusdt", "min_score": "6", "days": "90"},
+    )
+
+    assert payload["params"]["min_score"] == 6
+    assert payload["symbol"] == "BTCUSDT"
+    assert payload["timeframe"] == "5m"
+
+
+def test_hyperopt_payload_joins_checked_timeframes() -> None:
+    from types import SimpleNamespace
+
+    from app.jobs.models import RUN_HYPEROPT
+    from app.web.actions import _job_payload
+
+    settings = Settings()
+    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(settings=settings)))
+
+    payload = _job_payload(
+        request,
+        RUN_HYPEROPT,
+        {"strategy_key": "channel_4_touch", "timeframes": ["5m", "1h"], "limit": "40"},
+    )
+
+    assert payload["timeframe"] == "5m,1h"
+    assert payload["limit"] == 40
 
 
 @pytest.mark.asyncio

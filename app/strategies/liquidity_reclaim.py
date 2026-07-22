@@ -13,7 +13,12 @@ from app.strategies.base import (
 
 class MicroStopHuntReclaimStrategy:
     key = "micro_stop_hunt_reclaim"
-    name = "Micro Stop Hunt Reclaim"
+    name = "Микро-возврат после съёма стопов"
+    description = (
+        "То же, что съём ликвидности, но на коротком окне в 15 минут и с меньшим "
+        "проколом (от 0.15%). Требует возврата в диапазон за 3 минуты — быстрый "
+        "скальперский вариант для ликвидных пар."
+    )
 
     def __init__(
         self,
@@ -90,7 +95,12 @@ class MicroStopHuntReclaimStrategy:
 
 class FailedBreakoutFadeStrategy:
     key = "failed_breakout_fade"
-    name = "Failed Breakout Fade"
+    name = "Ложный пробой"
+    description = (
+        "Цена выходит за границу получасового диапазона минимум на 0.2%, но закрепиться "
+        "не может и в течение 5 минут возвращается внутрь. Вход — в сторону, "
+        "противоположную несостоявшемуся пробою."
+    )
 
     def __init__(
         self,

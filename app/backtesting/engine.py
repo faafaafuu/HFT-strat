@@ -249,6 +249,11 @@ class BacktestEngine:
         )
         accepts_config = _accepts_config(strategy)
         exit_rules = _exit_rules(params)
+        min_score = int(params.get("min_score", self.settings.signals.min_score))
+        # Counted so a zero-trade run can say which gate stopped it.
+        signals_found = 0
+        signals_below_score = 0
+        best_score = 0
         # Built once: rebuilding the OHLC window per candle dominates the run otherwise.
         bars = _candle_bars(candles) if window_size > SNAPSHOT_WINDOW_CANDLES else None
         for index in range(warmup, len(candles) - 1):
@@ -278,7 +283,10 @@ class BacktestEngine:
             )
             if signal is None:
                 continue
-            if signal.score < int(params.get("min_score", self.settings.signals.min_score)):
+            signals_found += 1
+            best_score = max(best_score, int(signal.score))
+            if signal.score < min_score:
+                signals_below_score += 1
                 continue
             future = candles[index + 1 : index + 1 + max_holding]
             trade = simulate_exit(
@@ -316,10 +324,53 @@ class BacktestEngine:
             "strategy_key": strategy_key,
             "timeframe": timeframe,
             "metrics": metrics,
+            "diagnostics": _run_diagnostics(
+                signals_found=signals_found,
+                below_score=signals_below_score,
+                best_score=best_score,
+                min_score=min_score,
+                trades=len(trades),
+            ),
             "trades": trades,
             "trade_rows": [_trade_row(strategy_key, trade, candles[0].exchange, candles[0].symbol) for trade in trades] if candles else [],
             "equity_curve": equity_curve,
         }
+
+
+def _run_diagnostics(
+    *,
+    signals_found: int,
+    below_score: int,
+    best_score: int,
+    min_score: int,
+    trades: int,
+) -> dict[str, Any]:
+    """Explains an empty run instead of just reporting zero trades."""
+    if trades:
+        explanation = ""
+    elif signals_found == 0:
+        explanation = (
+            "Стратегия не нашла ни одного сетапа на этих данных. "
+            "Попробуйте другой таймфрейм, больший период или менее строгие параметры."
+        )
+    elif below_score == signals_found:
+        explanation = (
+            f"Найдено сетапов: {signals_found}, но все отсеяны порогом скора "
+            f"({min_score}). Лучший скор среди них — {best_score}. "
+            f"Снизьте минимальный скор до {best_score} или ниже."
+        )
+    else:
+        explanation = (
+            f"Сетапы есть ({signals_found}), но сделки не открылись — "
+            "проверьте параметры выхода."
+        )
+    return {
+        "signals_found": signals_found,
+        "signals_below_score": below_score,
+        "best_score": best_score,
+        "min_score": min_score,
+        "explanation": explanation,
+    }
 
 
 async def load_density_events(session, symbol: str, since: datetime) -> list[DensityEventModel]:

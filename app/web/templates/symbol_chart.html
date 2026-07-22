@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}График по активу{% endblock %}
+{% block content %}
+<div class="top">
+  <h1>График по активу</h1>
+  <span class="muted">Все сделки одного инструмента на одной цене</span>
+</div>
+
+<form class="filters" method="get" action="/chart">
+  <label>Актив
+    <select name="symbol" onchange="this.form.submit()">
+      {% for item in symbols %}
+      <option value="{{ item.symbol }}" {% if item.symbol == selected %}selected{% endif %}>
+        {{ item.symbol }} — {{ item.trades }} сделок
+      </option>
+      {% else %}
+      <option value="">нет сделок</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Период
+    <select name="days" onchange="this.form.submit()">
+      {% for value in [7, 30, 90, 365] %}
+      <option value="{{ value }}" {% if value == days %}selected{% endif %}>{{ value }} дней</option>
+      {% endfor %}
+    </select>
+  </label>
+  <noscript><button class="button" type="submit">Показать</button></noscript>
+</form>
+
+{% if not selected %}
+<p class="muted">За выбранный период сделок не было.</p>
+{% else %}
+
+{% set stats = namespace(pnl=0.0, wins=0, closed=0) %}
+{% for trade in trades %}
+{% if trade.closed_at %}
+{% set stats.closed = stats.closed + 1 %}
+{% set stats.pnl = stats.pnl + (trade.pnl_usd or 0) %}
+{% if (trade.pnl_usd or 0) > 0 %}{% set stats.wins = stats.wins + 1 %}{% endif %}
+{% endif %}
+{% endfor %}
+
+<section class="grid">
+  <div class="card"><div class="metric">Сделок</div><div class="value">{{ trades|length }}</div></div>
+  <div class="card"><div class="metric">Закрыто</div><div class="value">{{ stats.closed }}</div></div>
+  <div class="card">
+    <div class="metric">Чистый PnL</div>
+    <div class="value {{ 'positive' if stats.pnl > 0 else 'negative' if stats.pnl < 0 else '' }}">{{ stats.pnl|money }}</div>
+  </div>
+  <div class="card">
+    <div class="metric">Винрейт</div>
+    <div class="value">{{ ((stats.wins / stats.closed * 100) if stats.closed else 0)|pct }}</div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>{{ selected }}</h2>
+  <p class="muted">
+    Источник:
+    {% if chart.source == "candles" %}свечи {{ chart.timeframe }}{% else %}снимки рынка{% endif %},
+    точек: {{ chart.series|length }}. Треугольник вверх — вход, вниз — выход;
+    зелёный выход по тейку, красный по стопу. Клик по маркеру открывает сделку.
+  </p>
+  {% if chart.series %}
+  <div class="chart-wrap tall"><canvas id="trade-chart"></canvas></div>
+  <div class="legend">
+    <span class="legend-item"><i class="swatch entry"></i>Вход</span>
+    <span class="legend-item"><i class="swatch take"></i>Выход по тейку</span>
+    <span class="legend-item"><i class="swatch stop"></i>Выход по стопу</span>
+    <span class="legend-item"><i class="swatch exit"></i>Прочий выход</span>
+  </div>
+  <script id="chart-data" type="application/json">{{ chart_json|tojson }}</script>
+  {% else %}
+  <p class="muted">Ценовых данных по {{ selected }} за этот период нет.</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Сделки на графике</h2>
+  {% include "trade_table.html" %}
+</section>
+{% endif %}
+{% endblock %}

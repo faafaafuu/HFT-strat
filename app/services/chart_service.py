@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.data.database import Database
 from app.data.models import (
@@ -65,6 +65,85 @@ class ChartService:
             "levels": [item for item in levels if item is not None],
             "markers": [item for item in markers if item is not None],
         }
+
+    async def symbol_chart(self, symbol: str, days: int = 30, limit: int = 200) -> dict[str, Any]:
+        """Every trade on one instrument, drawn on a single price series."""
+        end = datetime.now(UTC).replace(tzinfo=None)
+        start = end - timedelta(days=days)
+        async with self.database.session() as session:
+            trades = list(
+                (
+                    await session.scalars(
+                        select(PaperTradeModel)
+                        .where(
+                            PaperTradeModel.symbol == symbol,
+                            PaperTradeModel.opened_at >= start,
+                        )
+                        .order_by(PaperTradeModel.opened_at)
+                        .limit(limit)
+                    )
+                ).all()
+            )
+            if trades:
+                first = _naive(trades[0].opened_at) or start
+                last = max(
+                    (_naive(row.closed_at) or _naive(row.opened_at) or start) for row in trades
+                )
+                start = min(start, first - timedelta(hours=2))
+                end = max(end, last + timedelta(hours=2))
+            series, source, timeframe = await self._price_series(session, symbol, start, end)
+
+        markers = []
+        for trade in trades:
+            markers.append(
+                _marker(
+                    "entry",
+                    f"#{trade.id} вход {_ru_direction(trade.direction)}",
+                    _naive(trade.opened_at),
+                    trade.entry_price,
+                    trade_id=trade.id,
+                )
+            )
+            if trade.closed_at is not None and trade.exit_price:
+                kind = "take" if trade.status == "CLOSED_TP" else "stop"
+                markers.append(
+                    _marker(
+                        kind if trade.status in ("CLOSED_TP", "CLOSED_SL") else "exit",
+                        f"#{trade.id} {_exit_label(trade.status).lower()}",
+                        _naive(trade.closed_at),
+                        trade.exit_price,
+                        trade_id=trade.id,
+                    )
+                )
+        return {
+            "symbol": symbol,
+            "series": series,
+            "source": source,
+            "timeframe": timeframe,
+            "levels": [],
+            "markers": [item for item in markers if item is not None],
+            "trades": [_trade_payload(trade) for trade in trades],
+        }
+
+    async def traded_symbols(self, days: int = 30) -> list[dict[str, Any]]:
+        since = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=days)
+        async with self.database.session() as session:
+            rows = (
+                await session.execute(
+                    select(
+                        PaperTradeModel.symbol,
+                        func.count(PaperTradeModel.id),
+                        func.sum(PaperTradeModel.pnl_usd),
+                    )
+                    .where(PaperTradeModel.opened_at >= since)
+                    .group_by(PaperTradeModel.symbol)
+                    .order_by(func.count(PaperTradeModel.id).desc())
+                )
+            ).all()
+        return [
+            {"symbol": symbol, "trades": int(count or 0), "net_pnl": float(pnl or 0.0)}
+            for symbol, count, pnl in rows
+        ]
 
     async def signal_chart(self, signal_id: int) -> dict[str, Any] | None:
         async with self.database.session() as session:
@@ -211,16 +290,27 @@ def _level(kind: str, label: str, value: float | None) -> dict[str, Any] | None:
 
 
 def _marker(
-    kind: str, label: str, moment: datetime | None, value: float | None
+    kind: str,
+    label: str,
+    moment: datetime | None,
+    value: float | None,
+    trade_id: int | None = None,
 ) -> dict[str, Any] | None:
     if not value:
         return None
-    return {
+    marker = {
         "kind": kind,
         "label": label,
         "t": _iso(moment) if moment else None,
         "value": float(value),
     }
+    if trade_id is not None:
+        marker["trade_id"] = trade_id
+    return marker
+
+
+def _ru_direction(direction: str) -> str:
+    return {"LONG": "лонг", "SHORT": "шорт"}.get(direction, direction)
 
 
 def _exit_label(status: str) -> str:

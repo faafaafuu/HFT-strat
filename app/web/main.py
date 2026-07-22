@@ -33,6 +33,7 @@ from app.web.auth import (
     install_session_middleware,
     redirect_auth_exception_handler,
 )
+from app.web.labels import format_value, label_for
 from app.web.routes import router as page_router
 
 
@@ -113,6 +114,8 @@ def create_app(
     templates.env.filters["ago"] = _ago
     templates.env.filters["outcome"] = _outcome
     templates.env.filters["fromjson"] = _fromjson
+    templates.env.filters["param_label"] = label_for
+    templates.env.filters["param_value"] = lambda value, key: format_value(key, value)
     app.state.templates = templates
     app.mount("/static", StaticFiles(directory=str(base_dir / "static")), name="static")
 

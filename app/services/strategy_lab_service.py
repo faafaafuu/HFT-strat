@@ -110,13 +110,21 @@ class StrategyLabService:
         if name == "instances":
             return {"instances": await self.instances(), "strategies": await self.strategies()}
         if name == "backtests":
-            return {"backtests": await self.backtest_runs(), "jobs": await self.jobs()}
+            return {
+                "backtests": await self.backtest_runs(),
+                "jobs": await self.jobs(),
+                "strategies": await self.strategies(),
+                "instances": await self.instances(),
+                "coverage": await self.data_coverage(),
+            }
         if name == "hyperopt":
             return {
                 "instances": await self.instances(),
+                "strategies": await self.strategies(),
                 "jobs": await self.jobs(),
                 "ml_status": await self.ml_status(),
                 "coverage": await self.data_coverage(),
+                "hyperopt": await self.hyperopt_results(),
             }
         if name == "compare":
             return {"compare": await self.compare(), "diagnostics": await self.diagnostics()}

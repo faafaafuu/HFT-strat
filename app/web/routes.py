@@ -18,7 +18,7 @@ router = APIRouter()
 LAB_SECTIONS = [
     ("overview", "Обзор"),
     ("strategies", "Стратегии"),
-    ("instances", "Инстансы"),
+    ("instances", "Пресеты"),
     ("backtests", "Бэктесты"),
     ("hyperopt", "Гипероптимизация"),
     ("compare", "Сравнение"),
@@ -193,6 +193,32 @@ async def trades(
     context["stats"] = _trade_stats(context["closed_trades"])
     template = "partials/trade_lists.html" if _is_htmx(request) else "trades.html"
     return request.app.state.templates.TemplateResponse(request, template, context)
+
+
+@router.get("/chart", response_class=HTMLResponse)
+async def symbol_chart(
+    request: Request,
+    symbol: str = "",
+    days: int = 30,
+    _: str = Depends(require_web_auth),
+):
+    service = request.app.state.chart_service
+    symbols = await service.traded_symbols(days=days)
+    selected = symbol or (symbols[0]["symbol"] if symbols else "")
+    chart = await service.symbol_chart(selected, days=days) if selected else None
+    return request.app.state.templates.TemplateResponse(
+        request,
+        "symbol_chart.html",
+        {
+            "page": "chart",
+            "symbols": symbols,
+            "selected": selected,
+            "days": days,
+            "chart": chart,
+            "chart_json": _chart_payload(chart),
+            "trades": (chart or {}).get("trades", []),
+        },
+    )
 
 
 @router.get("/trades/{trade_id}", response_class=HTMLResponse)
