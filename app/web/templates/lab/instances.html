@@ -1,0 +1,79 @@
+{% if message %}{% include "partials/toast.html" %}{% endif %}
+<p class="hint">
+  Инстанс — это стратегия с собственными параметрами и порогом скора. Правки сохраняются в БД
+  и подхватываются ботом без перезапуска.
+</p>
+
+<section class="card">
+  <h2>Инстансы стратегий</h2>
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Стратегия</th><th>Мин. скор</th><th>Paper-профиль</th><th>Символы</th><th>Состояние</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for item in lab.instances %}
+      <tr>
+        <td><strong>{{ item.id }}</strong></td>
+        <td class="mono muted">{{ item.strategy_key }}</td>
+        <td class="num">{{ item.min_score }}</td>
+        <td>{{ item.paper_profile }}</td>
+        <td class="muted">{{ item.symbols if item.symbols != "auto" else "авто" }}</td>
+        <td><span class="pill {{ 'on' if item.enabled else 'off' }}">{{ "Включён" if item.enabled else "Выключен" }}</span></td>
+        <td>
+          <button class="button {{ 'danger' if item.enabled else 'primary' }}"
+                  hx-post="/actions/instances/{{ item.id }}/toggle"
+                  hx-target="#lab-body"
+                  hx-swap="innerHTML">
+            {{ "Выключить" if item.enabled else "Включить" }}
+          </button>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="muted">Инстансы не настроены.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="grid-2">
+  {% for item in lab.instances %}
+  <div class="card">
+    <h2>Параметры: {{ item.id }}</h2>
+    <form class="stack compact-form"
+          hx-post="/actions/instances/{{ item.id }}/settings"
+          hx-target="#lab-body"
+          hx-swap="innerHTML">
+      <label>Минимальный скор
+        <input name="min_score" type="number" min="1" max="10" value="{{ item.min_score }}">
+      </label>
+      <label>Paper-профиль
+        <input name="paper_profile" value="{{ item.paper_profile }}">
+      </label>
+      <label>Мин. объём плотности, $
+        <input name="config.min_density_usd" value="{{ item.config.min_density_usd or '' }}">
+      </label>
+      <label>Макс. расстояние до цены, %
+        <input name="config.max_distance_pct" value="{{ item.config.max_distance_pct or '' }}">
+      </label>
+      <label>Мин. время жизни, сек
+        <input name="config.min_lifetime_sec" value="{{ item.config.min_lifetime_sec or '' }}">
+      </label>
+      <label>Требовать поглощение
+        <select name="config.require_absorption">
+          <option value="true" {% if item.config.require_absorption %}selected{% endif %}>да</option>
+          <option value="false" {% if not item.config.require_absorption %}selected{% endif %}>нет</option>
+        </select>
+      </label>
+      <label>Требовать совпадение с трендом
+        <select name="config.require_trend_alignment">
+          <option value="true" {% if item.config.require_trend_alignment %}selected{% endif %}>да</option>
+          <option value="false" {% if not item.config.require_trend_alignment %}selected{% endif %}>нет</option>
+        </select>
+      </label>
+      <button class="button primary" type="submit">Сохранить</button>
+    </form>
+  </div>
+  {% else %}
+  <p class="muted">Нет инстансов для редактирования.</p>
+  {% endfor %}
+</section>

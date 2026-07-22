@@ -1,38 +1,67 @@
 {% extends "base.html" %}
+{% block title %}Аналитика{% endblock %}
 {% block content %}
 <div class="top">
-  <h1>Analytics</h1>
-  <span class="muted">Cached 10 seconds</span>
+  <h1>Аналитика</h1>
+  <span class="muted">Где бот зарабатывает, а где теряет</span>
 </div>
 
-<section class="grid">
-  <div class="card"><div class="metric">Signals</div><div class="value">{{ summary.signals.total_signals }}</div></div>
-  <div class="card"><div class="metric">Signal WR 30m</div><div class="value">{{ summary.signals.winrate_tp1_30m|pct }}</div></div>
-  <div class="card"><div class="metric">Paper Net PnL</div><div class="value">{{ summary.paper.net_pnl|money }}</div></div>
-  <div class="card"><div class="metric">Paper PF</div><div class="value">{{ summary.paper.profit_factor|num }}</div></div>
-</section>
+<p class="hint">
+  Разрезы ниже считаются по сигналам, у которых уже измерен исход через 30 минут.
+  <b>Винрейт</b> — доля сигналов, дошедших до +1% в свою сторону.
+  Нажмите на строку, чтобы отфильтровать сигналы по этому значению и посмотреть,
+  из чего сложилась цифра.
+</p>
 
 <section class="grid">
+  <div class="card"><div class="metric">Всего сигналов</div><div class="value">{{ summary.signals.total_signals }}</div></div>
+  <div class="card"><div class="metric">Винрейт 30 мин</div><div class="value">{{ summary.signals.winrate_tp1_30m|pct }}</div></div>
   <div class="card">
-    <h2>By Symbol</h2>
+    <div class="metric">Paper: чистый PnL</div>
+    <div class="value {{ 'positive' if summary.paper.net_pnl > 0 else 'negative' if summary.paper.net_pnl < 0 else '' }}">{{ summary.paper.net_pnl|money }}</div>
+  </div>
+  <div class="card"><div class="metric">Paper: профит-фактор</div><div class="value">{{ summary.paper.profit_factor|num }}</div></div>
+</section>
+
+<section class="grid-2">
+  <div class="card">
+    <h2>По символам</h2>
+    <p class="muted">Инструменты, где паттерны отрабатывают чаще всего.</p>
     {% set rows = summary.by_symbol %}
+    {% set link_param = "symbol" %}
     {% include "analytics_table.html" %}
   </div>
   <div class="card">
-    <h2>By Pattern</h2>
+    <h2>По паттернам</h2>
+    <p class="muted">Если у паттерна MAE стабильно выше MFE — он приносит убытки.</p>
     {% set rows = summary.by_pattern %}
+    {% set link_param = "" %}
     {% include "analytics_table.html" %}
   </div>
+</section>
+
+<section class="grid-2">
   <div class="card">
-    <h2>By Score</h2>
+    <h2>По скору</h2>
+    <p class="muted">Проверка главного допущения: выше скор — выше винрейт. Если это не так, пороги подобраны неверно.</p>
     {% set rows = summary.by_score %}
+    {% set link_param = "min_score" %}
     {% include "analytics_table.html" %}
   </div>
   <div class="card">
-    <h2>By Hour</h2>
+    <h2>По часам (UTC)</h2>
+    <p class="muted">Часы с устойчиво отрицательным результатом можно исключить из торговли.</p>
     {% set rows = summary.by_hour %}
+    {% set link_param = "" %}
     {% include "analytics_table.html" %}
   </div>
+</section>
+
+<section class="card">
+  <h2>Разбор убытков по paper-сделкам</h2>
+  <p class="muted">
+    Полная детализация: какие стратегии, инстансы, символы и часы съедают депозит.
+  </p>
+  <a class="button primary" href="/analytics/why-losing">Открыть разбор</a>
 </section>
 {% endblock %}
-

@@ -1,0 +1,72 @@
+{% if message %}{% include "partials/toast.html" %}{% endif %}
+<p class="hint">
+  Стратегия работает, если её мастер-переключатель включён <em>и</em> она входит хотя бы в один
+  активный профиль или инстанс. Изменения применяются работающим ботом в течение 15 секунд.
+</p>
+
+<section class="card">
+  <h2>Стратегии</h2>
+  <table>
+    <thead>
+      <tr><th>Стратегия</th><th>Состояние</th><th>Профили</th><th>Инстансы</th><th>Описание</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for item in lab.strategies %}
+      <tr>
+        <td><strong>{{ item.name }}</strong><br><span class="muted mono">{{ item.key }}</span></td>
+        <td><span class="pill {{ 'on' if item.enabled else 'off' }}">{{ "Работает" if item.enabled else "Выключена" }}</span></td>
+        <td>
+          {% if item.profiles %}{% for profile in item.profiles %}<span class="chip">{{ profile }}</span>{% endfor %}
+          {% else %}<span class="muted">—</span>{% endif %}
+        </td>
+        <td>
+          {% if item.instances %}{% for instance in item.instances %}<span class="chip">{{ instance }}</span>{% endfor %}
+          {% else %}<span class="muted">—</span>{% endif %}
+        </td>
+        <td class="muted">{{ item.description or "—" }}</td>
+        <td>
+          <button class="button {{ 'danger' if item.enabled else 'primary' }}"
+                  hx-post="/actions/strategies/{{ item.key }}/toggle"
+                  hx-target="#lab-body"
+                  hx-swap="innerHTML">
+            {{ "Выключить" if item.enabled else "Включить" }}
+          </button>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">Стратегии не зарегистрированы.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <h2>Профили стратегий</h2>
+  <p class="muted">Профиль объединяет несколько стратегий и направляет их сделки в один paper-профиль.</p>
+  <table>
+    <thead>
+      <tr><th>Профиль</th><th>Состояние</th><th>Стратегии</th><th>Мин. скор</th><th>Paper-профиль</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for profile in lab.profiles %}
+      <tr>
+        <td><strong>{{ profile.key }}</strong></td>
+        <td><span class="pill {{ 'on' if profile.enabled else 'off' }}">{{ "Включён" if profile.enabled else "Выключен" }}</span></td>
+        <td>{% for key in profile.strategies %}<span class="chip">{{ key }}</span>{% endfor %}</td>
+        <td class="num">{{ profile.min_score }}</td>
+        <td>{{ profile.paper_profile }}</td>
+        <td>
+          <button class="button {{ 'danger' if profile.enabled else 'primary' }}"
+                  hx-post="/actions/strategy-profiles/{{ profile.key }}/toggle"
+                  hx-target="#lab-body"
+                  hx-swap="innerHTML">
+            {{ "Выключить" if profile.enabled else "Включить" }}
+          </button>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">Профили не настроены.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>

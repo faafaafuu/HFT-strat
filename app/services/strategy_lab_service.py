@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from collections import defaultdict
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import func, select
@@ -15,7 +16,11 @@ from app.data.repositories import (
     JobRepository,
     MLModelRepository,
 )
+from app.services.cache import AsyncTTLCache
 from app.strategies.registry import default_registry
+
+# density_events grows by ~20k rows/day, so unbounded aggregates scan the whole table.
+DENSITY_SUMMARY_WINDOW_DAYS = 7
 
 
 class StrategyLabService:
@@ -23,6 +28,7 @@ class StrategyLabService:
         self.database = database
         self.settings = settings
         self.registry = default_registry(settings)
+        self._cache: AsyncTTLCache[Any] = AsyncTTLCache(ttl_seconds=30.0)
 
     async def overview(self) -> dict[str, Any]:
         return {
@@ -37,6 +43,55 @@ class StrategyLabService:
             "compare": await self.compare(),
             "ml_status": await self.ml_status(),
         }
+
+    def invalidate_cache(self) -> None:
+        self._cache.invalidate()
+
+    async def section(self, name: str) -> dict[str, Any]:
+        """Load only the data a single Strategy Lab tab renders."""
+        if name == "strategies":
+            return {
+                "strategies": await self.strategies(),
+                "profiles": await self.strategy_profiles(),
+            }
+        if name == "instances":
+            return {"instances": await self.instances(), "strategies": await self.strategies()}
+        if name == "backtests":
+            return {"backtests": await self.backtest_runs(), "jobs": await self.jobs()}
+        if name == "hyperopt":
+            return {
+                "instances": await self.instances(),
+                "jobs": await self.jobs(),
+                "ml_status": await self.ml_status(),
+                "coverage": await self.data_coverage(),
+            }
+        if name == "compare":
+            return {"compare": await self.compare(), "diagnostics": await self.diagnostics()}
+        if name == "density":
+            return {
+                "density_events": await self.density_events(limit=60),
+                "density_summary": await self.density_summary(),
+            }
+        return {
+            "strategies": await self.strategies(),
+            "instances": await self.instances(),
+            "jobs": await self.jobs(),
+            "compare": await self.compare(),
+            "coverage": await self.data_coverage(),
+        }
+
+    async def strategy_profiles(self) -> list[dict[str, Any]]:
+        return [
+            {
+                "key": profile_key,
+                "enabled": profile.enabled,
+                "strategies": profile.strategies,
+                "min_score": profile.min_score,
+                "symbols": profile.symbols,
+                "paper_profile": profile.paper_profile,
+            }
+            for profile_key, profile in sorted(self.settings.strategy_profiles.profiles.items())
+        ]
 
     async def strategies(self) -> list[dict[str, Any]]:
         return [
@@ -86,6 +141,12 @@ class StrategyLabService:
         ]
 
     async def density_summary(self) -> list[dict[str, Any]]:
+        return await self._cache.get_or_set("density_summary", self._density_summary)
+
+    async def _density_summary(self) -> list[dict[str, Any]]:
+        since = datetime.now(UTC).replace(tzinfo=None) - timedelta(
+            days=DENSITY_SUMMARY_WINDOW_DAYS
+        )
         async with self.database.session() as session:
             rows = (
                 await session.execute(
@@ -97,6 +158,7 @@ class StrategyLabService:
                         func.avg(DensityEventModel.absorption_score),
                         func.avg(DensityEventModel.spoof_score),
                     )
+                    .where(DensityEventModel.timestamp >= since)
                     .group_by(DensityEventModel.symbol, DensityEventModel.event_type)
                     .order_by(func.count(DensityEventModel.id).desc())
                     .limit(30)
@@ -160,6 +222,9 @@ class StrategyLabService:
         ]
 
     async def compare(self) -> dict[str, Any]:
+        return await self._cache.get_or_set("compare", self._compare)
+
+    async def _compare(self) -> dict[str, Any]:
         async with self.database.session() as session:
             profiles = list((await session.scalars(select(PaperProfileModel))).all())
             trades = list(
@@ -228,6 +293,9 @@ class StrategyLabService:
         }
 
     async def diagnostics(self) -> dict[str, list[dict[str, Any]]]:
+        return await self._cache.get_or_set("diagnostics", self._diagnostics)
+
+    async def _diagnostics(self) -> dict[str, list[dict[str, Any]]]:
         async with self.database.session() as session:
             trades = list(
                 (

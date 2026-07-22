@@ -1,0 +1,48 @@
+<section class="grid">
+  <div class="card"><div class="metric">Сигналов в выборке</div><div class="value">{{ stats.count }}<span class="value-suffix">/{{ total }}</span></div></div>
+  <div class="card"><div class="metric">Лонг / Шорт</div><div class="value-sm">{{ stats.long }} / {{ stats.short }}</div></div>
+  <div class="card"><div class="metric">Средний скор</div><div class="value">{{ stats.avg_score|num }}</div></div>
+  <div class="card">
+    <div class="metric">Дошли до +1% за 30 мин</div>
+    <div class="value">{{ stats.hit_rate|pct }}</div>
+    <div class="muted small">измерено сигналов: {{ stats.measured }}</div>
+  </div>
+</section>
+
+<section class="card">
+  <table class="clickable">
+    <thead>
+      <tr>
+        <th>ID</th><th>Время</th><th>Символ</th><th>Напр.</th><th>Паттерн</th>
+        <th>Стратегия</th><th>Скор</th><th>Вход</th><th>Через 30 мин</th><th>Статус</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for signal in signals %}
+      {% set result = signal|outcome(30) %}
+      <tr onclick="window.location='/signals/{{ signal.id }}'" title="Разбор сигнала">
+        <td class="num">{{ signal.id }}</td>
+        <td class="time">{{ signal.timestamp|time }}</td>
+        <td><b>{{ signal.symbol }}</b></td>
+        <td><span class="{{ 'long' if signal.direction == 'LONG' else 'short' }}">{{ signal.direction|ru_direction }}</span></td>
+        <td class="muted">{{ signal.pattern }}</td>
+        <td class="muted mono small">{{ signal.strategy_instance_id or signal.strategy_key or "—" }}</td>
+        <td class="num"><span class="score score-{{ signal.score }}">{{ signal.score }}/10</span></td>
+        <td class="num">{{ signal.entry_price|num }}</td>
+        <td class="num">
+          {% if result %}
+          <span class="positive">+{{ result.mfe_pct|round(2) }}%</span>
+          <span class="muted">/</span>
+          <span class="negative">−{{ result.mae_pct|abs|round(2) }}%</span>
+          {% else %}
+          <span class="muted">ещё измеряется</span>
+          {% endif %}
+        </td>
+        <td><span class="pill {{ signal.status }}">{{ signal.status|ru_status }}</span></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="10" class="muted">Под фильтр ничего не подошло.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>

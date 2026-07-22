@@ -65,7 +65,8 @@ class StrategyRegistry:
                 key=key,
                 name=strategy.name,
                 description=getattr(strategy, "description", ""),
-                enabled=bool(profile_map.get(key) or instance_map.get(key)),
+                enabled=settings.strategy_toggles.is_enabled(key)
+                and bool(profile_map.get(key) or instance_map.get(key)),
                 profiles=profile_map.get(key, []),
                 instances=instance_map.get(key, []),
             )
@@ -83,6 +84,8 @@ class StrategyRegistry:
             if not instance.enabled:
                 continue
             if instance.symbols != "auto" and market_state.symbol not in instance.symbols:
+                continue
+            if not settings.strategy_toggles.is_enabled(instance.strategy_key):
                 continue
             strategy = self._strategies.get(instance.strategy_key)
             if strategy is None:
@@ -111,6 +114,8 @@ class StrategyRegistry:
             if profile.symbols != "auto" and market_state.symbol not in profile.symbols:
                 continue
             for strategy_key in profile.strategies:
+                if not settings.strategy_toggles.is_enabled(strategy_key):
+                    continue
                 dedupe_key = (strategy_key, profile.paper_profile)
                 if dedupe_key in used:
                     continue

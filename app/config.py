@@ -134,6 +134,23 @@ class StrategyInstanceConfig(BaseModel):
     config: dict[str, object] = Field(default_factory=dict)
 
 
+class StrategyTogglesConfig(BaseModel):
+    """Master on/off switch per strategy key, independent of profiles and instances."""
+
+    disabled: list[str] = Field(default_factory=list)
+
+    def is_enabled(self, strategy_key: str) -> bool:
+        return strategy_key not in self.disabled
+
+    def set_enabled(self, strategy_key: str, enabled: bool) -> None:
+        disabled = set(self.disabled)
+        if enabled:
+            disabled.discard(strategy_key)
+        else:
+            disabled.add(strategy_key)
+        self.disabled = sorted(disabled)
+
+
 class StrategyProfilesConfig(BaseModel):
     profiles: dict[str, StrategyProfileConfig] = Field(
         default_factory=lambda: {
@@ -459,6 +476,7 @@ class Settings(BaseModel):
     outcomes: OutcomesConfig = Field(default_factory=OutcomesConfig)
     strategy_profiles: StrategyProfilesConfig = Field(default_factory=StrategyProfilesConfig)
     strategy_instances: StrategyInstancesConfig = Field(default_factory=StrategyInstancesConfig)
+    strategy_toggles: StrategyTogglesConfig = Field(default_factory=StrategyTogglesConfig)
     density_strategy: DensityStrategyConfig = Field(default_factory=DensityStrategyConfig)
     backtest: BacktestConfig = Field(default_factory=BacktestConfig)
     web: WebConfig = Field(default_factory=WebConfig)

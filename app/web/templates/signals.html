@@ -1,29 +1,60 @@
 {% extends "base.html" %}
+{% block title %}Сигналы{% endblock %}
 {% block content %}
 <div class="top">
-  <h1>Signals</h1>
-  <span class="muted">{{ signals|length }} latest</span>
+  <h1>Сигналы</h1>
+  <span class="muted">Что бот нашёл на рынке и чем это закончилось</span>
 </div>
 
-<table>
-  <tr>
-    <th>ID</th><th>Time</th><th>Exchange</th><th>Symbol</th><th>Direction</th>
-    <th>Pattern</th><th>Score</th><th>Entry</th><th>Status</th>
-  </tr>
-  {% for signal in signals %}
-  <tr>
-    <td class="num">{{ signal.id }}</td>
-    <td class="time">{{ signal.timestamp|time }}</td>
-    <td>{{ signal.exchange }}</td>
-    <td><b>{{ signal.symbol }}</b></td>
-    <td><span class="{{ 'long' if signal.direction == 'LONG' else 'short' }}">{{ signal.direction }}</span></td>
-    <td class="muted">{{ signal.pattern }}</td>
-    <td class="num">{{ signal.score }}/10</td>
-    <td class="num">{{ signal.entry_price|num }}</td>
-    <td><span class="pill">{{ signal.status }}</span></td>
-  </tr>
-  {% else %}
-  <tr><td colspan="9" class="muted">No signals yet.</td></tr>
-  {% endfor %}
-</table>
+<p class="hint">
+  Каждая строка — момент, когда стратегия сочла обстановку подходящей для входа.
+  Колонка «Через 30 мин» показывает, что цена сделала после сигнала:
+  <b>MFE</b> — максимум в сторону сигнала (сколько можно было забрать),
+  <b>MAE</b> — максимум против (насколько глубоко просаживало).
+  Если MAE регулярно больше MFE — стратегия входит слишком рано, и её стоит выключить
+  в <a class="link" href="/strategy-lab/strategies">Лаборатории</a>.
+</p>
+
+<form class="filters"
+      hx-get="/signals"
+      hx-target="#signal-table"
+      hx-swap="innerHTML"
+      hx-trigger="change, submit"
+      hx-push-url="true">
+  <label>Символ
+    <select name="symbol">
+      <option value="">все</option>
+      {% for value in facets.symbols %}
+      <option value="{{ value }}" {% if filters.symbol == value %}selected{% endif %}>{{ value }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Направление
+    <select name="direction">
+      <option value="">любое</option>
+      <option value="LONG" {% if filters.direction == "LONG" %}selected{% endif %}>Лонг</option>
+      <option value="SHORT" {% if filters.direction == "SHORT" %}selected{% endif %}>Шорт</option>
+    </select>
+  </label>
+  <label>Стратегия
+    <select name="strategy">
+      <option value="">все</option>
+      {% for value in facets.strategies %}
+      <option value="{{ value }}" {% if filters.strategy == value %}selected{% endif %}>{{ value }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Скор от
+    <select name="min_score">
+      {% for value in [0, 6, 7, 8, 9] %}
+      <option value="{{ value }}" {% if filters.min_score == value %}selected{% endif %}>{{ value if value else "любой" }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <a class="button" href="/signals">Сбросить</a>
+</form>
+
+<div id="signal-table">
+  {% include "partials/signal_table.html" %}
+</div>
 {% endblock %}

@@ -15,6 +15,21 @@ from app.web.auth import (
 
 router = APIRouter()
 
+LAB_SECTIONS = [
+    ("overview", "Обзор"),
+    ("strategies", "Стратегии"),
+    ("instances", "Инстансы"),
+    ("backtests", "Бэктесты"),
+    ("hyperopt", "Гипероптимизация"),
+    ("compare", "Сравнение"),
+    ("density", "Плотности"),
+]
+LAB_SECTION_KEYS = {key for key, _ in LAB_SECTIONS}
+
+
+def _is_htmx(request: Request) -> bool:
+    return request.headers.get("HX-Request") == "true"
+
 
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request, error: str | None = None, next: str = "/"):
@@ -60,34 +75,152 @@ async def dashboard(request: Request, _: str = Depends(require_web_auth)):
 
 
 @router.get("/signals", response_class=HTMLResponse)
-async def signals(request: Request, _: str = Depends(require_web_auth)):
-    rows = await request.app.state.signal_service.recent(limit=50)
+async def signals(
+    request: Request,
+    symbol: str = "",
+    direction: str = "",
+    strategy: str = "",
+    min_score: int = 0,
+    limit: int = 100,
+    _: str = Depends(require_web_auth),
+):
+    service = request.app.state.signal_service
+    rows = await service.recent_with_outcomes(limit=min(limit, 500))
+    filtered = [
+        row
+        for row in rows
+        if (not symbol or row.symbol == symbol)
+        and (not direction or row.direction == direction)
+        and (not strategy or (row.strategy_key or "") == strategy)
+        and (row.score or 0) >= min_score
+    ]
+    facets = {
+        "symbols": sorted({row.symbol for row in rows if row.symbol}),
+        "strategies": sorted({row.strategy_key for row in rows if row.strategy_key}),
+    }
+    context = {
+        "page": "signals",
+        "signals": filtered,
+        "total": len(rows),
+        "facets": facets,
+        "filters": {
+            "symbol": symbol,
+            "direction": direction,
+            "strategy": strategy,
+            "min_score": min_score,
+        },
+        "stats": _signal_stats(filtered),
+    }
+    template = "partials/signal_table.html" if _is_htmx(request) else "signals.html"
+    return request.app.state.templates.TemplateResponse(request, template, context)
+
+
+@router.get("/signals/{signal_id}", response_class=HTMLResponse)
+async def signal_detail(request: Request, signal_id: int, _: str = Depends(require_web_auth)):
+    signal = await request.app.state.signal_service.detail(signal_id)
+    chart = await request.app.state.chart_service.signal_chart(signal_id)
     return request.app.state.templates.TemplateResponse(
-        request, "signals.html", {"page": "signals", "signals": rows}
+        request,
+        "signal_detail.html",
+        {
+            "page": "signals",
+            "signal": signal,
+            "chart": chart,
+            "chart_json": _chart_payload(chart),
+        },
     )
 
 
 @router.get("/paper", response_class=HTMLResponse)
 async def paper(request: Request, _: str = Depends(require_web_auth)):
     profiles = await request.app.state.paper_service.profiles()
+    lab = request.app.state.strategy_lab_service
     return request.app.state.templates.TemplateResponse(
-        request, "paper.html", {"page": "paper", "profiles": profiles}
+        request,
+        "paper.html",
+        {
+            "page": "paper",
+            "profiles": profiles,
+            "settings": request.app.state.settings,
+            "instances": await lab.instances(),
+            "strategy_profiles": await lab.strategy_profiles(),
+            "strategies": await lab.strategies(),
+            "open_trades": await request.app.state.paper_service.trades(status="OPEN", limit=50),
+        },
     )
 
 
 @router.get("/trades", response_class=HTMLResponse)
-async def trades(request: Request, _: str = Depends(require_web_auth)):
-    open_trades = await request.app.state.paper_service.trades(status="OPEN", limit=100)
-    closed_trades = await request.app.state.paper_service.trades(status="CLOSED", limit=100)
+async def trades(
+    request: Request,
+    symbol: str = "",
+    profile: str = "",
+    strategy: str = "",
+    status: str = "",
+    _: str = Depends(require_web_auth),
+):
+    service = request.app.state.paper_service
+    open_trades = await service.trades(status="OPEN", limit=200)
+    closed_trades = await service.trades(status="CLOSED", limit=300)
+
+    def keep(row):
+        return (
+            (not symbol or row.symbol == symbol)
+            and (not profile or row.profile_key == profile)
+            and (not strategy or (row.strategy_key or "") == strategy)
+            and (not status or row.status == status)
+        )
+
+    everything = open_trades + closed_trades
+    facets = {
+        "symbols": sorted({row.symbol for row in everything if row.symbol}),
+        "profiles": sorted({row.profile_key for row in everything if row.profile_key}),
+        "strategies": sorted({row.strategy_key for row in everything if row.strategy_key}),
+        "statuses": sorted({row.status for row in everything if row.status}),
+    }
+    context = {
+        "page": "trades",
+        "open_trades": [row for row in open_trades if keep(row)],
+        "closed_trades": [row for row in closed_trades if keep(row)],
+        "facets": facets,
+        "filters": {
+            "symbol": symbol,
+            "profile": profile,
+            "strategy": strategy,
+            "status": status,
+        },
+    }
+    context["stats"] = _trade_stats(context["closed_trades"])
+    template = "partials/trade_lists.html" if _is_htmx(request) else "trades.html"
+    return request.app.state.templates.TemplateResponse(request, template, context)
+
+
+@router.get("/trades/{trade_id}", response_class=HTMLResponse)
+async def trade_detail(request: Request, trade_id: int, _: str = Depends(require_web_auth)):
+    chart = await request.app.state.chart_service.trade_chart(trade_id)
     return request.app.state.templates.TemplateResponse(
         request,
-        "trades.html",
+        "trade_detail.html",
         {
             "page": "trades",
-            "open_trades": open_trades,
-            "closed_trades": closed_trades,
+            "chart": chart,
+            "chart_json": _chart_payload(chart),
+            "trade": (chart or {}).get("trade"),
         },
     )
+
+
+def _chart_payload(chart: dict | None) -> dict:
+    """Only the plot-facing keys — the trade block holds datetimes tojson cannot encode."""
+    if not chart:
+        return {"series": [], "levels": [], "markers": []}
+    return {
+        "series": chart.get("series", []),
+        "levels": chart.get("levels", []),
+        "markers": chart.get("markers", []),
+        "source": chart.get("source"),
+        "timeframe": chart.get("timeframe"),
+    }
 
 
 @router.get("/analytics", response_class=HTMLResponse)
@@ -108,10 +241,7 @@ async def performance(request: Request, _: str = Depends(require_web_auth)):
 
 @router.get("/strategy-lab", response_class=HTMLResponse)
 async def strategy_lab(request: Request, _: str = Depends(require_web_auth)):
-    lab = await request.app.state.strategy_lab_service.overview()
-    return request.app.state.templates.TemplateResponse(
-        request, "strategy_lab.html", {"page": "strategy_lab", "lab": lab, "section": "overview"}
-    )
+    return await _render_lab_section(request, "overview")
 
 
 @router.get("/strategy-lab/{section}", response_class=HTMLResponse)
@@ -120,12 +250,29 @@ async def strategy_lab_section(
     section: str,
     _: str = Depends(require_web_auth),
 ):
-    allowed = {"strategies", "instances", "backtests", "hyperopt", "compare", "density"}
-    lab = await request.app.state.strategy_lab_service.overview()
+    return await _render_lab_section(request, section)
+
+
+async def _render_lab_section(request: Request, section: str):
+    section = section if section in LAB_SECTION_KEYS else "overview"
+    data = await request.app.state.strategy_lab_service.section(section)
+    context = {
+        "page": "strategy_lab",
+        "section": section,
+        "sections": LAB_SECTIONS,
+        "lab": data,
+    }
+    template = (
+        f"lab/{section}.html" if _is_htmx(request) else "strategy_lab.html"
+    )
+    return request.app.state.templates.TemplateResponse(request, template, context)
+
+
+@router.get("/fragments/jobs", response_class=HTMLResponse)
+async def fragment_jobs(request: Request, _: str = Depends(require_web_auth)):
+    jobs = await request.app.state.strategy_lab_service.jobs()
     return request.app.state.templates.TemplateResponse(
-        request,
-        "strategy_lab.html",
-        {"page": "strategy_lab", "lab": lab, "section": section if section in allowed else "overview"},
+        request, "partials/jobs_table.html", {"jobs": jobs}
     )
 
 
@@ -147,3 +294,39 @@ async def why_losing(request: Request, _: str = Depends(require_web_auth)):
         "diagnostics.html",
         {"page": "analytics", "diagnostics": diagnostics_data},
     )
+
+
+def _signal_stats(rows: list) -> dict[str, object]:
+    if not rows:
+        return {"count": 0, "long": 0, "short": 0, "avg_score": 0.0, "measured": 0, "hit_rate": 0.0}
+    measured = [row for row in rows if _outcome_at(row, 30) is not None]
+    hits = [row for row in measured if getattr(_outcome_at(row, 30), "hit_tp_1_0", False)]
+    return {
+        "count": len(rows),
+        "long": len([row for row in rows if row.direction == "LONG"]),
+        "short": len([row for row in rows if row.direction == "SHORT"]),
+        "avg_score": sum(row.score or 0 for row in rows) / len(rows),
+        "measured": len(measured),
+        "hit_rate": len(hits) / len(measured) * 100 if measured else 0.0,
+    }
+
+
+def _outcome_at(signal, horizon_minutes: int):
+    for outcome in getattr(signal, "outcomes", None) or []:
+        if outcome.horizon_minutes == horizon_minutes:
+            return outcome
+    return None
+
+
+def _trade_stats(rows: list) -> dict[str, object]:
+    if not rows:
+        return {"count": 0, "net_pnl": 0.0, "winrate": 0.0, "profit_factor": 0.0}
+    wins = [row for row in rows if (row.pnl_usd or 0) > 0]
+    gross_profit = sum(row.pnl_usd for row in wins)
+    gross_loss = abs(sum(row.pnl_usd for row in rows if (row.pnl_usd or 0) < 0))
+    return {
+        "count": len(rows),
+        "net_pnl": sum(row.pnl_usd or 0 for row in rows),
+        "winrate": len(wins) / len(rows) * 100,
+        "profit_factor": gross_profit / gross_loss if gross_loss else gross_profit,
+    }

@@ -505,3 +505,282 @@ code {
     padding: 20px 16px;
   }
 }
+
+/* --- Локальные шрифты вместо CDN --- */
+:root {
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+}
+
+/* --- Вкладки: активное состояние --- */
+.tabs a.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* --- Состояния переключателей --- */
+.pill.off,
+.pill.CLOSED_SL {
+  background: var(--negative-tint);
+  color: var(--negative);
+}
+
+.pill.CLOSED_TP {
+  background: var(--positive-tint);
+  color: var(--positive);
+}
+
+.pill.EXPIRED,
+.pill.IGNORED {
+  background: var(--warning-tint);
+  color: var(--warning);
+}
+
+.status.running {
+  color: var(--warning);
+}
+
+.status.failed,
+.status.error {
+  color: var(--negative);
+}
+
+.status.done,
+.status.success {
+  color: var(--positive);
+}
+
+/* --- Кнопки действий --- */
+.button.primary,
+button.primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.button.danger,
+button.danger {
+  background: var(--negative-tint);
+  color: var(--negative);
+}
+
+.button.danger:hover,
+button.danger:hover {
+  background: var(--negative);
+  color: #fff;
+}
+
+/* --- Пояснения --- */
+.hint {
+  background: var(--sidebar-bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--link);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  color: var(--text-body);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.link {
+  color: var(--link);
+  text-decoration: underline;
+}
+
+.small {
+  font-size: 11.5px;
+}
+
+.value-suffix {
+  color: var(--text-muted);
+  font-size: 0.6em;
+  font-weight: 600;
+}
+
+/* --- Фильтры --- */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+
+.filters label {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* --- Кликабельные таблицы --- */
+table.clickable tbody tr {
+  cursor: pointer;
+}
+
+table.clickable tbody tr:hover {
+  background: var(--pill-bg);
+}
+
+/* --- Графики --- */
+.chart-wrap {
+  position: relative;
+  height: 380px;
+  margin-bottom: 14px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-body);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  width: 12px;
+  height: 3px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.swatch.entry { background: #23211c; }
+.swatch.stop { background: var(--negative); }
+.swatch.take { background: var(--positive); }
+.swatch.exit { background: var(--warning); }
+
+/* --- Уведомления --- */
+.toast {
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.toast.ok {
+  background: var(--positive-tint);
+  color: var(--positive);
+}
+
+.toast.error {
+  background: var(--negative-tint);
+  color: var(--negative);
+}
+
+.toast.warn {
+  background: var(--warning-tint);
+  color: var(--warning);
+}
+
+.job-result:empty {
+  display: none;
+}
+
+.job-result {
+  margin-top: 14px;
+  border-top: 1px solid var(--divider);
+  padding-top: 14px;
+}
+
+/* --- Карточки с управлением --- */
+.master-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.master-switch h2 {
+  margin-bottom: 4px;
+}
+
+.master-switch-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+
+.kv.compact dt,
+.kv.compact dd {
+  font-size: 12px;
+}
+
+/* --- Оценки и вердикты --- */
+.score {
+  font-weight: 700;
+}
+
+.verdict {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 5px;
+  padding: 2px 8px;
+}
+
+.verdict.good {
+  background: var(--positive-tint);
+  color: var(--positive);
+}
+
+.verdict.bad {
+  background: var(--negative-tint);
+  color: var(--negative);
+}
+
+.reasons {
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.7;
+  color: var(--text-body);
+}
+
+/* --- Индикатор загрузки --- */
+.global-indicator {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.global-indicator.visible {
+  opacity: 1;
+}
+
+.lab-body {
+  min-height: 200px;
+}
+
+.lab-body.htmx-request {
+  opacity: 0.45;
+  transition: opacity 0.15s ease;
+}

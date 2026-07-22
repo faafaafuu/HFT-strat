@@ -1,0 +1,66 @@
+{% if message %}{% include "partials/toast.html" %}{% endif %}
+<p class="hint">
+  Плотность — крупная заявка в стакане. Её судьба и есть сигнал: «поглощена» означает,
+  что рынок съел объём и пошёл дальше, «спуфинг» — заявку сняли до исполнения.
+</p>
+
+<section class="grid-2">
+  <div class="card">
+    <h2>Сводка за 7 дней</h2>
+    <table>
+      <thead><tr><th>Символ</th><th>Тип события</th><th>Событий</th><th>Средний объём</th><th>Поглощение</th><th>Спуфинг</th></tr></thead>
+      <tbody>
+        {% for row in lab.density_summary %}
+        <tr>
+          <td><b>{{ row.symbol }}</b></td>
+          <td>{{ row.event_type|ru_event }}</td>
+          <td class="num">{{ row.events }}</td>
+          <td class="num">{{ row.avg_size_usd|usd }}</td>
+          <td class="num">{{ row.avg_absorption_score|num }}</td>
+          <td class="num">{{ row.avg_spoof_score|num }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="muted">Данных пока нет.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Пересчитать анализ</h2>
+    <p class="muted">Переоценивает недавние события плотности и обновляет сводку.</p>
+    <form class="stack compact-form"
+          hx-post="/actions/jobs/density"
+          hx-target="#job-result"
+          hx-swap="innerHTML">
+      <label>Символ (пусто — все) <input name="symbol" value="" placeholder="BTCUSDT"></label>
+      <button class="button primary" type="submit">Запустить анализ</button>
+    </form>
+    <div id="job-result" class="job-result"></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Последние события</h2>
+  <table>
+    <thead>
+      <tr><th>Время</th><th>Символ</th><th>Сторона</th><th>Тип</th><th>Цена</th><th>Объём</th><th>Дистанция</th><th>Жизнь</th></tr>
+    </thead>
+    <tbody>
+      {% for row in lab.density_events %}
+      <tr>
+        <td class="time">{{ row.timestamp|time }}</td>
+        <td><b>{{ row.symbol }}</b></td>
+        <td><span class="{{ 'long' if row.side in ('bid', 'BID', 'buy') else 'short' }}">{{ "Покупка" if row.side in ('bid', 'BID', 'buy') else "Продажа" }}</span></td>
+        <td>{{ row.event_type|ru_event }}</td>
+        <td class="num">{{ row.price|num }}</td>
+        <td class="num">{{ row.size_usd|usd }}</td>
+        <td class="num">{{ row.distance_pct|pct }}</td>
+        <td class="num">{{ row.lifetime_sec|num }} с</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="muted">Событий плотности пока нет.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>

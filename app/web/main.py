@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import asyncio
+import contextlib
+import json
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -14,12 +17,16 @@ from fastapi.templating import Jinja2Templates
 
 from app.config import Settings, load_settings
 from app.data.database import Database
+from app.logger import get_logger
+from app.runtime_settings import apply_runtime_settings, refresh_runtime_settings_loop
 from app.services.analytics_service import AnalyticsService
+from app.services.chart_service import ChartService
 from app.services.paper_service import PaperService
 from app.services.performance_service import PerformanceService
 from app.services.signal_service import SignalService
 from app.services.status_service import StatusService
 from app.services.strategy_lab_service import StrategyLabService
+from app.web.actions import router as actions_router
 from app.web.api import router as api_router
 from app.web.auth import (
     _RedirectToLogin,
@@ -46,6 +53,16 @@ def create_app(
             await database_local.init()
         app.state.settings = settings
         app.state.database = database_local
+        refresh_task: asyncio.Task[None] | None = None
+        if not service_overrides:
+            # Without this the dashboard would render config.yaml defaults and hide
+            # every override the bot is actually running with.
+            await apply_runtime_settings(database_local, settings)
+            refresh_task = asyncio.create_task(
+                refresh_runtime_settings_loop(
+                    get_logger("web_runtime_settings"), database_local, settings
+                )
+            )
         service_overrides_local = service_overrides or {}
         app.state.status_service = service_overrides_local.get(
             "status_service", StatusService(database_local, settings)
@@ -65,11 +82,20 @@ def create_app(
         app.state.strategy_lab_service = service_overrides_local.get(
             "strategy_lab_service", StrategyLabService(database_local, settings)
         )
+        app.state.chart_service = service_overrides_local.get(
+            "chart_service", ChartService(database_local)
+        )
         yield
+        if refresh_task is not None:
+            refresh_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await refresh_task
         if not service_overrides:
             await database_local.close()
 
     app = FastAPI(title="Market Heat Signal Bot", lifespan=lifespan)
+    # Templates read settings directly, so it must exist even when lifespan never runs (tests).
+    app.state.settings = settings
     install_session_middleware(app, settings)
     app.add_exception_handler(_RedirectToLogin, redirect_auth_exception_handler)
     base_dir = Path(__file__).resolve().parent
@@ -80,6 +106,13 @@ def create_app(
     templates.env.filters["num"] = _num
     templates.env.filters["time"] = _time
     templates.env.filters["duration"] = _duration
+    templates.env.filters["ru_status"] = _ru_status
+    templates.env.filters["ru_direction"] = _ru_direction
+    templates.env.filters["ru_job"] = _ru_job
+    templates.env.filters["ru_event"] = _ru_event
+    templates.env.filters["ago"] = _ago
+    templates.env.filters["outcome"] = _outcome
+    templates.env.filters["fromjson"] = _fromjson
     app.state.templates = templates
     app.mount("/static", StaticFiles(directory=str(base_dir / "static")), name="static")
 
@@ -93,6 +126,7 @@ def create_app(
 
     app.include_router(page_router)
     app.include_router(api_router)
+    app.include_router(actions_router)
     return app
 
 
@@ -150,6 +184,101 @@ def _duration(value: object) -> str:
     if hours:
         return f"{hours}h {minutes}m"
     return f"{minutes}m"
+
+
+_RU_STATUS = {
+    "OPEN": "Открыта",
+    "CLOSED": "Закрыта",
+    "CLOSED_TP": "Тейк",
+    "CLOSED_SL": "Стоп",
+    "EXPIRED": "Таймаут",
+    "PENDING": "В очереди",
+    "ACTIVE": "Активен",
+    "NEW": "Новый",
+    "IGNORED": "Пропущен",
+    "ENTERED": "В позиции",
+    "queued": "В очереди",
+    "running": "Выполняется",
+    "done": "Готово",
+    "success": "Готово",
+    "failed": "Ошибка",
+    "error": "Ошибка",
+    "cancelled": "Отменено",
+}
+
+_RU_JOB = {
+    "download_history": "Загрузка истории",
+    "run_backtest": "Бэктест",
+    "run_hyperopt": "Гипероптимизация",
+    "train_ml_model": "Обучение ML",
+    "run_density_analysis": "Анализ плотностей",
+}
+
+_RU_EVENT = {
+    "absorbed": "Поглощение",
+    "absorption": "Поглощение",
+    "eaten": "Съедена",
+    "spoof": "Спуфинг",
+    "spoofed": "Спуфинг",
+    "pulled": "Снята",
+    "appeared": "Появилась",
+    "created": "Появилась",
+    "expired": "Истекла",
+}
+
+
+def _ru_status(value: object) -> str:
+    text = str(value or "")
+    return _RU_STATUS.get(text, _RU_STATUS.get(text.lower(), text or "n/a"))
+
+
+def _ru_direction(value: object) -> str:
+    text = str(value or "").upper()
+    return {"LONG": "Лонг", "SHORT": "Шорт"}.get(text, text or "n/a")
+
+
+def _ru_job(value: object) -> str:
+    text = str(value or "")
+    return _RU_JOB.get(text, text or "n/a")
+
+
+def _ru_event(value: object) -> str:
+    text = str(value or "")
+    return _RU_EVENT.get(text.lower(), text or "n/a")
+
+
+def _fromjson(value: object) -> Any:
+    if not value:
+        return None
+    try:
+        return json.loads(str(value))
+    except (json.JSONDecodeError, TypeError):
+        return None
+
+
+def _outcome(signal: object, horizon_minutes: int = 30) -> Any:
+    for item in getattr(signal, "outcomes", None) or []:
+        if item.horizon_minutes == horizon_minutes:
+            return item
+    return None
+
+
+def _ago(value: object) -> str:
+    if not isinstance(value, datetime):
+        return "n/a"
+    aware = value if value.tzinfo else value.replace(tzinfo=UTC)
+    seconds = int((datetime.now(UTC) - aware).total_seconds())
+    if seconds < 0:
+        return "только что"
+    if seconds < 60:
+        return f"{seconds} с назад"
+    minutes = seconds // 60
+    if minutes < 60:
+        return f"{minutes} мин назад"
+    hours = minutes // 60
+    if hours < 24:
+        return f"{hours} ч назад"
+    return f"{hours // 24} дн назад"
 
 
 def main() -> None:

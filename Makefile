@@ -4,6 +4,7 @@ TIMEFRAME ?= 1m
 DAYS ?= 30
 TLS_HOST ?= 84.247.166.53
 TLS_PORT ?= 9443
+WEB_HOST_PORT ?= 8090
 
 dev:
 	docker compose -f docker-compose.dev.yml up
@@ -46,7 +47,7 @@ worker-restart:
 	docker compose restart worker
 
 web-health:
-	curl -fsS http://127.0.0.1:8080/health
+	curl -fsS http://127.0.0.1:$(WEB_HOST_PORT)/health
 
 tls-cert:
 	mkdir -p certs

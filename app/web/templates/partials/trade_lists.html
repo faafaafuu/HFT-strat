@@ -1,0 +1,21 @@
+<section class="grid">
+  <div class="card"><div class="metric">Закрытых сделок</div><div class="value">{{ stats.count }}</div></div>
+  <div class="card">
+    <div class="metric">Чистый PnL</div>
+    <div class="value {{ 'positive' if stats.net_pnl > 0 else 'negative' if stats.net_pnl < 0 else '' }}">{{ stats.net_pnl|money }}</div>
+  </div>
+  <div class="card"><div class="metric">Винрейт</div><div class="value">{{ stats.winrate|pct }}</div></div>
+  <div class="card"><div class="metric">Профит-фактор</div><div class="value">{{ stats.profit_factor|num }}</div></div>
+</section>
+
+<section class="card">
+  <h2>Открытые ({{ open_trades|length }})</h2>
+  {% set trades = open_trades %}
+  {% include "trade_table.html" %}
+</section>
+
+<section class="card">
+  <h2>Закрытые ({{ closed_trades|length }})</h2>
+  {% set trades = closed_trades %}
+  {% include "trade_table.html" %}
+</section>

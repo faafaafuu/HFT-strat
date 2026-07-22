@@ -16,3 +16,5 @@ models/*
 !models/.gitkeep
 market_heat.db
 graphify-out/
+
+.claude/worktrees/

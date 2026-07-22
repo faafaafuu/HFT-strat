@@ -1,0 +1,10 @@
+<div class="toast ok">{{ message }}</div>
+<dl class="kv compact">
+  <dt>Статус</dt><dd><span class="status {{ job['status'] }}">{{ job['status']|ru_status }}</span></dd>
+  {% for key, value in payload.items() %}
+  {% if value is not none and value != {} %}
+  <dt>{{ key }}</dt><dd class="mono">{{ value }}</dd>
+  {% endif %}
+  {% endfor %}
+</dl>
+<p class="muted">Прогресс виден в таблице «Фоновые задачи» ниже — она обновляется автоматически.</p>

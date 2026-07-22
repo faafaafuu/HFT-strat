@@ -1,0 +1,129 @@
+{% if message %}{% include "partials/toast.html" %}{% endif %}
+
+<section class="card master-switch">
+  <div>
+    <h2>Paper-торговля</h2>
+    <p class="muted">
+      {% if settings.paper.enabled %}
+      Включена: бот открывает виртуальные сделки по подходящим сигналам.
+      {% else %}
+      Выключена: сигналы генерируются, но сделки не открываются.
+      {% endif %}
+    </p>
+  </div>
+  <div class="master-switch-action">
+    <span class="pill {{ 'on' if settings.paper.enabled else 'off' }}">{{ "Включена" if settings.paper.enabled else "Выключена" }}</span>
+    <button class="button {{ 'danger' if settings.paper.enabled else 'primary' }}"
+            hx-post="/actions/paper/toggle"
+            hx-target="#paper-controls"
+            hx-swap="innerHTML">
+      {{ "Выключить" if settings.paper.enabled else "Включить" }}
+    </button>
+  </div>
+</section>
+
+<section class="grid-2">
+  {% for profile in profiles %}
+  {% set config = settings.paper.profiles.get(profile.profile_key) %}
+  <div class="card">
+    <div class="card-head">
+      <div>
+        <div class="stat-name">{{ profile.name }}</div>
+        <div class="muted mono small">{{ profile.profile_key }}</div>
+      </div>
+      <span class="pill {{ 'on' if (config.enabled if config else profile.enabled) else 'off' }}">
+        {{ "Активен" if (config.enabled if config else profile.enabled) else "Отключён" }}
+      </span>
+    </div>
+    <dl class="kv">
+      <dt>Баланс</dt><dd>{{ profile.balance|usd }}</dd>
+      <dt>Средства</dt><dd>{{ profile.equity|usd }}</dd>
+      <dt>Прибыль</dt><dd class="{{ 'positive' if profile.net_profit > 0 else 'negative' if profile.net_profit < 0 else '' }}">{{ profile.net_profit|money }}</dd>
+      <dt>Винрейт</dt><dd>{{ profile.winrate|pct }}</dd>
+      <dt>Профит-фактор</dt><dd>{{ profile.profit_factor|num }}</dd>
+      <dt>Макс. просадка</dt><dd>{{ profile.max_drawdown_pct|pct }}</dd>
+      <dt>Открыто / закрыто</dt><dd>{{ profile.open_positions }} / {{ profile.closed_trades }}</dd>
+      {% if config %}
+      <dt>Мин. скор</dt><dd>{{ config.min_score }}</dd>
+      <dt>Риск на сделку</dt><dd>{{ config.risk_per_trade_pct }}%</dd>
+      <dt>Плечо</dt><dd>{{ config.leverage }}x</dd>
+      {% endif %}
+    </dl>
+    <button class="button {{ 'danger' if (config.enabled if config else profile.enabled) else 'primary' }}"
+            hx-post="/actions/paper-profiles/{{ profile.profile_key }}/toggle"
+            hx-target="#paper-controls"
+            hx-swap="innerHTML">
+      {{ "Отключить профиль" if (config.enabled if config else profile.enabled) else "Включить профиль" }}
+    </button>
+  </div>
+  {% else %}
+  <p class="muted">Paper-профилей пока нет.</p>
+  {% endfor %}
+</section>
+
+<section class="card">
+  <h2>Какие стратегии торгуют</h2>
+  <p class="muted">
+    Сделки открывают только включённые стратегии. Переключатели ниже действуют на живого бота
+    в течение 15 секунд.
+  </p>
+  <table>
+    <thead>
+      <tr><th>Стратегия</th><th>Куда торгует</th><th>Состояние</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for item in strategies %}
+      <tr>
+        <td><strong>{{ item.name }}</strong><br><span class="muted mono small">{{ item.key }}</span></td>
+        <td>
+          {% for profile in item.profiles %}<span class="chip">{{ profile }}</span>{% endfor %}
+          {% for instance in item.instances %}<span class="chip">{{ instance }}</span>{% endfor %}
+          {% if not item.profiles and not item.instances %}<span class="muted">не подключена</span>{% endif %}
+        </td>
+        <td><span class="pill {{ 'on' if item.enabled else 'off' }}">{{ "Работает" if item.enabled else "Выключена" }}</span></td>
+        <td>
+          <button class="button {{ 'danger' if item.enabled else 'primary' }}"
+                  hx-post="/actions/strategies/{{ item.key }}/toggle"
+                  hx-target="#paper-controls"
+                  hx-swap="innerHTML"
+                  hx-vals='{"return_to": "paper"}'>
+            {{ "Выключить" if item.enabled else "Включить" }}
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <h2>Инстансы стратегий</h2>
+  <table>
+    <thead>
+      <tr><th>Инстанс</th><th>Стратегия</th><th>Мин. скор</th><th>Профиль</th><th>Состояние</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for item in instances %}
+      <tr>
+        <td><strong>{{ item.id }}</strong></td>
+        <td class="mono muted">{{ item.strategy_key }}</td>
+        <td class="num">{{ item.min_score }}</td>
+        <td>{{ item.paper_profile }}</td>
+        <td><span class="pill {{ 'on' if item.enabled else 'off' }}">{{ "Включён" if item.enabled else "Выключен" }}</span></td>
+        <td>
+          <button class="button {{ 'danger' if item.enabled else 'primary' }}"
+                  hx-post="/actions/instances/{{ item.id }}/toggle"
+                  hx-target="#paper-controls"
+                  hx-swap="innerHTML"
+                  hx-vals='{"return_to": "paper"}'>
+            {{ "Выключить" if item.enabled else "Включить" }}
+          </button>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">Инстансов нет.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="muted">Тонкая настройка параметров — на вкладке «Инстансы» в Лаборатории.</p>
+</section>

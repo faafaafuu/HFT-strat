@@ -1,0 +1,26 @@
+<section class="card"
+         hx-get="/fragments/jobs"
+         hx-trigger="every 10s"
+         hx-swap="outerHTML">
+  <h2>Фоновые задачи</h2>
+  <p class="muted">Задачи выполняет отдельный worker-контейнер. Список обновляется сам.</p>
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Тип</th><th>Статус</th><th>Создана</th><th>Параметры</th><th>Ошибка</th></tr>
+    </thead>
+    <tbody>
+      {% for job in jobs %}
+      <tr>
+        <td class="num">{{ job.id }}</td>
+        <td>{{ job.job_type|ru_job }}</td>
+        <td><span class="status {{ job.status }}">{{ job.status|ru_status }}</span></td>
+        <td class="time">{{ job.created_at|ago }}</td>
+        <td><code class="mono">{{ job.params }}</code></td>
+        <td class="negative">{{ job.error or "" }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">Задач пока нет.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>

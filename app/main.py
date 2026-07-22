@@ -5,12 +5,10 @@ import contextlib
 import shutil
 import signal
 from pathlib import Path
-from typing import Any
 
 from app.analysis.daily import DailyStrategyAnalysisJob
 from app.config import load_settings
 from app.data.database import Database
-from app.data.repositories import RuntimeSettingsRepository
 from app.exchanges.base import TickerEvent
 from app.exchanges.bybit_client import BybitClient
 from app.logger import get_logger, setup_logging
@@ -18,6 +16,7 @@ from app.market.features import MarketFeatureStore
 from app.market.oi_tracker import OpenInterestTracker
 from app.market.symbol_selector import SymbolSelector
 from app.paper.manager import PaperTradeManager
+from app.runtime_settings import apply_runtime_settings, refresh_runtime_settings_loop
 from app.signals.outcome_tracker import OutcomeTracker
 from app.signals.signal_engine import MarketEventSink, SignalEngine
 from app.telegram.bot import TelegramService
@@ -123,6 +122,10 @@ async def main() -> None:
                 _heartbeat_loop(log, telegram, bybit, database, feature_store),
                 name="heartbeat",
             ),
+            asyncio.create_task(
+                refresh_runtime_settings_loop(log, database, settings),
+                name="runtime_settings",
+            ),
         ]
         log.info("market heat signal bot started")
         await stop_event.wait()
@@ -148,26 +151,7 @@ async def main() -> None:
 
 
 async def _apply_runtime_settings(database: Database, settings) -> None:
-    async with database.session() as session:
-        overrides = await RuntimeSettingsRepository(session).get_all()
-    for key, value in overrides.items():
-        _set_nested(settings, key, value)
-
-
-def _set_nested(settings, key: str, value: Any) -> None:
-    target = settings
-    parts = key.split(".")
-    for part in parts[:-1]:
-        if isinstance(target, dict):
-            target = target.get(part)
-        else:
-            target = getattr(target, part, None)
-        if target is None:
-            return
-    if isinstance(target, dict):
-        target[parts[-1]] = value
-    elif hasattr(target, parts[-1]):
-        setattr(target, parts[-1], value)
+    await apply_runtime_settings(database, settings)
 
 
 def _migrate_legacy_sqlite_if_needed(settings, log) -> None:

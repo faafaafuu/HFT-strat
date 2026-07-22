@@ -1,0 +1,85 @@
+{% if message %}{% include "partials/toast.html" %}{% endif %}
+
+<section class="grid-2">
+  <div class="card">
+    <h2>Гипероптимизация</h2>
+    <p class="muted">
+      Перебор параметров стратегии на исторических данных. Найденные значения можно
+      перенести в инстанс на вкладке «Инстансы».
+    </p>
+    <form class="stack compact-form"
+          hx-post="/actions/jobs/hyperopt"
+          hx-target="#job-result"
+          hx-swap="innerHTML">
+      <label>Инстанс
+        <select name="strategy_instance_id">
+          <option value="">— задать стратегию вручную —</option>
+          {% for item in lab.instances %}
+          <option value="{{ item.id }}">{{ item.id }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Ключ стратегии <input name="strategy_key" value="density_strategy"></label>
+      <label>Символ <input name="symbol" value="BTCUSDT"></label>
+      <label>Таймфрейм
+        <select name="timeframe">
+          <option value="1m">1m</option>
+          <option value="15m">15m</option>
+          <option value="1h">1h</option>
+          <option value="4h">4h</option>
+        </select>
+      </label>
+      <label>Дней истории <input name="days" type="number" value="30" min="1" max="720"></label>
+      <button class="button primary" type="submit">Запустить подбор</button>
+    </form>
+    <div id="job-result" class="job-result"></div>
+  </div>
+
+  <div class="card">
+    <h2>ML-модель</h2>
+    {% if lab.ml_status.active %}
+    <dl class="kv">
+      <dt>Тип</dt><dd>{{ lab.ml_status.model_type }}</dd>
+      <dt>Файл</dt><dd class="mono">{{ lab.ml_status.model_path }}</dd>
+      <dt>Обучена</dt><dd>{{ lab.ml_status.created_at|time }}</dd>
+    </dl>
+    <pre class="code">{{ lab.ml_status.metrics }}</pre>
+    {% else %}
+    <p class="muted">
+      Активной модели нет. Обучение активирует модель только если данных достаточно
+      и она проходит валидацию.
+    </p>
+    {% endif %}
+    <form class="stack compact-form"
+          hx-post="/actions/jobs/ml"
+          hx-target="#job-result"
+          hx-swap="innerHTML">
+      <label>Тип модели <input name="model_type" value="heuristic_gbdt_proxy"></label>
+      <button class="button" type="submit">Обучить модель</button>
+    </form>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Доступная история</h2>
+  <p class="muted">Гипероптимизация работает только по загруженным свечам.</p>
+  <table>
+    <thead><tr><th>Символ</th><th>ТФ</th><th>Свечей</th><th>Начало</th><th>Конец</th></tr></thead>
+    <tbody>
+      {% for row in lab.coverage %}
+      <tr>
+        <td><b>{{ row.symbol }}</b></td>
+        <td>{{ row.timeframe }}</td>
+        <td class="num">{{ row.candles }}</td>
+        <td class="time">{{ row.start|time }}</td>
+        <td class="time">{{ row.end|time }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">Свечи не загружены.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{% set jobs = lab.jobs %}
+{% include "partials/jobs_table.html" %}

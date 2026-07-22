@@ -1,19 +1,53 @@
 {% extends "base.html" %}
+{% block title %}Сделки{% endblock %}
 {% block content %}
 <div class="top">
-  <h1>Trades</h1>
-  <span class="muted">Paper trades only</span>
+  <h1>Сделки</h1>
+  <span class="muted">Paper-сделки: вход, стоп, тейк, результат</span>
 </div>
 
-<section class="card">
-  <h2>Open Trades</h2>
-  {% set trades = open_trades %}
-  {% include "trade_table.html" %}
-</section>
+<form class="filters"
+      hx-get="/trades"
+      hx-target="#trade-lists"
+      hx-swap="innerHTML"
+      hx-trigger="change, submit"
+      hx-push-url="true">
+  <label>Символ
+    <select name="symbol">
+      <option value="">все</option>
+      {% for value in facets.symbols %}
+      <option value="{{ value }}" {% if filters.symbol == value %}selected{% endif %}>{{ value }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Профиль
+    <select name="profile">
+      <option value="">все</option>
+      {% for value in facets.profiles %}
+      <option value="{{ value }}" {% if filters.profile == value %}selected{% endif %}>{{ value }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Стратегия
+    <select name="strategy">
+      <option value="">все</option>
+      {% for value in facets.strategies %}
+      <option value="{{ value }}" {% if filters.strategy == value %}selected{% endif %}>{{ value }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Статус
+    <select name="status">
+      <option value="">все</option>
+      {% for value in facets.statuses %}
+      <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ value|ru_status }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <a class="button" href="/trades">Сбросить</a>
+</form>
 
-<section class="card">
-  <h2>Closed Trades</h2>
-  {% set trades = closed_trades %}
-  {% include "trade_table.html" %}
-</section>
+<div id="trade-lists">
+  {% include "partials/trade_lists.html" %}
+</div>
 {% endblock %}

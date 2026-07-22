@@ -1,3 +1,5 @@
+import json
+from contextlib import asynccontextmanager
 from datetime import timedelta
 from pathlib import Path
 
@@ -32,6 +34,12 @@ class _StatusService:
 class _SignalService:
     async def recent(self, limit: int = 20, offset: int = 0):
         return []
+
+    async def recent_with_outcomes(self, limit: int = 100, offset: int = 0):
+        return []
+
+    async def detail(self, signal_id: int):
+        return None
 
 
 class _PaperService:
@@ -99,6 +107,55 @@ class _StrategyLabService:
     async def diagnostics(self):
         return (await self.overview())["diagnostics"]
 
+    async def section(self, name: str):
+        overview = await self.overview()
+        overview["profiles"] = []
+        return overview
+
+    async def strategies(self):
+        return []
+
+    async def strategy_profiles(self):
+        return []
+
+    async def instances(self):
+        return []
+
+    async def jobs(self):
+        return []
+
+    def invalidate_cache(self):
+        return None
+
+
+class _RecordingSession:
+    def __init__(self, saved: dict) -> None:
+        self.saved = saved
+
+    async def execute(self, statement):
+        values = statement.compile().params
+        self.saved[values["key"]] = json.loads(values["value_json"])
+        return None
+
+
+class _RecordingDatabase:
+    """Captures runtime-setting writes without touching a real database."""
+
+    def __init__(self) -> None:
+        self.saved: dict = {}
+
+    @asynccontextmanager
+    async def session(self):
+        yield _RecordingSession(self.saved)
+
+
+class _ChartService:
+    async def trade_chart(self, trade_id: int):
+        return None
+
+    async def signal_chart(self, signal_id: int):
+        return None
+
 
 def _app(tmp_path: Path, monkeypatch, auth: bool = True):
     if auth:
@@ -122,6 +179,7 @@ def _app(tmp_path: Path, monkeypatch, auth: bool = True):
     app.state.analytics_service = _AnalyticsService()
     app.state.performance_service = _PerformanceService()
     app.state.strategy_lab_service = _StrategyLabService()
+    app.state.chart_service = _ChartService()
     return app
 
 
@@ -183,8 +241,8 @@ async def test_status_page_works_on_empty_data(tmp_path: Path, monkeypatch) -> N
     response = await _authed_get(_app(tmp_path, monkeypatch), "/")
 
     assert response.status_code == 200
-    assert "Dashboard" in response.text
-    assert "Signals Today" in response.text
+    assert "Сводка" in response.text
+    assert "Сигналов сегодня" in response.text
 
 
 @pytest.mark.asyncio
@@ -192,7 +250,7 @@ async def test_paper_profiles_page_works_on_empty_data(tmp_path: Path, monkeypat
     response = await _authed_get(_app(tmp_path, monkeypatch), "/paper")
 
     assert response.status_code == 200
-    assert "Paper Trading" in response.text
+    assert "Paper-торговля" in response.text
 
 
 @pytest.mark.asyncio
@@ -210,7 +268,83 @@ async def test_strategy_lab_page_works_on_empty_data(tmp_path: Path, monkeypatch
     response = await _authed_get(_app(tmp_path, monkeypatch), "/strategy-lab")
 
     assert response.status_code == 200
-    assert "Strategy Lab" in response.text
+    assert "Лаборатория стратегий" in response.text
+
+
+@pytest.mark.asyncio
+async def test_strategy_lab_sections_render_distinct_content(tmp_path: Path, monkeypatch) -> None:
+    app = _app(tmp_path, monkeypatch)
+
+    strategies = await _authed_get(app, "/strategy-lab/strategies")
+    density = await _authed_get(app, "/strategy-lab/density")
+
+    assert strategies.status_code == 200
+    assert density.status_code == 200
+    assert "Профили стратегий" in strategies.text
+    assert "Профили стратегий" not in density.text
+    assert "Последние события" in density.text
+
+
+@pytest.mark.asyncio
+async def test_strategy_lab_htmx_request_returns_fragment_only(
+    tmp_path: Path, monkeypatch
+) -> None:
+    app = _app(tmp_path, monkeypatch)
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://test", follow_redirects=False
+    ) as client:
+        await client.post(
+            "/login",
+            content="username=admin&password=secret&next=/",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        response = await client.get(
+            "/strategy-lab/instances", headers={"HX-Request": "true"}
+        )
+
+    assert response.status_code == 200
+    assert "<html" not in response.text
+    assert "Инстансы стратегий" in response.text
+
+
+@pytest.mark.asyncio
+async def test_strategy_toggle_flips_state_and_persists(tmp_path: Path, monkeypatch) -> None:
+    app = _app(tmp_path, monkeypatch)
+    app.state.database = _RecordingDatabase()
+    settings = app.state.settings
+    assert settings.strategy_toggles.is_enabled("density_strategy")
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://test", follow_redirects=False
+    ) as client:
+        await client.post(
+            "/login",
+            content="username=admin&password=secret&next=/",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        response = await client.post(
+            "/actions/strategies/density_strategy/toggle", headers={"HX-Request": "true"}
+        )
+
+    assert response.status_code == 200
+    assert not settings.strategy_toggles.is_enabled("density_strategy")
+    assert app.state.database.saved["strategy_toggles.disabled"] == ["density_strategy"]
+
+
+@pytest.mark.asyncio
+async def test_disabled_strategy_stops_generating_signals() -> None:
+    from app.strategies.registry import default_registry
+
+    settings = Settings()
+    registry = default_registry(settings)
+    settings.strategy_toggles.set_enabled("micro_stop_hunt_reclaim", False)
+
+    descriptors = {item.key: item for item in registry.descriptors(settings)}
+
+    assert descriptors["micro_stop_hunt_reclaim"].enabled is False
+    assert descriptors["failed_breakout_fade"].enabled is True
 
 
 @pytest.mark.asyncio

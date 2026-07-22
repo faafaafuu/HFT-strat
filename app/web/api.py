@@ -57,6 +57,16 @@ async def api_performance(request: Request):
     return jsonable_encoder(await request.app.state.performance_service.snapshot())
 
 
+@router.get("/charts/trade/{trade_id}")
+async def api_trade_chart(request: Request, trade_id: int):
+    return jsonable_encoder(await request.app.state.chart_service.trade_chart(trade_id))
+
+
+@router.get("/charts/signal/{signal_id}")
+async def api_signal_chart(request: Request, signal_id: int):
+    return jsonable_encoder(await request.app.state.chart_service.signal_chart(signal_id))
+
+
 @router.get("/strategy-lab/strategies")
 async def api_strategy_lab_strategies(request: Request):
     return jsonable_encoder(await request.app.state.strategy_lab_service.strategies())

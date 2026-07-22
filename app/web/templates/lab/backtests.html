@@ -1,0 +1,83 @@
+{% if message %}{% include "partials/toast.html" %}{% endif %}
+
+<section class="grid-2">
+  <div class="card">
+    <h2>Запустить бэктест</h2>
+    <p class="muted">Прогон стратегии по загруженным свечам. Результат появится в таблице ниже.</p>
+    <form class="stack compact-form"
+          hx-post="/actions/jobs/backtest"
+          hx-target="#job-result"
+          hx-swap="innerHTML">
+      <label>Инстанс (берёт его параметры)
+        <select name="strategy_instance_id">
+          <option value="">— задать стратегию вручную —</option>
+          {% for item in lab.instances or [] %}
+          <option value="{{ item.id }}">{{ item.id }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Ключ стратегии <input name="strategy_key" value="micro_stop_hunt_reclaim"></label>
+      <label>Символ <input name="symbol" value="BTCUSDT"></label>
+      <label>Таймфрейм
+        <select name="timeframe">
+          <option value="1m">1m</option>
+          <option value="15m">15m</option>
+          <option value="1h">1h</option>
+          <option value="4h">4h</option>
+        </select>
+      </label>
+      <label>Дней истории <input name="days" type="number" value="30" min="1" max="720"></label>
+      <button class="button primary" type="submit">Запустить бэктест</button>
+    </form>
+    <div id="job-result" class="job-result"></div>
+  </div>
+
+  <div class="card">
+    <h2>Загрузить историю</h2>
+    <p class="muted">Без свечей бэктест вернёт ноль сделок. Сначала загрузите историю по символу.</p>
+    <form class="stack compact-form"
+          hx-post="/actions/jobs/history"
+          hx-target="#job-result"
+          hx-swap="innerHTML">
+      <label>Символ <input name="symbol" value="BTCUSDT"></label>
+      <label>Таймфрейм
+        <select name="timeframe">
+          <option value="1m">1m</option>
+          <option value="15m">15m</option>
+          <option value="1h">1h</option>
+          <option value="4h">4h</option>
+        </select>
+      </label>
+      <label>Дней <input name="days" type="number" value="30" min="1" max="720"></label>
+      <button class="button" type="submit">Загрузить</button>
+    </form>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Последние бэктесты</h2>
+  <table>
+    <thead>
+      <tr><th>ID</th><th>Стратегия</th><th>Символ</th><th>ТФ</th><th>Винрейт</th><th>Профит-фактор</th><th>Чистый PnL</th><th>Сделок</th></tr>
+    </thead>
+    <tbody>
+      {% for run in lab.backtests %}
+      <tr>
+        <td class="num">{{ run.id }}</td>
+        <td class="mono">{{ run.strategy_key }}</td>
+        <td><b>{{ run.symbol }}</b></td>
+        <td class="muted">{{ run.timeframe }}</td>
+        <td class="num">{{ run.metrics.winrate|pct }}</td>
+        <td class="num">{{ run.metrics.profit_factor|num }}</td>
+        <td class="num {{ 'positive' if (run.metrics.net_pnl or 0) > 0 else 'negative' if (run.metrics.net_pnl or 0) < 0 else '' }}">{{ run.metrics.net_pnl|money }}</td>
+        <td class="num">{{ run.metrics.total_trades or 0 }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="muted">Бэктестов пока нет.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{% set jobs = lab.jobs %}
+{% include "partials/jobs_table.html" %}

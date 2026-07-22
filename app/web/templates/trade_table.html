@@ -1,23 +1,28 @@
-<table>
-  <tr>
-    <th>ID</th><th>Profile</th><th>Symbol</th><th>Direction</th><th>Status</th>
-    <th>Entry</th><th>Stop</th><th>Take</th><th>PnL</th><th>Opened</th>
-  </tr>
-  {% for trade in trades %}
-  <tr>
-    <td class="num">{{ trade.id }}</td>
-    <td>{{ trade.profile_key }}</td>
-    <td><b>{{ trade.symbol }}</b></td>
-    <td><span class="{{ 'long' if trade.direction == 'LONG' else 'short' }}">{{ trade.direction }}</span></td>
-    <td><span class="pill">{{ trade.status }}</span></td>
-    <td class="num">{{ trade.entry_price|num }}</td>
-    <td class="num">{{ trade.stop_price|num }}</td>
-    <td class="num">{{ trade.take_price|num }}</td>
-    <td class="num {{ 'positive' if trade.pnl_usd > 0 else 'negative' if trade.pnl_usd < 0 else '' }}">{{ trade.pnl_usd|money }}</td>
-    <td class="time">{{ trade.opened_at|time }}</td>
-  </tr>
-  {% else %}
-  <tr><td colspan="10" class="muted">No trades.</td></tr>
-  {% endfor %}
+<table class="clickable">
+  <thead>
+    <tr>
+      <th>ID</th><th>Символ</th><th>Направление</th><th>Профиль</th><th>Стратегия</th>
+      <th>Статус</th><th>Вход</th><th>Стоп</th><th>Тейк</th><th>Выход</th><th>PnL</th><th>Открыта</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for trade in trades %}
+    <tr onclick="window.location='/trades/{{ trade.id }}'" title="Открыть график сделки">
+      <td class="num">{{ trade.id }}</td>
+      <td><b>{{ trade.symbol }}</b></td>
+      <td><span class="{{ 'long' if trade.direction == 'LONG' else 'short' }}">{{ trade.direction|ru_direction }}</span></td>
+      <td class="muted">{{ trade.profile_key }}</td>
+      <td class="muted mono">{{ trade.strategy_instance_id or trade.strategy_key or "—" }}</td>
+      <td><span class="pill {{ trade.status }}">{{ trade.status|ru_status }}</span></td>
+      <td class="num">{{ trade.entry_price|num }}</td>
+      <td class="num">{{ trade.stop_price|num }}</td>
+      <td class="num">{{ trade.take_price|num }}</td>
+      <td class="num">{{ trade.exit_price|num if trade.exit_price else "—" }}</td>
+      <td class="num {{ 'positive' if trade.pnl_usd > 0 else 'negative' if trade.pnl_usd < 0 else '' }}">{{ trade.pnl_usd|money }}</td>
+      <td class="time">{{ trade.opened_at|time }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="12" class="muted">Сделок нет.</td></tr>
+    {% endfor %}
+  </tbody>
 </table>
-

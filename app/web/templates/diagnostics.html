@@ -1,18 +1,28 @@
 {% extends "base.html" %}
+{% block title %}Разбор убытков{% endblock %}
 {% block content %}
 <div class="top">
-  <h1>Paper Diagnostics</h1>
-  <span class="muted">Why paper trading is losing money</span>
+  <h1>Разбор убытков</h1>
+  <span class="muted">Почему paper-торговля теряет деньги</span>
 </div>
 
-<section class="grid">
-  <div class="card"><h2>By Strategy</h2>{% set rows = diagnostics.by_strategy %}{% include "diagnostics_table.html" %}</div>
-  <div class="card"><h2>By Instance</h2>{% set rows = diagnostics.by_instance %}{% include "diagnostics_table.html" %}</div>
-  <div class="card"><h2>By Paper Profile</h2>{% set rows = diagnostics.by_profile %}{% include "diagnostics_table.html" %}</div>
-  <div class="card"><h2>By Pattern</h2>{% set rows = diagnostics.by_pattern %}{% include "diagnostics_table.html" %}</div>
-  <div class="card"><h2>By Symbol</h2>{% set rows = diagnostics.by_symbol %}{% include "diagnostics_table.html" %}</div>
-  <div class="card"><h2>By Score</h2>{% set rows = diagnostics.by_score %}{% include "diagnostics_table.html" %}</div>
-  <div class="card"><h2>By Hour</h2>{% set rows = diagnostics.by_hour %}{% include "diagnostics_table.html" %}</div>
-  <div class="card"><h2>By Exit Status</h2>{% set rows = diagnostics.by_status %}{% include "diagnostics_table.html" %}</div>
+<p class="hint">
+  Каждая таблица — один разрез закрытых сделок, отсортированный по чистому PnL: сверху то,
+  что теряет больше всего. <b>Средний R</b> ниже нуля означает, что группа систематически
+  забирает больше риска, чем приносит прибыли. Высокая доля стопов при низкой доле тейков —
+  стоп стоит слишком близко либо вход преждевременный.
+</p>
+
+<section class="grid-2">
+  <div class="card"><h2>По стратегиям</h2>{% set rows = diagnostics.by_strategy %}{% include "diagnostics_table.html" %}</div>
+  <div class="card"><h2>По инстансам</h2>{% set rows = diagnostics.by_instance %}{% include "diagnostics_table.html" %}</div>
+  <div class="card"><h2>По paper-профилям</h2>{% set rows = diagnostics.by_profile %}{% include "diagnostics_table.html" %}</div>
+  <div class="card"><h2>По паттернам</h2>{% set rows = diagnostics.by_pattern %}{% include "diagnostics_table.html" %}</div>
+  <div class="card"><h2>По символам</h2>{% set rows = diagnostics.by_symbol %}{% include "diagnostics_table.html" %}</div>
+  <div class="card"><h2>По скору</h2>{% set rows = diagnostics.by_score %}{% include "diagnostics_table.html" %}</div>
+  <div class="card"><h2>По часам (UTC)</h2>{% set rows = diagnostics.by_hour %}{% include "diagnostics_table.html" %}</div>
+  <div class="card"><h2>По типу выхода</h2>{% set rows = diagnostics.by_status %}{% include "diagnostics_table.html" %}</div>
 </section>
+
+<p><a class="button" href="/strategy-lab/strategies">Выключить убыточные стратегии →</a></p>
 {% endblock %}

@@ -1,0 +1,59 @@
+{% if message %}{% include "partials/toast.html" %}{% endif %}
+
+<section class="grid">
+  <div class="card">
+    <div class="metric">Стратегий работает</div>
+    <div class="value">{{ lab.strategies|selectattr("enabled")|list|length }}<span class="value-suffix">/{{ lab.strategies|length }}</span></div>
+  </div>
+  <div class="card">
+    <div class="metric">Инстансов включено</div>
+    <div class="value">{{ lab.instances|selectattr("enabled")|list|length }}<span class="value-suffix">/{{ lab.instances|length }}</span></div>
+  </div>
+  <div class="card">
+    <div class="metric">Задач в работе</div>
+    <div class="value">{{ lab.jobs|selectattr("status", "equalto", "running")|list|length }}</div>
+  </div>
+  <div class="card">
+    <div class="metric">Свечей загружено</div>
+    <div class="value-sm">{{ lab.coverage|sum(attribute="candles") }}</div>
+  </div>
+</section>
+
+<section class="grid-2">
+  <div class="card">
+    <h2>Стратегии</h2>
+    <div class="rows">
+      {% for item in lab.strategies %}
+      <div class="row-item">
+        <span>{{ item.name }}</span>
+        <span class="pill {{ 'on' if item.enabled else 'off' }}">{{ "Работает" if item.enabled else "Выключена" }}</span>
+      </div>
+      {% else %}
+      <p class="muted">Стратегии не зарегистрированы.</p>
+      {% endfor %}
+    </div>
+    <p><a class="button" href="/strategy-lab/strategies" hx-get="/strategy-lab/strategies" hx-target="#lab-body" hx-push-url="/strategy-lab/strategies">Управлять стратегиями</a></p>
+  </div>
+
+  <div class="card">
+    <h2>Paper-профили</h2>
+    <table>
+      <thead><tr><th>Профиль</th><th>PnL</th><th>Сделок</th><th>Винрейт</th></tr></thead>
+      <tbody>
+        {% for row in lab.compare.profiles %}
+        <tr>
+          <td>{{ row.profile_key }}</td>
+          <td class="num {{ 'positive' if row.net_pnl > 0 else 'negative' if row.net_pnl < 0 else '' }}">{{ row.net_pnl|money }}</td>
+          <td class="num">{{ row.trades }}</td>
+          <td class="num">{{ row.winrate|pct }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="muted">Данных нет.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% set jobs = lab.jobs %}
+{% include "partials/jobs_table.html" %}

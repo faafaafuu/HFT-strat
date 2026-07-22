@@ -21,7 +21,7 @@ services:
     container_name: market-heat-signal-bot-web-dev
     command: watchfiles "uvicorn app.web.main:app --host 0.0.0.0 --port 8080" app
     ports:
-      - "8080:8080"
+      - "${WEB_HOST_PORT:-8090}:8080"
     volumes:
       - ./app:/app/app
       - ./config.yaml:/app/config.yaml:ro

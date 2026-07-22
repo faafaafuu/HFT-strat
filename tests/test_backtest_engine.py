@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from app.backtesting.engine import BacktestEngine, MIN_BACKTEST_CANDLES
+from app.backtesting.engine import MIN_BACKTEST_CANDLES, BacktestEngine
 from app.config import Settings
 from app.data.database import Database
 from app.data.models import MarketSnapshotModel

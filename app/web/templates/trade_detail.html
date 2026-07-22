@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Сделка #{{ trade.id if trade else "?" }}{% endblock %}
+{% block content %}
+{% if not trade %}
+<div class="top"><h1>Сделка не найдена</h1></div>
+<p><a class="button" href="/trades">К списку сделок</a></p>
+{% else %}
+<div class="top">
+  <h1>
+    Сделка #{{ trade.id }} · {{ trade.symbol }}
+    <span class="{{ 'long' if trade.direction == 'LONG' else 'short' }}">{{ trade.direction|ru_direction }}</span>
+  </h1>
+  <span class="pill {{ trade.status }}">{{ trade.status|ru_status }}</span>
+</div>
+
+<section class="grid">
+  <div class="card">
+    <div class="metric">Результат</div>
+    <div class="value {{ 'positive' if trade.pnl_usd > 0 else 'negative' if trade.pnl_usd < 0 else '' }}">{{ trade.pnl_usd|money }}</div>
+  </div>
+  <div class="card"><div class="metric">Доходность</div><div class="value">{{ trade.pnl_pct|pct }}</div></div>
+  <div class="card"><div class="metric">Реализованный R</div><div class="value">{{ trade.realized_rr|num }}</div></div>
+  <div class="card"><div class="metric">Скор сигнала</div><div class="value">{{ trade.score }}<span class="value-suffix">/10</span></div></div>
+</section>
+
+<section class="card">
+  <h2>График сделки</h2>
+  <p class="muted">
+    Источник данных:
+    {% if chart.source == "candles" %}свечи {{ chart.timeframe }}{% else %}снимки рынка{% endif %},
+    точек: {{ chart.series|length }}.
+  </p>
+  {% if chart.series %}
+  <div class="chart-wrap"><canvas id="trade-chart"></canvas></div>
+  <div class="legend">
+    <span class="legend-item"><i class="swatch entry"></i>Вход</span>
+    <span class="legend-item"><i class="swatch stop"></i>Стоп-лосс</span>
+    <span class="legend-item"><i class="swatch take"></i>Тейк-профит</span>
+    <span class="legend-item"><i class="swatch exit"></i>Фактический выход</span>
+  </div>
+  <script id="chart-data" type="application/json">{{ chart_json|tojson }}</script>
+  {% else %}
+  <p class="muted">
+    Нет ценовых данных за период сделки. Загрузите историю по {{ trade.symbol }}
+    на вкладке «Бэктесты» в Лаборатории.
+  </p>
+  {% endif %}
+</section>
+
+<section class="grid-2">
+  <div class="card">
+    <h2>Параметры сделки</h2>
+    <dl class="kv">
+      <dt>Вход</dt><dd class="num">{{ trade.entry_price|num }}</dd>
+      <dt>Стоп-лосс</dt><dd class="num">{{ trade.stop_price|num }}</dd>
+      <dt>Тейк-профит</dt><dd class="num">{{ trade.take_price|num }}</dd>
+      <dt>Выход</dt><dd class="num">{{ trade.exit_price|num if trade.exit_price else "—" }}</dd>
+      <dt>Размер позиции</dt><dd>{{ trade.position_size_usd|usd }}</dd>
+      <dt>Риск</dt><dd>{{ trade.risk_usd|usd }}</dd>
+      <dt>Плечо</dt><dd>{{ trade.leverage }}x</dd>
+      <dt>Комиссии</dt><dd>{{ trade.fees_usd|usd }}</dd>
+    </dl>
+  </div>
+  <div class="card">
+    <h2>Происхождение</h2>
+    <dl class="kv">
+      <dt>Паттерн</dt><dd>{{ trade.pattern or "—" }}</dd>
+      <dt>Стратегия</dt><dd class="mono">{{ trade.strategy_key or "—" }}</dd>
+      <dt>Инстанс</dt><dd class="mono">{{ trade.strategy_instance_id or "—" }}</dd>
+      <dt>Paper-профиль</dt><dd>{{ trade.profile_key }}</dd>
+      <dt>Открыта</dt><dd>{{ trade.opened_at|time }}</dd>
+      <dt>Закрыта</dt><dd>{{ trade.closed_at|time if trade.closed_at else "ещё открыта" }}</dd>
+      <dt>Сигнал</dt>
+      <dd>
+        {% if trade.signal_id %}
+        <a class="link" href="/signals/{{ trade.signal_id }}">#{{ trade.signal_id }} — открыть</a>
+        {% else %}—{% endif %}
+      </dd>
+    </dl>
+  </div>
+</section>
+
+<p><a class="button" href="/trades">← К списку сделок</a></p>
+{% endif %}
+{% endblock %}

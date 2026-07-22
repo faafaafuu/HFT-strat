@@ -1,22 +1,31 @@
 {% extends "base.html" %}
+{% block title %}Производительность{% endblock %}
 {% block content %}
 <div class="top">
-  <h1>Performance</h1>
-  <span class="muted">Realtime path metrics</span>
+  <h1>Производительность</h1>
+  <span class="muted">Состояние процессов бота в реальном времени</span>
 </div>
 
-<table>
-  <tr><th>Metric</th><th>Value</th></tr>
-  <tr><td>RAM</td><td>{{ performance.ram_mb|num }} MB</td></tr>
-  <tr><td>Active Tasks</td><td>{{ performance.active_tasks }}</td></tr>
-  <tr><td>WS Connections</td><td>{{ performance.ws_connections }}</td></tr>
-  <tr><td>Selected Symbols</td><td>{{ performance.selected_symbols }}</td></tr>
-  <tr><td>DB Size</td><td>{{ performance.db_size_mb|num }} MB</td></tr>
-  <tr><td>Heartbeat File</td><td>{{ "OK" if performance.heartbeat_exists else "Missing" }}</td></tr>
-  <tr><td>Signal Cycle</td><td>{{ performance.signal_cycle_ms or "n/a" }}</td></tr>
-  <tr><td>Orderbook Processing</td><td>{{ performance.orderbook_processing_ms or "n/a" }}</td></tr>
-  <tr><td>DB Write Latency</td><td>{{ performance.db_write_latency_ms or "n/a" }}</td></tr>
-  <tr><td>Telegram Callback Latency</td><td>{{ performance.telegram_callback_latency_ms or "n/a" }}</td></tr>
-</table>
-{% endblock %}
+<section class="grid">
+  <div class="card"><div class="metric">Оперативная память</div><div class="value-sm">{{ performance.ram_mb|num }} МБ</div></div>
+  <div class="card"><div class="metric">Активных задач</div><div class="value">{{ performance.active_tasks }}</div></div>
+  <div class="card"><div class="metric">WS-соединений</div><div class="value">{{ performance.ws_connections }}</div></div>
+  <div class="card"><div class="metric">Размер БД</div><div class="value-sm">{{ performance.db_size_mb|num }} МБ</div></div>
+</section>
 
+<section class="card">
+  <h2>Задержки обработки</h2>
+  <p class="muted">Если цикл сигналов растёт до секунд — бот не успевает за рынком.</p>
+  <table>
+    <thead><tr><th>Метрика</th><th>Значение</th></tr></thead>
+    <tbody>
+      <tr><td>Отслеживаемых символов</td><td class="num">{{ performance.selected_symbols }}</td></tr>
+      <tr><td>Файл heartbeat</td><td>{{ "в порядке" if performance.heartbeat_exists else "отсутствует" }}</td></tr>
+      <tr><td>Цикл генерации сигналов</td><td class="num">{{ performance.signal_cycle_ms or "нет данных" }}</td></tr>
+      <tr><td>Обработка стакана</td><td class="num">{{ performance.orderbook_processing_ms or "нет данных" }}</td></tr>
+      <tr><td>Запись в БД</td><td class="num">{{ performance.db_write_latency_ms or "нет данных" }}</td></tr>
+      <tr><td>Ответ Telegram</td><td class="num">{{ performance.telegram_callback_latency_ms or "нет данных" }}</td></tr>
+    </tbody>
+  </table>
+</section>
+{% endblock %}

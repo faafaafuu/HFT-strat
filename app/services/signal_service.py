@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+
 from app.data.database import Database
 from app.data.models import SignalModel
 from app.data.repositories import SignalRepository
@@ -15,6 +18,18 @@ class SignalService:
     async def recent(self, limit: int = 20, offset: int = 0) -> list[SignalModel]:
         async with self.database.session() as session:
             return await SignalRepository(session).list_recent(limit=limit, offset=offset)
+
+    async def recent_with_outcomes(self, limit: int = 100, offset: int = 0) -> list[SignalModel]:
+        """Signals plus their measured follow-through — the reason the list is worth reading."""
+        async with self.database.session() as session:
+            stmt = (
+                select(SignalModel)
+                .options(selectinload(SignalModel.outcomes))
+                .order_by(SignalModel.timestamp.desc())
+                .limit(limit)
+                .offset(offset)
+            )
+            return list((await session.scalars(stmt)).all())
 
     async def detail(self, signal_id: int) -> SignalModel | None:
         async with self.database.session() as session:

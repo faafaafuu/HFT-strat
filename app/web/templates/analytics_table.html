@@ -1,15 +1,25 @@
-<table>
-  <tr><th>Key</th><th>Count</th><th>WR</th><th>MFE</th><th>MAE</th></tr>
-  {% for row in rows %}
-  <tr>
-    <td>{{ row.key }}</td>
-    <td>{{ row.count }}</td>
-    <td>{{ row.winrate|pct }}</td>
-    <td>{{ row.avg_mfe|pct }}</td>
-    <td>{{ row.avg_mae|pct }}</td>
-  </tr>
-  {% else %}
-  <tr><td colspan="5" class="muted">No data.</td></tr>
-  {% endfor %}
+<table class="{{ 'clickable' if link_param else '' }}">
+  <thead>
+    <tr><th>Значение</th><th>Сигналов</th><th>Винрейт</th><th>MFE</th><th>MAE</th><th>Итог</th></tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr {% if link_param %}onclick="window.location='/signals?{{ link_param }}={{ row.key }}'" title="Показать эти сигналы"{% endif %}>
+      <td><b>{{ row.key }}</b></td>
+      <td class="num">{{ row.count }}</td>
+      <td class="num">{{ row.winrate|pct }}</td>
+      <td class="num positive">{{ row.avg_mfe|pct }}</td>
+      <td class="num negative">{{ row.avg_mae|pct }}</td>
+      <td>
+        {% if row.avg_mfe > (row.avg_mae|abs) %}
+        <span class="verdict good">отрабатывает</span>
+        {% else %}
+        <span class="verdict bad">убыточно</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" class="muted">Данных нет.</td></tr>
+    {% endfor %}
+  </tbody>
 </table>
-

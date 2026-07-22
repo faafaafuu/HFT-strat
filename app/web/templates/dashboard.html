@@ -1,64 +1,70 @@
 {% extends "base.html" %}
+{% block title %}Сводка{% endblock %}
 {% block content %}
 <div class="top">
-  <h1>Dashboard</h1>
-  <span class="muted">Read-only web dashboard</span>
+  <h1>Сводка</h1>
+  <span class="muted">Общее состояние бота</span>
 </div>
 
 <section class="grid">
-  <div class="card"><div class="metric">Status</div><div class="value {{ 'positive' if status.online else 'negative' }}">{{ "● Online" if status.online else "● Offline" }}</div></div>
-  <div class="card"><div class="metric">Pairs Tracked</div><div class="value">{{ status.pairs_count }}</div></div>
-  <div class="card"><div class="metric">Signals Today</div><div class="value">{{ status.signals_today }}</div></div>
-  <div class="card"><div class="metric">Signals (7d)</div><div class="value">{{ status.signals_week }}</div></div>
-  <div class="card"><div class="metric">Open Paper Trades</div><div class="value">{{ status.open_paper_trades }}</div></div>
-  <div class="card"><div class="metric">RAM / DB</div><div class="value-sm">{{ status.memory_mb|num }} MB / {{ status.db_size_mb|num }} MB</div></div>
+  <div class="card">
+    <div class="metric">Статус</div>
+    <div class="value {{ 'positive' if status.online else 'negative' }}">{{ "● В работе" if status.online else "● Остановлен" }}</div>
+  </div>
+  <div class="card"><div class="metric">Пар отслеживается</div><div class="value">{{ status.pairs_count }}</div></div>
+  <div class="card"><div class="metric">Сигналов сегодня</div><div class="value">{{ status.signals_today }}</div></div>
+  <div class="card"><div class="metric">Сигналов за 7 дней</div><div class="value">{{ status.signals_week }}</div></div>
+  <div class="card"><div class="metric">Открытых сделок</div><div class="value">{{ status.open_paper_trades }}</div></div>
+  <div class="card"><div class="metric">Память / БД</div><div class="value-sm">{{ status.memory_mb|num }} МБ / {{ status.db_size_mb|num }} МБ</div></div>
 </section>
 
 <section class="grid-2">
   <div class="card">
-    <div class="metric">Best Pattern</div>
+    <div class="metric">Лучший паттерн</div>
     {% if status.best_pattern %}
     <div class="stat-name">{{ status.best_pattern[0] }} <span class="stat-pct">{{ "%.1f"|format(status.best_pattern[1] * 100) }}%</span></div>
     {% else %}
-    <div class="stat-name muted">n/a</div>
+    <div class="stat-name muted">нет данных</div>
     {% endif %}
   </div>
   <div class="card">
-    <div class="metric">Best Pair</div>
+    <div class="metric">Лучшая пара</div>
     {% if status.best_pair %}
     <div class="stat-name">{{ status.best_pair[0] }} <span class="stat-pct">{{ "%.1f"|format(status.best_pair[1] * 100) }}%</span></div>
     {% else %}
-    <div class="stat-name muted">n/a</div>
+    <div class="stat-name muted">нет данных</div>
     {% endif %}
   </div>
 </section>
 
-<section class="card" style="margin-bottom: 22px;">
-  <h2>Runtime</h2>
+<section class="card">
+  <h2>Работа процессов</h2>
   <table>
-    <tr><th>Metric</th><th>Value</th></tr>
-    <tr><td>WS Connections</td><td class="num">{{ status.active_websocket_connections }}</td></tr>
-    <tr><td>RAM</td><td class="num">{{ status.memory_mb|num }} MB</td></tr>
-    <tr><td>Active Tasks</td><td class="num">{{ status.active_tasks }}</td></tr>
-    <tr><td>Last Heartbeat</td><td class="num">{{ status.last_heartbeat|time }}</td></tr>
-    <tr><td>Last Signal</td><td class="num">{{ status.last_signal_time|time }}</td></tr>
-    <tr><td>Uptime</td><td class="num">{{ status.uptime|duration }}</td></tr>
+    <thead><tr><th>Показатель</th><th>Значение</th></tr></thead>
+    <tbody>
+      <tr><td>WebSocket-соединений</td><td class="num">{{ status.active_websocket_connections }}</td></tr>
+      <tr><td>Оперативная память</td><td class="num">{{ status.memory_mb|num }} МБ</td></tr>
+      <tr><td>Активных задач</td><td class="num">{{ status.active_tasks }}</td></tr>
+      <tr><td>Последний heartbeat</td><td class="num">{{ status.last_heartbeat|ago }}</td></tr>
+      <tr><td>Последний сигнал</td><td class="num">{{ status.last_signal_time|ago }}</td></tr>
+      <tr><td>Время работы</td><td class="num">{{ status.uptime|duration }}</td></tr>
+    </tbody>
   </table>
 </section>
 
 <section>
-  <div class="section-label">Selected symbols</div>
+  <div class="section-label">Отслеживаемые символы</div>
   {% if status.selected_symbols %}
   <div class="chips">
     {% for symbol in status.selected_symbols[:12] %}
     <span class="chip">{{ symbol }}</span>
     {% endfor %}
     {% if status.selected_symbols|length > 12 %}
-    <span class="chip more">+{{ status.selected_symbols|length - 12 }}</span>
+    <span class="chip more">ещё {{ status.selected_symbols|length - 12 }}</span>
     {% endif %}
   </div>
   {% else %}
-  <p class="muted">No symbols selected yet.</p>
+  <p class="muted">Символы ещё не выбраны.</p>
   {% endif %}
 </section>
 {% endblock %}

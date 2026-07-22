@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Сигнал #{{ signal.id if signal else "?" }}{% endblock %}
+{% block content %}
+{% if not signal %}
+<div class="top"><h1>Сигнал не найден</h1></div>
+<p><a class="button" href="/signals">К списку сигналов</a></p>
+{% else %}
+<div class="top">
+  <h1>
+    Сигнал #{{ signal.id }} · {{ signal.symbol }}
+    <span class="{{ 'long' if signal.direction == 'LONG' else 'short' }}">{{ signal.direction|ru_direction }}</span>
+  </h1>
+  <span class="pill {{ signal.status }}">{{ signal.status|ru_status }}</span>
+</div>
+
+<section class="grid">
+  <div class="card"><div class="metric">Скор</div><div class="value">{{ signal.score }}<span class="value-suffix">/10</span></div></div>
+  <div class="card"><div class="metric">Цена входа</div><div class="value-sm">{{ signal.entry_price|num }}</div></div>
+  <div class="card"><div class="metric">Паттерн</div><div class="value-sm">{{ signal.pattern }}</div></div>
+  <div class="card"><div class="metric">Уверенность</div><div class="value">{{ (signal.confidence * 100)|num if signal.confidence else "—" }}{% if signal.confidence %}%{% endif %}</div></div>
+</section>
+
+<section class="card">
+  <h2>График</h2>
+  <p class="muted">2 часа до сигнала и 4 часа после — видно, отработал он или нет.</p>
+  {% if chart and chart.series %}
+  <div class="chart-wrap"><canvas id="signal-chart"></canvas></div>
+  <div class="legend">
+    <span class="legend-item"><i class="swatch entry"></i>Момент сигнала</span>
+    <span class="legend-item"><i class="swatch stop"></i>Предлагаемый стоп</span>
+    <span class="legend-item"><i class="swatch take"></i>Предлагаемый тейк</span>
+  </div>
+  <script id="chart-data" type="application/json">{{ chart_json|tojson }}</script>
+  {% else %}
+  <p class="muted">Ценовых данных за этот период нет.</p>
+  {% endif %}
+</section>
+
+<section class="grid-2">
+  <div class="card">
+    <h2>Почему сработал</h2>
+    {% set reasons = signal.reasons_json|fromjson %}
+    {% if reasons %}
+    <ul class="reasons">
+      {% for reason in reasons %}
+      <li>{{ reason }}</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">Причины не записаны.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Что было дальше</h2>
+    {% if signal.outcomes %}
+    <table>
+      <thead>
+        <tr><th>Горизонт</th><th>Цена</th><th>MFE</th><th>MAE</th><th>+1%</th><th>−0.5%</th></tr>
+      </thead>
+      <tbody>
+        {% for item in signal.outcomes|sort(attribute="horizon_minutes") %}
+        <tr>
+          <td>{{ item.horizon_minutes }} мин</td>
+          <td class="num">{{ item.price_after|num }}</td>
+          <td class="num positive">+{{ item.mfe_pct|round(2) }}%</td>
+          <td class="num negative">−{{ item.mae_pct|abs|round(2) }}%</td>
+          <td>{{ "да" if item.hit_tp_1_0 else "нет" }}</td>
+          <td>{{ "да" if item.hit_sl_0_5 else "нет" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="muted">
+      MFE больше MAE — сигнал давал возможность заработать. Наоборот — вход был преждевременным.
+    </p>
+    {% else %}
+    <p class="muted">Исходы ещё не измерены — трекер считает их с задержкой.</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="grid-2">
+  <div class="card">
+    <h2>Параметры</h2>
+    <dl class="kv">
+      <dt>Биржа</dt><dd>{{ signal.exchange }}</dd>
+      <dt>Время</dt><dd>{{ signal.timestamp|time }}</dd>
+      <dt>Стратегия</dt><dd class="mono">{{ signal.strategy_key or "—" }}</dd>
+      <dt>Инстанс</dt><dd class="mono">{{ signal.strategy_instance_id or "—" }}</dd>
+      <dt>Paper-профиль</dt><dd>{{ signal.paper_profile_key or "—" }}</dd>
+      <dt>Стоп (предложен)</dt><dd>{{ signal.suggested_stop_pct|pct if signal.suggested_stop_pct else "—" }}</dd>
+      <dt>Тейк (предложен)</dt><dd>{{ signal.suggested_take_pct|pct if signal.suggested_take_pct else "—" }}</dd>
+      <dt>Инвалидация</dt><dd class="num">{{ signal.invalidation_level|num if signal.invalidation_level else "—" }}</dd>
+    </dl>
+  </div>
+  <div class="card">
+    <h2>Обстановка на рынке</h2>
+    {% set context = signal.market_context_json|fromjson %}
+    {% if context %}
+    <dl class="kv">
+      {% for key, value in context.items() %}
+      <dt>{{ key }}</dt><dd class="mono">{{ value }}</dd>
+      {% endfor %}
+    </dl>
+    {% else %}
+    <p class="muted">Контекст не записан.</p>
+    {% endif %}
+  </div>
+</section>
+
+<p><a class="button" href="/signals">← К списку сигналов</a></p>
+{% endif %}
+{% endblock %}
