@@ -147,6 +147,7 @@ channel_strategy:
   enabled: true
   pivot_lookback: 3
   min_bars_between_points: 5
+  min_bars_before_touch: 5
   max_bars_wait_touch: 60
   touch_tolerance_pct: 0.1
   breakout_buffer_pct: 0.1

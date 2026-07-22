@@ -78,9 +78,10 @@ def _rising_channel_bars(
             high, low, close = middle + 1.0, bottom, middle
         elif index == 90:
             # Wick into the lower line and close just above it: the rejection bar.
+            # A negative gap pierces the line, a positive one stops short of it.
             low = bottom * (1 + touch_gap_pct / 100)
-            close = low * 1.003
-            high = low * 1.004
+            close = max(low, bottom) * 1.003
+            high = close * 1.001
         bars.append(_bar(index, high, low, close))
     return bars[:91]
 
@@ -174,6 +175,26 @@ def test_only_the_first_touch_after_point_three_signals() -> None:
     bars[75] = _bar(75, middle + 1.0, lower_at_75, middle)
 
     assert _strategy().generate_signal(_snapshot(bars)) is None
+
+
+def test_touch_too_soon_after_point_three_is_skipped() -> None:
+    """Reaching the far boundary right after point 3 is one swing, not a bounce."""
+    bars = _rising_channel_bars()
+    # Point 3 sits at bar 60; require a longer pause than the 30 bars on offer.
+    assert _strategy(min_bars_before_touch=40).generate_signal(_snapshot(bars)) is None
+    assert _strategy(min_bars_before_touch=30).generate_signal(_snapshot(bars)) is not None
+
+
+def test_precision_bonus_does_not_reward_a_deep_pierce() -> None:
+    """A wick far through the line is no cleaner than one far short of it."""
+    strategy = _strategy(touch_tolerance_pct=1.0, min_rr=1.0)
+    on_the_line = strategy.generate_signal(_snapshot(_rising_channel_bars()))
+    deep_pierce = strategy.generate_signal(_snapshot(_rising_channel_bars(touch_gap_pct=-0.9)))
+
+    assert on_the_line is not None
+    assert deep_pierce is not None
+    assert deep_pierce.market_context["channel"]["touch_pierced"] is True
+    assert deep_pierce.score < on_the_line.score
 
 
 def test_stale_channel_stops_producing_signals() -> None:

@@ -39,6 +39,7 @@ CHANNEL_SEARCH_SPACE: dict[str, list[Any]] = {
     "touch_tolerance_pct": [0.05, 0.1, 0.2],
     "breakout_buffer_pct": [0.0, 0.1, 0.3],
     "min_bars_between_points": [3, 5, 10],
+    "min_bars_before_touch": [0, 5, 10],
     "max_bars_wait_touch": [30, 60, 120],
     "pivot_lookback": [2, 3, 5],
 }

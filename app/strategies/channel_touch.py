@@ -138,6 +138,7 @@ def _merged_config(defaults: ChannelStrategyConfig, override: dict[str, Any]) ->
     base: dict[str, Any] = {
         "pivot_lookback": defaults.pivot_lookback,
         "min_bars_between_points": defaults.min_bars_between_points,
+        "min_bars_before_touch": defaults.min_bars_before_touch,
         "max_bars_wait_touch": defaults.max_bars_wait_touch,
         "touch_tolerance_pct": defaults.touch_tolerance_pct,
         "breakout_buffer_pct": defaults.breakout_buffer_pct,
@@ -312,10 +313,12 @@ def _touch_at(
     cfg: dict[str, Any],
 ) -> Touch | None:
     """The 4th touch, and only the 4th: earlier touches after point 3 disqualify it."""
+    point3_index = channel.point_indexes[2]
+    if current - point3_index < int(cfg["min_bars_before_touch"]):
+        return None
     touch = _touch_of(candles, current, channel, cfg)
     if touch is None:
         return None
-    point3_index = channel.point_indexes[2]
     for index in range(point3_index + 1, current):
         if _touch_of(candles, index, channel, cfg) is not None:
             return None
@@ -411,12 +414,15 @@ def _build_signal(
 
 
 def _precision_bonus(touch: Touch, cfg: dict[str, Any]) -> float:
-    """A wick that reaches the line beats one that stops short of it."""
-    if touch.pierced:
-        return 1.5
+    """Best when the wick lands on the line, whether it stops short or runs through.
+
+    A deep pierce is not a cleaner touch than a shallow one - on 4h BTC/ETH/SOL the
+    pierced touches actually won less often - so distance from the line is scored the
+    same in both directions.
+    """
     tolerance = float(cfg["touch_tolerance_pct"])
     if tolerance <= 0:
-        return 1.5
+        return 0.0
     return max(0.0, 1.0 - touch.gap_pct / tolerance) * 1.5
 
 

@@ -239,6 +239,9 @@ class ChannelStrategyConfig(BaseModel):
     pivot_lookback: int = 3
     # Guards against drawing a channel across a few noisy bars.
     min_bars_between_points: int = 5
+    # Same guard for the 4th touch: reaching the far boundary right after point 3 is
+    # one swing, not a bounce off a confirmed channel.
+    min_bars_before_touch: int = 5
     # After point 3 the channel goes stale if the 4th touch never arrives.
     max_bars_wait_touch: int = 60
     # How close a wick must come to a boundary to count as a touch.
