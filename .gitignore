@@ -19,3 +19,4 @@ graphify-out/
 
 .claude/worktrees/
 data/research*.sqlite3*
+data/research5m.sqlite3*

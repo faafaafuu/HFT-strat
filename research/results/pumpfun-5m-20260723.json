@@ -1,0 +1,41 @@
+{
+  "standalone_5m_IS": {
+    "R_per_trade_base": -0.27,
+    "R_per_trade_zero_cost": -0.04,
+    "PF": 0.62,
+    "trades": 251
+  },
+  "regime_slice_IS": {
+    "vol_0.15-0.27": -0.109,
+    "vol_0.27-0.51": -0.248,
+    "vol_gt_0.51": -0.406,
+    "vol_lt_0.15": -0.608
+  },
+  "compare_1h_majors": {
+    "PUMPFUN_5m": -0.27,
+    "BTC_1h": 0.081,
+    "ETH_1h": 0.012,
+    "SOL_1h": 0.083
+  },
+  "portfolio_donchian": {
+    "IS_without_PF_PF": 0.46,
+    "OOS_without_PF_PF": 0.61,
+    "PF_contribution_IS_R": -0.096,
+    "PF_contribution_OOS_R": 0.136
+  },
+  "portfolio_crosssection": {
+    "best_without_PF_PF": 0.94,
+    "same_with_PF_PF": 0.88,
+    "PF_contribution_R_range": [
+      -0.411,
+      -0.177
+    ]
+  },
+  "caveats": {
+    "window_days": 90,
+    "IS_days": 54,
+    "OOS_days": 36,
+    "slippage_5m_per_side_pct": 0.05,
+    "vol_median_pct": 0.27
+  }
+}
